@@ -1,0 +1,577 @@
+/* Takeoff Tooling - Counttooling.com Style */
+
+:root {
+  --bg: #0f0f11;
+  --surface: #17171a;
+  --surface2: #1e1e22;
+  --surface3: #26262c;
+  --border: #2e2e36;
+  --border2: #3a3a44;
+  --accent: #e8c547;
+  --accent2: #c9a82e;
+  --text: #f0ede8;
+  --text2: #9e9b96;
+  --text3: #5e5c58;
+  --red: #e85447;
+  --green: #47c88e;
+  --radius: 6px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  margin: 0;
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+.header-trash-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.header-trash-toggle:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.header-trash-toggle.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.header-trash-toggle .trash-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+#main-content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Manifest table */
+.manifest-view table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.manifest-view col.col-remove { width: 3%; }
+.manifest-view col.col-desc { width: 28%; }
+.manifest-view col.col-qty { width: 9%; }
+.manifest-view col.col-labor { width: 9%; }
+.manifest-view col.col-plan { width: 14%; }
+.manifest-view col.col-type { width: 20%; }
+.manifest-view col.col-price { width: 17%; }
+
+.manifest-view th,
+.manifest-view td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.manifest-view th:first-child,
+.manifest-view td:first-child {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  text-align: center;
+}
+
+.manifest-view th {
+  background: var(--surface2);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.manifest-view tr:hover {
+  background: var(--surface2);
+}
+
+.manifest-view tr.child-row td:nth-child(2) {
+  padding-left: 2rem;
+}
+
+.remove-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.remove-cell .remove-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+  border-radius: 4px;
+}
+
+.remove-cell .remove-btn.icon-btn:hover {
+  background: rgba(232,84,71,0.2);
+  color: var(--red);
+}
+
+.remove-cell .remove-btn .trash-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.remove-cell:not(.visible) .remove-btn {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.manifest-view tr.child-row {
+  background: var(--surface);
+}
+
+.manifest-view input,
+.manifest-view select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.manifest-view input::placeholder {
+  color: var(--text3);
+}
+
+.manifest-view input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232,197,71,0.2);
+}
+
+.manifest-view .type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.manifest-view .type-badge.lighting { background: rgba(232,184,74,0.25); color: #e8b84a; }
+.manifest-view .type-badge.gear { background: rgba(74,158,255,0.25); color: #4a9eff; }
+.manifest-view .type-badge.devices { background: rgba(71,200,142,0.25); color: #47c88e; }
+.manifest-view .type-badge.conduit { background: rgba(164,127,255,0.25); color: #a47fff; }
+.manifest-view .type-badge.wire { background: rgba(232,197,71,0.2); color: #e8c547; }
+.manifest-view .type-badge.specialSystems { background: rgba(232,84,71,0.2); color: #e85447; }
+.manifest-view .type-badge.default { background: var(--surface3); color: var(--text2); }
+
+.manifest-view .edit-flow-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: 0.25rem;
+}
+
+.manifest-view .edit-flow-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.manifest-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.manifest-actions.print-actions {
+  margin-top: 0.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn:hover {
+  background: var(--accent2);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+.btn-secondary:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.btn-success {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-success:hover {
+  background: var(--accent2);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal[aria-hidden="false"] {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.modal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.modal-buttons-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.modal-buttons button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.modal-buttons button:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
+.modal-buttons button kbd {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text2);
+  font-family: inherit;
+}
+
+/* Form modal */
+#form-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+#form-details label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+
+#form-details input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+#form-details input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232,197,71,0.2);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.modal-actions button:first-child {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+.modal-actions button:first-child:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.modal-actions button:last-child {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+}
+
+.modal-actions button:last-child:hover {
+  background: var(--accent2);
+}
+
+/* Flow pages (Device, Conduit, Wire) */
+.flow-page {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  border-radius: 8px;
+  max-width: 700px;
+}
+
+.flow-page h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.flow-page .parent-summary {
+  background: var(--surface2);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.flow-section {
+  margin-bottom: 1.5rem;
+}
+
+.flow-section h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text2);
+}
+
+.flow-section table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.flow-section th,
+.flow-section td {
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.flow-section th {
+  color: var(--text2);
+}
+
+.flow-section input {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.flow-section input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.flow-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.overage-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.overage-buttons button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.overage-buttons button:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
+.trenching-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 300px;
+}
+
+.trenching-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+
+.trenching-fields input {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.flow-section select {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  min-width: 200px;
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* Row actions */
+.row-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.row-actions button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--surface2);
+  color: var(--text2);
+}
+
+.row-actions button:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+/* Totals */
+.totals {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+
+.totals p {
+  margin: 0.25rem 0;
+  font-family: 'DM Mono', monospace;
+}
