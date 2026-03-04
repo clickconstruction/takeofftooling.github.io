@@ -13,6 +13,9 @@ const TakeoffManifestView = (function () {
     conduit: 'Conduit',
     wire: 'Wire',
     specialSystems: 'Special Systems',
+    permits: 'PERMITS',
+    powerCoCharges: 'POWER CO. CHARGES',
+    temporaryPower: 'TEMPORARY POWER',
   };
 
   function renderRow(item, isChild = false) {
@@ -31,7 +34,7 @@ const TakeoffManifestView = (function () {
     const showEditFlow = (hasFlow && !isChild) || (isChild && parentHasFlow);
     const editFlowTargetId = isChild && parentHasFlow ? parentId : item.id;
     const typeCell = item.type
-      ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
+      ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span><button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
       : `<td><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
 
     const showRemove = TakeoffState.getShowRemoveIcons();
@@ -41,9 +44,9 @@ const TakeoffManifestView = (function () {
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
         ${removeCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Description" /></td>
-        <td class="qty-cell"><input type="number" data-field="quantity" data-id="${item.id}" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /></td>
-        <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open labor book">${BOOK_SVG}</button></td>
-        <td><input type="text" data-field="price" data-id="${item.id}" value="${item.price !== undefined && item.price !== null ? item.price : ''}" placeholder="Price" /></td>
+        <td class="qty-cell"><div class="qty-spinner"><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div></td>
+        <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open labor book">${BOOK_SVG}</button></td>
+        <td><input type="number" data-field="price" data-id="${item.id}" dir="ltr" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" /></td>
         ${planPageCell}
         ${typeCell}
       </tr>
@@ -57,10 +60,78 @@ const TakeoffManifestView = (function () {
     return div.innerHTML;
   }
 
+  const SUMMARY_LABELS = {
+    lighting: 'Lighting',
+    gear: 'Gear',
+    devices: 'Devices',
+    conduit: 'Conduit',
+    wire: 'Wire',
+    specialSystems: 'Special Systems',
+    misc: 'Misc.',
+    permits: 'PERMITS',
+    powerCoCharges: 'POWER CO. CHARGES',
+    temporaryPower: 'TEMPORARY POWER',
+  };
+
+  function formatMoney(n) {
+    return (n || 0).toFixed(2);
+  }
+
+  function renderSummary() {
+    const s = TakeoffState.getSummaryBreakdown();
+    const matTypes = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems', 'misc'];
+    const otherTypes = ['permits', 'powerCoCharges', 'temporaryPower'];
+
+    let materialsRows = matTypes.map((t) => `<tr><td>${SUMMARY_LABELS[t]}</td><td class="summary-value">$${formatMoney(s.materials[t])}</td></tr>`).join('');
+    let laborRows = matTypes.map((t) => `<tr><td>${SUMMARY_LABELS[t]}</td><td class="summary-value">${(s.labor[t] || 0).toFixed(1)}</td></tr>`).join('');
+    let otherRows = otherTypes.map((t) => `<tr><td>${SUMMARY_LABELS[t]}</td><td class="summary-value">$${formatMoney(s.otherCharges[t])}</td></tr>`).join('');
+
+    return `
+      <div class="manifest-summary">
+        <div class="manifest-summary-section">
+          <h3 class="manifest-summary-title">MATERIALS</h3>
+          <table class="manifest-summary-table">
+            ${materialsRows}
+            <tr class="summary-subtotal"><td>Sub Total</td><td class="summary-value">$${formatMoney(s.materialsSubtotal)}</td></tr>
+            <tr><td>SALES TAX (8.5%)</td><td class="summary-value">$${formatMoney(s.salesTax)}</td></tr>
+            <tr class="summary-total"><td>Materials TOTAL $</td><td class="summary-value">$${formatMoney(s.materialsTotal)}</td></tr>
+          </table>
+        </div>
+        <div class="manifest-summary-section">
+          <h3 class="manifest-summary-title">LABOR</h3>
+          <table class="manifest-summary-table">
+            ${laborRows}
+            <tr class="summary-total"><td>Labor TOTAL (hrs)</td><td class="summary-value">${s.laborTotal.toFixed(1)}</td></tr>
+            <tr><td>Labor Rate ($/Hr)</td><td class="summary-value"><input type="number" id="labor-rate-input" value="${TakeoffState.getLaborRate() || ''}" min="0" step="0.01" placeholder="0" /></td></tr>
+            <tr class="summary-total"><td>Labor Total $</td><td class="summary-value">$${formatMoney(s.laborTotal * (TakeoffState.getLaborRate() || 0))}</td></tr>
+          </table>
+        </div>
+        <div class="manifest-summary-section">
+          <h3 class="manifest-summary-title">OTHER CHARGES</h3>
+          <table class="manifest-summary-table">
+            ${otherRows}
+            <tr class="summary-total"><td>Other TOTAL $</td><td class="summary-value">$${formatMoney(s.otherTotal)}</td></tr>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function updateSummaryOnly() {
+    const laborInput = document.getElementById('labor-rate-input');
+    if (laborInput) TakeoffState.setLaborRate(laborInput.value);
+    const summaryEl = document.querySelector('.manifest-view .manifest-summary');
+    if (summaryEl) {
+      summaryEl.outerHTML = renderSummary();
+      document.getElementById('labor-rate-input')?.addEventListener('change', (e) => {
+        TakeoffState.setLaborRate(e.target.value);
+        updateSummaryOnly();
+      });
+    }
+  }
+
   function render() {
     const items = TakeoffState.getFlattenedItems();
-    const totalLabor = TakeoffState.getTotalLabor();
-    const totalPrice = TakeoffState.getTotalPrice();
 
     let rows = '';
     for (const { _depth, ...item } of items) {
@@ -97,9 +168,7 @@ const TakeoffManifestView = (function () {
         <div class="manifest-actions">
           <button type="button" class="btn btn-success" id="add-row-btn">Add Row</button>
         </div>
-        <div class="totals">
-          <p><strong>Total Labor:</strong> ${totalLabor.toFixed(1)} hrs &nbsp; <strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
-        </div>
+        ${renderSummary()}
         <div class="print-options ${TakeoffState.getShowPrintOptions() ? 'expanded' : ''}">
           <button type="button" class="btn print-options-toggle" id="print-options-toggle" aria-expanded="${TakeoffState.getShowPrintOptions()}">
             Print Options
@@ -144,26 +213,55 @@ const TakeoffManifestView = (function () {
       TakeoffApp.render();
     });
 
+    document.getElementById('labor-rate-input')?.addEventListener('change', (e) => {
+      TakeoffState.setLaborRate(e.target.value);
+      TakeoffApp.render();
+    });
+
     document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         TakeoffApp.showLaborBookModal(e.currentTarget.dataset.id);
       });
     });
 
+    function handleFieldUpdate(e) {
+      const id = e.target.dataset.id;
+      const field = e.target.dataset.field;
+      let value = e.target.value;
+      if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
+      if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
+      TakeoffState.updateItem(id, { [field]: value });
+      if (['quantity', 'price', 'labor'].includes(field)) updateSummaryOnly();
+    }
+
     document.querySelectorAll('[data-field]').forEach((input) => {
-      input.addEventListener('change', (e) => {
-        const id = e.target.dataset.id;
-        const field = e.target.dataset.field;
-        let value = e.target.value;
-        if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
-        if (field === 'price') value = value === '' ? null : value;
-        TakeoffState.updateItem(id, { [field]: value });
+      input.addEventListener('change', handleFieldUpdate);
+      input.addEventListener('input', handleFieldUpdate);
+    });
+
+    document.querySelectorAll('.qty-up-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const input = document.querySelector(`.qty-cell input[data-field="quantity"][data-id="${id}"]`);
+        if (input) {
+          const val = parseFloat(input.value) || 0;
+          input.value = val + 1;
+          TakeoffState.updateItem(id, { quantity: val + 1 });
+          updateSummaryOnly();
+        }
       });
     });
 
     document.querySelectorAll('.select-type-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         TakeoffApp.showTypeModal(e.target.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.clear-type-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        TakeoffState.setType(e.target.dataset.id, null);
+        TakeoffApp.render();
       });
     });
 

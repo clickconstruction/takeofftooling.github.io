@@ -3,6 +3,8 @@
  */
 
 const TakeoffDeviceView = (function () {
+  const TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>';
+
   function render(itemId) {
     const item = TakeoffState.getItemById(itemId);
     if (!item) return '';
@@ -20,7 +22,7 @@ const TakeoffDeviceView = (function () {
         <td><input type="text" data-section="boxes" data-index="${i}" data-field="description" value="${escapeHtml(b.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-section="boxes" data-index="${i}" data-field="quantity" value="${b.quantity || ''}" min="0" /></td>
         <td><input type="number" data-section="boxes" data-index="${i}" data-field="labor" value="${b.labor !== undefined ? b.labor : ''}" min="0" step="0.1" /></td>
-        <td><button type="button" class="remove-child-btn" data-section="boxes" data-index="${i}">Remove</button></td>
+        <td><button type="button" class="remove-child-btn icon-btn" data-section="boxes" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
       )
@@ -33,7 +35,7 @@ const TakeoffDeviceView = (function () {
         <td><input type="text" data-section="covers" data-index="${i}" data-field="description" value="${escapeHtml(c.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-section="covers" data-index="${i}" data-field="quantity" value="${c.quantity || ''}" min="0" /></td>
         <td><input type="number" data-section="covers" data-index="${i}" data-field="labor" value="${c.labor !== undefined ? c.labor : ''}" min="0" step="0.1" /></td>
-        <td><button type="button" class="remove-child-btn" data-section="covers" data-index="${i}">Remove</button></td>
+        <td><button type="button" class="remove-child-btn icon-btn" data-section="covers" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
       )
@@ -43,7 +45,9 @@ const TakeoffDeviceView = (function () {
       <div class="flow-page device-flow">
         <h2>Devices - Add Boxes and Covers</h2>
         <div class="parent-summary">
-          <strong>Parent:</strong> ${escapeHtml(item.description || '')} | Qty: ${item.quantity} | Labor: ${(item.labor || 0) * 0.1} hrs
+          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
+          <div class="parent-summary-line">Quantity: ${item.quantity}</div>
+          <div class="parent-summary-line">Labor: ${(item.labor || 0) * 0.1} hrs</div>
         </div>
         <div class="flow-section">
           <h3>Boxes (at least one required)</h3>
@@ -98,8 +102,8 @@ const TakeoffDeviceView = (function () {
 
     document.querySelectorAll('.remove-child-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const section = e.target.dataset.section;
-        const index = parseInt(e.target.dataset.index, 10);
+        const section = e.currentTarget.dataset.section;
+        const index = parseInt(e.currentTarget.dataset.index, 10);
         const temp = TakeoffState.getDeviceTempData();
         temp[section].splice(index, 1);
         if (temp[section].length === 0) {

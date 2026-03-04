@@ -110,12 +110,49 @@ header h1 {
 
 .manifest-view col.col-remove { width: 3%; }
 .manifest-view col.col-desc { width: 28%; }
-.manifest-view col.col-qty { width: 4.5%; }
+.manifest-view col.col-qty { width: 6.5%; }
 
+.manifest-view .qty-spinner {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .manifest-view .qty-cell input {
-  width: 100%;
+  width: 4.5rem;
   min-width: 0;
   box-sizing: border-box;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.manifest-view .qty-cell input::-webkit-outer-spin-button,
+.manifest-view .qty-cell input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.manifest-view .qty-up-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.manifest-view .qty-up-btn:hover {
+  color: var(--accent);
+  background: rgba(232, 197, 71, 0.12);
+  border-color: var(--accent);
+}
+.manifest-view .qty-up-btn:active {
+  transform: scale(0.95);
 }
 .manifest-view col.col-labor { width: 9%; }
 .manifest-view col.col-plan { width: 14%; }
@@ -262,7 +299,31 @@ header h1 {
 .manifest-view .type-badge.conduit { background: rgba(164,127,255,0.25); color: #a47fff; }
 .manifest-view .type-badge.wire { background: rgba(232,197,71,0.2); color: #e8c547; }
 .manifest-view .type-badge.specialSystems { background: rgba(232,84,71,0.2); color: #e85447; }
+.manifest-view .type-badge.permits,
+.manifest-view .type-badge.powerCoCharges,
+.manifest-view .type-badge.temporaryPower { background: rgba(128,128,128,0.25); color: #888; }
 .manifest-view .type-badge.default { background: var(--surface3); color: var(--text2); }
+
+.manifest-view .clear-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.manifest-view .clear-type-btn:hover {
+  background: rgba(232, 84, 71, 0.2);
+  color: var(--red);
+}
 
 .manifest-view .edit-flow-btn {
   padding: 0.25rem 0.5rem;
@@ -446,6 +507,42 @@ header h1 {
   font-size: 0.8rem;
   color: var(--text2);
   padding-left: 0.25rem;
+}
+
+.modal-other-toggle {
+  cursor: pointer;
+}
+
+.modal-other-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.modal-other-toggle .modal-other-chevron::before {
+  content: '\25B6';
+}
+
+.modal-other-toggle[aria-expanded="true"] .modal-other-chevron::before {
+  content: '\25BC';
+}
+
+.modal-other-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 1rem;
+  margin-top: 0.25rem;
+  border-left: 2px solid var(--border);
+}
+
+.modal-other-content.modal-other-collapsed {
+  display: none;
+}
+
+.modal-other-content button {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  text-align: left;
 }
 
 .modal-buttons button {
@@ -784,6 +881,15 @@ header h1 {
   color: var(--text);
 }
 
+.flow-page .parent-summary-line {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.flow-page .parent-summary-line:last-child {
+  margin-bottom: 0;
+}
+
 .flow-section {
   margin-bottom: 1.5rem;
 }
@@ -811,6 +917,33 @@ header h1 {
   color: var(--text2);
 }
 
+.flow-section .remove-child-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.flow-section .remove-child-btn.icon-btn:hover {
+  background: rgba(232, 84, 71, 0.2);
+  color: var(--red);
+}
+
+.flow-section .remove-child-btn .trash-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.flow-section .add-box-btn,
+.flow-section .add-cover-btn {
+  margin-top: 0.75rem;
+}
+
 .flow-section input {
   width: 100%;
   padding: 0.4rem;
@@ -827,6 +960,7 @@ header h1 {
 
 .flow-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
 }
@@ -906,16 +1040,61 @@ header h1 {
   color: var(--text);
 }
 
-/* Totals */
-.totals {
-  margin-top: 1rem;
-  padding: 1rem;
+.manifest-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
   background: var(--surface2);
   border-radius: var(--radius);
-  color: var(--text);
+  border: 1px solid var(--border);
 }
 
-.totals p {
-  margin: 0.25rem 0;
+.manifest-summary-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.manifest-summary-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.manifest-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.manifest-summary-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.manifest-summary-table .summary-value {
+  text-align: right;
   font-family: 'DM Mono', monospace;
+}
+
+.manifest-summary-table .summary-subtotal td,
+.manifest-summary-table .summary-total td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+#labor-rate-input {
+  width: 6rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  text-align: right;
 }

@@ -38,7 +38,8 @@ const TakeoffWireView = (function () {
       <div class="flow-page wire-flow">
         <h2>Wire - Overage and MAC Adapters</h2>
         <div class="parent-summary">
-          <strong>Parent:</strong> ${escapeHtml(item.description || '')} | Current length: ${baseLength}
+          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
+          <div class="parent-summary-line">Current length: ${baseLength}</div>
         </div>
         <div class="flow-section">
           <h3>Overage</h3>

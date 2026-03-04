@@ -176,7 +176,7 @@ const TakeoffLaborBookView = (function () {
     return items
       .map((item) => {
         const desc = (item.description || '').slice(0, 40) + ((item.description || '').length > 40 ? '...' : '');
-        const label = `${desc} | Qty: ${item.quantity || 0} | ${item.planPage || '-'}`;
+        const label = `${desc} | Quantity: ${item.quantity || 0} | ${item.planPage || '-'}`;
         return `<option value="${item.id}">${escapeHtml(label)}</option>`;
       })
       .join('');
@@ -191,7 +191,7 @@ const TakeoffLaborBookView = (function () {
       const fixtureId = TakeoffState.getTopLevelParentId(preselectedId);
       const fixture = TakeoffState.getItemById(fixtureId);
       const desc = (fixture?.description || '').slice(0, 50) + ((fixture?.description || '').length > 50 ? '...' : '');
-      applyToEl.innerHTML = `<div class="labor-book-preselected">Add to: <strong>${escapeHtml(desc)}</strong> (Qty: ${fixture?.quantity || 0})</div>`;
+      applyToEl.innerHTML = `<div class="labor-book-preselected">Add to: <strong>${escapeHtml(desc)}</strong> (Quantity: ${fixture?.quantity || 0})</div>`;
       applyToEl.dataset.targetFixtureId = fixtureId;
     } else {
       applyToEl.removeAttribute('data-target-fixture-id');

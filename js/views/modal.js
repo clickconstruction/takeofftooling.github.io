@@ -29,6 +29,17 @@ const TakeoffModal = (function () {
       btn.addEventListener('click', () => handleTypeSelect(btn.dataset.type));
     });
 
+    const otherToggle = document.getElementById('modal-other-toggle');
+    const otherContent = document.getElementById('modal-other-content');
+    if (otherToggle && otherContent) {
+      otherToggle.replaceWith(otherToggle.cloneNode(true));
+      document.getElementById('modal-other-toggle').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const expanded = otherContent.classList.toggle('modal-other-collapsed');
+        document.getElementById('modal-other-toggle').setAttribute('aria-expanded', !expanded);
+      });
+    }
+
     document.getElementById('type-modal')?.addEventListener('click', (e) => {
       if (e.target.id === 'type-modal') {
         TakeoffApp.hideTypeModal();

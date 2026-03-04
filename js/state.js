@@ -3,7 +3,7 @@
  */
 
 const TakeoffState = (function () {
-  const ITEM_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems'];
+  const ITEM_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems', 'permits', 'powerCoCharges', 'temporaryPower'];
 
   let manifest = [];
   let currentView = 'manifest'; // 'manifest' | 'device' | 'conduit' | 'wire'
@@ -15,6 +15,7 @@ const TakeoffState = (function () {
   let wireTempData = { overagePercent: null, macAdapters: [] };
   let showRemoveIcons = false;
   let showPrintOptions = false;
+  let laborRate = 0;
 
   const LABOR_BOOK_TAB_ORDER = ['gear', 'lighting', 'devices', 'conduit', 'wire', 'specialSystems'];
   const LABOR_BOOK_TYPE_LABELS = { gear: 'Gear', lighting: 'Lighting', devices: 'Devices', conduit: 'Conduit', wire: 'Wire', specialSystems: 'Special Systems' };
@@ -758,6 +759,14 @@ const TakeoffState = (function () {
     return showRemoveIcons;
   }
 
+  function getLaborRate() {
+    return laborRate;
+  }
+
+  function setLaborRate(value) {
+    laborRate = Number(value) || 0;
+  }
+
   function getShowPrintOptions() {
     return showPrintOptions;
   }
@@ -857,6 +866,60 @@ const TakeoffState = (function () {
     return result;
   }
 
+  const MATERIAL_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems'];
+  const OTHER_TYPES = ['permits', 'powerCoCharges', 'temporaryPower'];
+  const SALES_TAX_RATE = 0.085;
+
+  function getSummaryBreakdown() {
+    const materials = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
+    const labor = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
+    const otherCharges = { permits: 0, powerCoCharges: 0, temporaryPower: 0 };
+
+    function processItems(items, parentType) {
+      for (const item of items) {
+        const type = item.type || parentType;
+        const effectiveType = type || parentType;
+        const qty = Number(item.quantity) || 0;
+        const priceVal = Number(item.price);
+        const effectiveQty = qty > 0 ? qty : (!isNaN(priceVal) && priceVal > 0 ? 1 : 0);
+        const priceAmount = !isNaN(priceVal) && priceVal > 0 ? priceVal * effectiveQty : 0;
+        const laborHrs = (item.labor || 0) * 0.1;
+
+        if (OTHER_TYPES.includes(effectiveType)) {
+          otherCharges[effectiveType] = (otherCharges[effectiveType] || 0) + priceAmount;
+        } else if (MATERIAL_TYPES.includes(effectiveType)) {
+          materials[effectiveType] = (materials[effectiveType] || 0) + priceAmount;
+          labor[effectiveType] = (labor[effectiveType] || 0) + laborHrs;
+        } else {
+          materials.misc += priceAmount;
+          labor.misc += laborHrs;
+        }
+
+        if (item.children && item.children.length) {
+          processItems(item.children, effectiveType || parentType);
+        }
+      }
+    }
+    processItems(manifest.filter((i) => !i.parentId), null);
+
+    const materialsSubtotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (materials[t] || 0), 0);
+    const salesTax = materialsSubtotal * SALES_TAX_RATE;
+    const materialsTotal = materialsSubtotal + salesTax;
+    const laborTotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (labor[t] || 0), 0);
+    const otherTotal = OTHER_TYPES.reduce((s, t) => s + (otherCharges[t] || 0), 0);
+
+    return {
+      materials,
+      materialsSubtotal,
+      salesTax,
+      materialsTotal,
+      labor,
+      laborTotal,
+      otherCharges,
+      otherTotal,
+    };
+  }
+
   return {
     ITEM_TYPES,
     LABOR_BOOK_TYPE_LABELS,
@@ -891,7 +954,10 @@ const TakeoffState = (function () {
     getTotalLabor,
     getTotalPrice,
     getFlattenedItems,
+    getSummaryBreakdown,
     generateId,
+    getLaborRate,
+    setLaborRate,
     getShowRemoveIcons,
     setShowRemoveIcons,
     toggleShowRemoveIcons,

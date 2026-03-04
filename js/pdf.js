@@ -30,7 +30,7 @@ const TakeoffPDF = (function () {
 
     doc.setFontSize(10);
     const colWidths = [25, 80, 35, 35, 40, 35];
-    const headers = ['Type', 'Description', 'Qty', 'Labor', 'Plan Page', 'Price'];
+    const headers = ['Type', 'Description', 'Quantity', 'Labor', 'Plan Page', 'Price'];
     doc.setFont(undefined, 'bold');
     doc.text(headers[0], margin, y);
     doc.text(headers[1], margin + colWidths[0], y);

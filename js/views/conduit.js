@@ -19,7 +19,9 @@ const TakeoffConduitView = (function () {
       <div class="flow-page conduit-flow">
         <h2>Conduit - Trenching</h2>
         <div class="parent-summary">
-          <strong>Parent:</strong> ${escapeHtml(item.description || '')} | Qty: ${item.quantity} | Length: ${item.quantity}
+          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
+          <div class="parent-summary-line">Quantity: ${item.quantity}</div>
+          <div class="parent-summary-line">Length: ${item.quantity}</div>
         </div>
         <div class="flow-section">
           <h3>Trenching</h3>
@@ -71,7 +73,8 @@ const TakeoffConduitView = (function () {
       <div class="flow-page conduit-flow">
         <h2>Conduit - Fittings</h2>
         <div class="parent-summary">
-          <strong>Parent:</strong> ${escapeHtml(item.description || '')} | Qty: ${item.quantity}
+          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
+          <div class="parent-summary-line">Quantity: ${item.quantity}</div>
         </div>
         <div class="flow-section">
           <h3>Fittings</h3>
@@ -107,7 +110,8 @@ const TakeoffConduitView = (function () {
       <div class="flow-page conduit-flow">
         <h2>Conduit - Overage</h2>
         <div class="parent-summary">
-          <strong>Parent:</strong> ${escapeHtml(item.description || '')} | Current length: ${baseLength}
+          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
+          <div class="parent-summary-line">Current length: ${baseLength}</div>
         </div>
         <div class="flow-section">
           <h3>Overage</h3>
