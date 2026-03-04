@@ -59,6 +59,7 @@ const TakeoffManifestView = (function () {
   function render() {
     const items = TakeoffState.getFlattenedItems();
     const totalLabor = TakeoffState.getTotalLabor();
+    const totalPrice = TakeoffState.getTotalPrice();
 
     let rows = '';
     for (const { _depth, ...item } of items) {
@@ -96,7 +97,7 @@ const TakeoffManifestView = (function () {
           <button type="button" class="btn btn-success" id="add-row-btn">Add Row</button>
         </div>
         <div class="totals">
-          <p><strong>Total Labor:</strong> ${totalLabor.toFixed(1)} hrs</p>
+          <p><strong>Total Labor:</strong> ${totalLabor.toFixed(1)} hrs &nbsp; <strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
         </div>
         <div class="manifest-actions print-actions">
           <button type="button" class="btn" id="print-review-btn">Print for Review</button>

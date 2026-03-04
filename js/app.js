@@ -113,6 +113,11 @@
     navigateToWire,
   };
 
+  // Import From Count Tooling
+  document.getElementById('import-count-tooling-btn')?.addEventListener('click', () => {
+    TakeoffImport.importFromClipboard();
+  });
+
   // Header trash toggle
   document.getElementById('remove-toggle-btn')?.addEventListener('click', () => {
     TakeoffState.toggleShowRemoveIcons();

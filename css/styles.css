@@ -45,12 +45,23 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 header h1 {
   margin: 0;
   font-family: 'Instrument Serif', serif;
   font-size: 1.4rem;
   font-weight: 400;
   color: var(--accent);
+}
+
+.header-import-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
 }
 
 .header-trash-toggle {
@@ -326,6 +337,19 @@ header h1 {
 .modal-buttons-stack {
   flex-direction: column;
   flex-wrap: nowrap;
+}
+
+.modal-type-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.modal-type-flow {
+  font-size: 0.8rem;
+  color: var(--text2);
+  padding-left: 0.25rem;
 }
 
 .modal-buttons button {

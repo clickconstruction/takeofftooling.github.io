@@ -12,7 +12,10 @@
 <body>
   <div id="app">
     <header>
-      <h1>Takeoff Tooling</h1>
+      <div class="header-left">
+        <h1>Takeoff Tooling</h1>
+        <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Import From CountTooling.com</button>
+      </div>
       <button type="button" id="remove-toggle-btn" class="header-trash-toggle" title="Toggle remove icons" aria-pressed="false">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
       </button>
@@ -27,12 +30,30 @@
     <div class="modal-content">
       <h2>Select Item Type</h2>
       <div class="modal-buttons modal-buttons-stack">
-        <button type="button" data-type="lighting" data-macro="L"><span class="modal-btn-label">Lighting</span> <kbd>L</kbd></button>
-        <button type="button" data-type="gear" data-macro="G"><span class="modal-btn-label">Gear</span> <kbd>G</kbd></button>
-        <button type="button" data-type="devices" data-macro="D"><span class="modal-btn-label">Devices</span> <kbd>D</kbd></button>
-        <button type="button" data-type="conduit" data-macro="C"><span class="modal-btn-label">Conduit</span> <kbd>C</kbd></button>
-        <button type="button" data-type="wire" data-macro="W"><span class="modal-btn-label">Wire</span> <kbd>W</kbd></button>
-        <button type="button" data-type="specialSystems" data-macro="S"><span class="modal-btn-label">Special Systems</span> <kbd>S</kbd></button>
+        <div class="modal-type-option">
+          <button type="button" data-type="lighting" data-macro="L"><span class="modal-btn-label">Lighting</span> <kbd>L</kbd></button>
+          <span class="modal-type-flow">—</span>
+        </div>
+        <div class="modal-type-option">
+          <button type="button" data-type="gear" data-macro="G"><span class="modal-btn-label">Gear</span> <kbd>G</kbd></button>
+          <span class="modal-type-flow">—</span>
+        </div>
+        <div class="modal-type-option">
+          <button type="button" data-type="devices" data-macro="D"><span class="modal-btn-label">Devices</span> <kbd>D</kbd></button>
+          <span class="modal-type-flow">Boxes and Covers</span>
+        </div>
+        <div class="modal-type-option">
+          <button type="button" data-type="conduit" data-macro="C"><span class="modal-btn-label">Conduit</span> <kbd>C</kbd></button>
+          <span class="modal-type-flow">Trenching → Fittings → Overage</span>
+        </div>
+        <div class="modal-type-option">
+          <button type="button" data-type="wire" data-macro="W"><span class="modal-btn-label">Wire</span> <kbd>W</kbd></button>
+          <span class="modal-type-flow">Overage and MAC Adapters</span>
+        </div>
+        <div class="modal-type-option">
+          <button type="button" data-type="specialSystems" data-macro="S"><span class="modal-btn-label">Special Systems</span> <kbd>S</kbd></button>
+          <span class="modal-type-flow">—</span>
+        </div>
       </div>
     </div>
   </div>
@@ -57,6 +78,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/data/fittings.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/import.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/views/manifest.js"></script>
   <script src="js/views/modal.js"></script>

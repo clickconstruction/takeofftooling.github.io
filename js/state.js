@@ -189,6 +189,22 @@ const TakeoffState = (function () {
     return sumLabor(manifest.filter((i) => !i.parentId));
   }
 
+  function getTotalPrice() {
+    function sumPrice(items) {
+      let total = 0;
+      for (const item of items) {
+        const p = Number(item.price);
+        const q = Number(item.quantity) || 0;
+        if (!isNaN(p) && p > 0) total += p * q;
+        if (item.children && item.children.length) {
+          total += sumPrice(item.children);
+        }
+      }
+      return total;
+    }
+    return sumPrice(manifest.filter((i) => !i.parentId));
+  }
+
   function getFlattenedItems() {
     const result = [];
     function flatten(items, depth = 0) {
@@ -230,6 +246,7 @@ const TakeoffState = (function () {
     getWireTempData,
     clearWireTempData,
     getTotalLabor,
+    getTotalPrice,
     getFlattenedItems,
     generateId,
     getShowRemoveIcons,
