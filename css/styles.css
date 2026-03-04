@@ -949,8 +949,25 @@ header h1 {
   color: var(--red);
 }
 
+.flow-section .remove-addon-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.flow-section .remove-addon-btn.icon-btn:hover {
+  background: rgba(232, 84, 71, 0.2);
+  color: var(--red);
+}
+
 .flow-section .remove-child-btn .trash-icon,
-.flow-section .remove-fitting-btn .trash-icon {
+.flow-section .remove-fitting-btn .trash-icon,
+.flow-section .remove-addon-btn .trash-icon {
   width: 16px;
   height: 16px;
   fill: currentColor;
@@ -1103,6 +1120,64 @@ header h1 {
   color: var(--text);
 }
 
+.trenching-addons {
+  margin-top: 1rem;
+}
+
+.trenching-addons p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.trenching-addon-section {
+  margin-bottom: 1rem;
+}
+
+.trenching-addon-section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trenching-addon-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.trenching-addon-buttons .trenching-addon-btn {
+  flex-shrink: 0;
+}
+
+.trenching-addons-table {
+  margin-top: 0.75rem;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trenching-addons-table th,
+.trenching-addons-table td {
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.trenching-addons-table th {
+  color: var(--text2);
+}
+
+.trenching-addons-table input {
+  width: 100%;
+  min-width: 4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 .flow-section select {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
@@ -1179,6 +1254,18 @@ header h1 {
   font-weight: 600;
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
+}
+
+.manifest-summary-grand-total {
+  width: 100%;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: right;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
 }
 
 #labor-rate-input {

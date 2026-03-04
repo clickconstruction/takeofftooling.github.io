@@ -86,6 +86,9 @@ const TakeoffManifestView = (function () {
     let laborRows = matTypes.map((t) => `<tr><td>${SUMMARY_LABELS[t]}</td><td class="summary-value">${(s.labor[t] || 0).toFixed(1)}</td></tr>`).join('');
     let otherRows = otherTypes.map((t) => `<tr><td>${SUMMARY_LABELS[t]}</td><td class="summary-value">$${formatMoney(s.otherCharges[t])}</td></tr>`).join('');
 
+    const laborTotalDollars = s.laborTotal * (TakeoffState.getLaborRate() || 0);
+    const grandTotal = s.materialsTotal + laborTotalDollars + s.otherTotal;
+
     return `
       <div class="manifest-summary">
         <div class="manifest-summary-section">
@@ -112,6 +115,9 @@ const TakeoffManifestView = (function () {
             ${otherRows}
             <tr class="summary-total"><td>Other TOTAL $</td><td class="summary-value">$${formatMoney(s.otherTotal)}</td></tr>
           </table>
+        </div>
+        <div class="manifest-summary-grand-total">
+          Grand Total: $${formatMoney(grandTotal)}
         </div>
       </div>
     `;

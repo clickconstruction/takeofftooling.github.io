@@ -35,6 +35,41 @@ const TakeoffConduitView = (function () {
             <label>Depth <input type="text" id="trench-depth" value="${escapeHtml(temp.trenchDepth || '')}" placeholder="e.g. 18 inches" /></label>
             <label>Price per Foot of Trenching ($) <input type="number" id="trench-price-per-foot" value="${temp.trenchPricePerFoot ?? ''}" min="0" step="0.01" placeholder="0" /></label>
           </div>
+          <div class="trenching-addons">
+            <p>Add additional child items:</p>
+            <div class="trenching-addon-section">
+              <p class="trenching-addon-section-title">Rentals</p>
+              <div class="trenching-addon-buttons">
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="BACKHOE">+ BACKHOE</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="SAW CUTTING">+ SAW CUTTING</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="DRILLING">+ DRILLING</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="HAUL-OFF">+ HAUL-OFF</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="MANLIFT">+ MANLIFT</button>
+              </div>
+            </div>
+            <div class="trenching-addon-section">
+              <p class="trenching-addon-section-title">Fill Materials</p>
+              <div class="trenching-addon-buttons">
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="ASPHALT PATCH">+ ASPHALT PATCH</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="TRENCHING SAND">+ TRENCHING SAND</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="POLE BASES">+ POLE BASES</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="CONCRETE PADS">+ CONCRETE PADS</button>
+                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="MANHOLES">+ MANHOLES</button>
+              </div>
+            </div>
+            <table class="trenching-addons-table">
+              <thead><tr><th>Description</th><th>Quantity<br>(Hours or Days)</th><th>Additional Labor</th><th>Charge (per Hour or Day)</th><th></th></tr></thead>
+              <tbody>${(temp.trenchingAddons || []).map((a, i) => `
+      <tr>
+        <td>${escapeHtml(a.description || '')}</td>
+        <td><input type="number" data-addon-index="${i}" data-field="quantity" value="${a.quantity ?? ''}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
+        <td><input type="number" data-addon-index="${i}" data-field="labor" value="${a.labor ?? ''}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
+        <td><input type="number" data-addon-index="${i}" data-field="price" value="${a.price ?? ''}" min="0" step="0.01" dir="ltr" placeholder="0" /></td>
+        <td><button type="button" class="remove-addon-btn icon-btn" data-addon-index="${i}" title="Remove">${TRASH_SVG}</button></td>
+      </tr>
+    `).join('')}</tbody>
+            </table>
+          </div>
         </div>
         <div class="flow-actions">
           <button type="button" class="btn btn-secondary" id="conduit-cancel-btn">Cancel</button>
@@ -152,6 +187,43 @@ const TakeoffConduitView = (function () {
         TakeoffApp.navigateToManifest();
       });
 
+      document.querySelectorAll('.trenching-addon-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const description = e.currentTarget.dataset.description || '';
+          if (!description) return;
+          const temp = TakeoffState.getConduitTempData();
+          temp.trenchingAddons = temp.trenchingAddons || [];
+          temp.trenchingAddons.push({ description, quantity: '', labor: '', price: '' });
+          TakeoffState.setConduitTempData(temp);
+          TakeoffApp.render();
+        });
+      });
+
+      document.querySelectorAll('.remove-addon-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const index = parseInt(e.currentTarget.dataset.addonIndex, 10);
+          const temp = TakeoffState.getConduitTempData();
+          temp.trenchingAddons = temp.trenchingAddons || [];
+          temp.trenchingAddons.splice(index, 1);
+          TakeoffState.setConduitTempData(temp);
+          TakeoffApp.render();
+        });
+      });
+
+      document.querySelectorAll('[data-addon-index]').forEach((el) => {
+        if (el.tagName !== 'INPUT') return;
+        el.addEventListener('change', (e) => {
+          const index = parseInt(e.target.dataset.addonIndex, 10);
+          const field = e.target.dataset.field;
+          let value = e.target.value;
+          if (field === 'quantity' || field === 'labor') value = value === '' ? '' : (parseFloat(value) ?? '');
+          if (field === 'price') value = value === '' ? '' : (parseFloat(value) ?? '');
+          const temp = TakeoffState.getConduitTempData();
+          if (temp.trenchingAddons?.[index]) temp.trenchingAddons[index][field] = value;
+          TakeoffState.setConduitTempData(temp);
+        });
+      });
+
       document.getElementById('conduit-next-fittings')?.addEventListener('click', () => {
         const qty = document.getElementById('trench-qty')?.value;
         const material = document.getElementById('trench-material')?.value;
@@ -183,6 +255,22 @@ const TakeoffConduitView = (function () {
           price: parseFloat(pricePerFoot) || undefined,
           parentId: itemId,
         });
+        if (parent) {
+          parent.children = (parent.children || []).filter((c) => c.type !== 'trenchingAddon');
+        }
+        for (const a of temp.trenchingAddons || []) {
+          if (a.description) {
+            TakeoffState.addItem({
+              id: TakeoffState.generateId(),
+              type: 'trenchingAddon',
+              description: a.description,
+              quantity: parseFloat(a.quantity) || 0,
+              labor: Math.round((parseFloat(a.labor) || 0) * 10),
+              price: parseFloat(a.price) || null,
+              parentId: itemId,
+            });
+          }
+        }
         TakeoffState.setConduitStep(2);
         TakeoffApp.render();
       });
