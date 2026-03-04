@@ -3,6 +3,9 @@
  */
 
 const TakeoffConduitView = (function () {
+  const BOOK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="labor-book-icon"><path d="M480 576L192 576C139 576 96 533 96 480L96 160C96 107 139 64 192 64L496 64C522.5 64 544 85.5 544 112L544 400C544 420.9 530.6 438.7 512 445.3L512 512C529.7 512 544 526.3 544 544C544 561.7 529.7 576 512 576L480 576zM192 448C174.3 448 160 462.3 160 480C160 497.7 174.3 512 192 512L448 512L448 448L192 448zM224 216C224 229.3 234.7 240 248 240L424 240C437.3 240 448 229.3 448 216C448 202.7 437.3 192 424 192L248 192C234.7 192 224 202.7 224 216zM248 288C234.7 288 224 298.7 224 312C224 325.3 234.7 336 248 336L424 336C437.3 336 448 325.3 448 312C448 298.7 437.3 288 424 288L248 288z"/></svg>';
+  const TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>';
+
   function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
@@ -25,12 +28,12 @@ const TakeoffConduitView = (function () {
         </div>
         <div class="flow-section">
           <h3>Trenching</h3>
-          <p>How much trenching? Through what material? At what depth? At what length?</p>
+          <p>How much trenching (feet)? Through what material? At what depth?</p>
           <div class="trenching-fields">
-            <label>Quantity <input type="number" id="trench-qty" value="${temp.trenchQty ?? ''}" min="0" placeholder="0" /></label>
-            <label>Material <input type="text" id="trench-material" value="${escapeHtml(temp.trenchMaterial || '')}" placeholder="e.g. asphalt, concrete" /></label>
+            <label>Quantity (Feet Of Trenching) <input type="number" id="trench-qty" value="${temp.trenchQty ?? ''}" min="0" placeholder="0" /></label>
+            <label>Material to Dig Through <input type="text" id="trench-material" value="${escapeHtml(temp.trenchMaterial || '')}" placeholder="e.g. asphalt, concrete" /></label>
             <label>Depth <input type="text" id="trench-depth" value="${escapeHtml(temp.trenchDepth || '')}" placeholder="e.g. 18 inches" /></label>
-            <label>Length <input type="text" id="trench-length" value="${escapeHtml(temp.trenchLength || '')}" placeholder="e.g. 50 ft" /></label>
+            <label>Price per Foot of Trenching ($) <input type="number" id="trench-price-per-foot" value="${temp.trenchPricePerFoot ?? ''}" min="0" step="0.01" placeholder="0" /></label>
           </div>
         </div>
         <div class="flow-actions">
@@ -54,7 +57,8 @@ const TakeoffConduitView = (function () {
         <td><input type="text" data-fittings-index="${i}" data-field="description" value="${escapeHtml(f.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-fittings-index="${i}" data-field="quantity" value="${f.quantity ?? ''}" min="0" /></td>
         <td><input type="number" data-fittings-index="${i}" data-field="labor" value="${f.labor !== undefined ? f.labor : ''}" min="0" step="0.1" /></td>
-        <td><button type="button" class="remove-fitting-btn" data-index="${i}">Remove</button></td>
+        <td><input type="number" data-fittings-index="${i}" data-field="price" value="${f.price ?? ''}" min="0" step="0.01" dir="ltr" placeholder="Price" /></td>
+        <td><button type="button" class="remove-fitting-btn icon-btn" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
       )
@@ -84,7 +88,7 @@ const TakeoffConduitView = (function () {
             ${presetOptions}
           </select>
           <table class="fittings-table">
-            <thead><tr><th>Description</th><th>Quantity</th><th>Labor</th><th></th></tr></thead>
+            <thead><tr><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
             <tbody>${fittingRows}</tbody>
           </table>
           <button type="button" class="btn add-fitting-btn">Add Fitting Row</button>
@@ -152,17 +156,17 @@ const TakeoffConduitView = (function () {
         const qty = document.getElementById('trench-qty')?.value;
         const material = document.getElementById('trench-material')?.value;
         const depth = document.getElementById('trench-depth')?.value;
-        const length = document.getElementById('trench-length')?.value;
-        const desc = `Trenching: ${qty || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}, ${length || 'N/A'}`;
+        const pricePerFoot = document.getElementById('trench-price-per-foot')?.value;
+        const desc = `Trenching: ${qty || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}`;
         const trenchData = { description: desc, quantity: parseFloat(qty) || 0, labor: 0 };
         const temp = TakeoffState.getConduitTempData();
         temp.trenching = trenchData;
         temp.trenchQty = qty;
         temp.trenchMaterial = material;
         temp.trenchDepth = depth;
-        temp.trenchLength = length;
+        temp.trenchPricePerFoot = pricePerFoot;
         if (!temp.fittings || temp.fittings.length === 0) {
-          temp.fittings = [{ description: '', quantity: 0, labor: 0 }];
+          temp.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
         }
         TakeoffState.setConduitTempData(temp);
         const parent = TakeoffState.getItemById(itemId);
@@ -176,6 +180,7 @@ const TakeoffConduitView = (function () {
           description: trenchData.description,
           quantity: trenchData.quantity,
           labor: trenchData.labor,
+          price: parseFloat(pricePerFoot) || undefined,
           parentId: itemId,
         });
         TakeoffState.setConduitStep(2);
@@ -194,7 +199,7 @@ const TakeoffConduitView = (function () {
         if (!val) return;
         const temp = TakeoffState.getConduitTempData();
         temp.fittings = temp.fittings || [];
-        temp.fittings.push({ description: val, quantity: 1, labor: 0 });
+        temp.fittings.push({ description: val, quantity: 1, labor: 0, price: '' });
         TakeoffState.setConduitTempData(temp);
         e.target.value = '';
         TakeoffApp.render();
@@ -203,19 +208,19 @@ const TakeoffConduitView = (function () {
       document.querySelector('.add-fitting-btn')?.addEventListener('click', () => {
         const temp = TakeoffState.getConduitTempData();
         temp.fittings = temp.fittings || [];
-        temp.fittings.push({ description: '', quantity: 0, labor: 0 });
+        temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
         TakeoffState.setConduitTempData(temp);
         TakeoffApp.render();
       });
 
       document.querySelectorAll('.remove-fitting-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
-          const index = parseInt(e.target.dataset.index, 10);
+          const index = parseInt(e.currentTarget.dataset.index, 10);
           const temp = TakeoffState.getConduitTempData();
           temp.fittings = temp.fittings || [];
           temp.fittings.splice(index, 1);
           if (temp.fittings.length === 0) {
-            temp.fittings.push({ description: '', quantity: 0, labor: 0 });
+            temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
           }
           TakeoffState.setConduitTempData(temp);
           TakeoffApp.render();
@@ -228,6 +233,7 @@ const TakeoffConduitView = (function () {
           const field = e.target.dataset.field;
           let value = e.target.value;
           if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
+          if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
           const temp = TakeoffState.getConduitTempData();
           if (temp.fittings?.[index]) temp.fittings[index][field] = value;
           TakeoffState.setConduitTempData(temp);
@@ -248,6 +254,7 @@ const TakeoffConduitView = (function () {
               description: f.description,
               quantity: f.quantity || 0,
               labor: f.labor || 0,
+              price: f.price != null && !isNaN(f.price) ? parseFloat(f.price) : null,
               parentId: itemId,
             });
           }

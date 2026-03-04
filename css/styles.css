@@ -933,7 +933,24 @@ header h1 {
   color: var(--red);
 }
 
-.flow-section .remove-child-btn .trash-icon {
+.flow-section .remove-fitting-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.flow-section .remove-fitting-btn.icon-btn:hover {
+  background: rgba(232, 84, 71, 0.2);
+  color: var(--red);
+}
+
+.flow-section .remove-child-btn .trash-icon,
+.flow-section .remove-fitting-btn .trash-icon {
   width: 16px;
   height: 16px;
   fill: currentColor;
@@ -942,6 +959,48 @@ header h1 {
 .flow-section .add-box-btn,
 .flow-section .add-cover-btn {
   margin-top: 0.75rem;
+}
+
+.flow-section .labor-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.flow-section .labor-cell input {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-section .labor-cell .labor-book-icon-btn.icon-btn,
+.flow-section .labor-book-cell .labor-book-icon-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.flow-section .labor-cell .labor-book-icon-btn.icon-btn:hover,
+.flow-section .labor-book-cell .labor-book-icon-btn.icon-btn:hover {
+  color: var(--accent);
+}
+
+.flow-section .labor-cell .labor-book-icon,
+.flow-section .labor-book-cell .labor-book-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.flow-section .labor-book-cell {
+  text-align: center;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .flow-section input {
@@ -984,6 +1043,41 @@ header h1 {
 .overage-buttons button:hover {
   background: var(--surface3);
   border-color: var(--border2);
+}
+
+.trenching-labor-book-row {
+  margin-bottom: 1rem;
+}
+
+.trenching-labor-book-row .labor-book-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.trenching-labor-book-row .labor-book-btn:hover {
+  background: rgba(232, 197, 71, 0.12);
+  color: var(--accent2);
+  border-color: var(--accent2);
+}
+
+.trenching-labor-book-row .labor-book-btn-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.trenching-labor-book-row .labor-book-btn .labor-book-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .trenching-fields {

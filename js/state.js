@@ -702,6 +702,17 @@ const TakeoffState = (function () {
     laborBookPreselectedItemId = null;
   }
 
+  let laborBookTargetDeviceRow = null;
+  function setLaborBookTargetDeviceRow(val) {
+    laborBookTargetDeviceRow = val;
+  }
+  function getLaborBookTargetDeviceRow() {
+    return laborBookTargetDeviceRow;
+  }
+  function clearLaborBookTargetDeviceRow() {
+    laborBookTargetDeviceRow = null;
+  }
+
   function setConduitStep(step) {
     conduitStep = step;
   }
@@ -939,6 +950,9 @@ const TakeoffState = (function () {
     setLaborBookPreselectedItemId,
     getLaborBookPreselectedItemId,
     clearLaborBookPreselectedItemId,
+    setLaborBookTargetDeviceRow,
+    getLaborBookTargetDeviceRow,
+    clearLaborBookTargetDeviceRow,
     getTopLevelParentId,
     setConduitStep,
     getConduitStep,

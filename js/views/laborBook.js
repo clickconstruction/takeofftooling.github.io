@@ -185,16 +185,27 @@ const TakeoffLaborBookView = (function () {
   function render() {
     document.getElementById('labor-book-tabs').innerHTML = renderTabs();
     document.getElementById('labor-book-content').innerHTML = renderContent();
+    const deviceTarget = TakeoffState.getLaborBookTargetDeviceRow();
     const preselectedId = TakeoffState.getLaborBookPreselectedItemId();
     const applyToEl = document.getElementById('labor-book-apply-to');
-    if (preselectedId) {
+    if (deviceTarget) {
+      const label = deviceTarget.section === 'boxes' ? 'Box' : 'Cover';
+      const temp = TakeoffState.getDeviceTempData();
+      const row = temp[deviceTarget.section]?.[deviceTarget.index];
+      const desc = (row?.description || '').slice(0, 40) + ((row?.description || '').length > 40 ? '...' : '');
+      applyToEl.innerHTML = `<div class="labor-book-preselected">Add to: <strong>${escapeHtml(label)} row ${deviceTarget.index + 1}</strong>${desc ? ` (${escapeHtml(desc)})` : ''}</div>`;
+      applyToEl.dataset.targetDeviceRow = JSON.stringify(deviceTarget);
+      applyToEl.removeAttribute('data-target-fixture-id');
+    } else if (preselectedId) {
       const fixtureId = TakeoffState.getTopLevelParentId(preselectedId);
       const fixture = TakeoffState.getItemById(fixtureId);
       const desc = (fixture?.description || '').slice(0, 50) + ((fixture?.description || '').length > 50 ? '...' : '');
       applyToEl.innerHTML = `<div class="labor-book-preselected">Add to: <strong>${escapeHtml(desc)}</strong> (Quantity: ${fixture?.quantity || 0})</div>`;
       applyToEl.dataset.targetFixtureId = fixtureId;
+      applyToEl.removeAttribute('data-target-device-row');
     } else {
       applyToEl.removeAttribute('data-target-fixture-id');
+      applyToEl.removeAttribute('data-target-device-row');
       const prevSelect = document.getElementById('labor-book-target-select');
       const currentVal = prevSelect?.value || '';
       applyToEl.innerHTML = '<label>Add to fixture: <select id="labor-book-target-select"><option value="">-- Select fixture --</option>' + renderApplyToSelect() + '</select></label>';
@@ -222,6 +233,30 @@ const TakeoffLaborBookView = (function () {
 
     function addRowToFixture(row) {
       const applyToEl = document.getElementById('labor-book-apply-to');
+      const deviceTargetJson = applyToEl?.dataset.targetDeviceRow;
+      if (deviceTargetJson) {
+        const deviceTarget = JSON.parse(deviceTargetJson);
+        const temp = TakeoffState.getDeviceTempData();
+        const targetRow = temp[deviceTarget.section]?.[deviceTarget.index];
+        if (!targetRow) return;
+        const name = row.querySelector('.labor-book-name')?.value || '';
+        const lbSection = row.dataset.section || '';
+        let itemDesc = name;
+        if (lbSection === 'Panels.1PH') itemDesc = `${name} Panel (1PH)`;
+        else if (lbSection === 'Panels.3PH') itemDesc = `${name} Panel (3PH)`;
+        else if (lbSection === 'THHN CU' || lbSection === 'THW AL') itemDesc = `${lbSection} ${name}`;
+        else if (lbSection.startsWith('Cable Tray.')) {
+          const depth = lbSection.replace('Cable Tray.', '');
+          itemDesc = `${name} Cable Tray (${depth})`;
+        }
+        const laborHours = parseFloat(row.dataset.labor) || 0;
+        targetRow.description = targetRow.description ? `${targetRow.description}, ${itemDesc}` : itemDesc;
+        targetRow.quantity = (targetRow.quantity || 0) + 1;
+        targetRow.labor = (targetRow.labor || 0) + Math.round(laborHours * 10);
+        TakeoffState.setDeviceTempData(temp);
+        TakeoffApp.render();
+        return;
+      }
       const targetId = applyToEl?.dataset.targetFixtureId || document.getElementById('labor-book-target-select')?.value;
       if (!targetId) {
         alert('Please select a fixture from "Add to fixture" first.');

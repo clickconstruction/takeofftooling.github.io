@@ -32,12 +32,16 @@
   }
 
   function hideTypeModal() {
-    TakeoffState.setModalItemId(null);
     const modal = document.getElementById('type-modal');
-    modal.setAttribute('aria-hidden', 'true');
+    if (modal?.contains(document.activeElement)) {
+      document.activeElement?.blur();
+    }
+    TakeoffState.setModalItemId(null);
+    modal?.setAttribute('aria-hidden', 'true');
   }
 
   function showLaborBookModal(itemId) {
+    TakeoffState.clearLaborBookTargetDeviceRow();
     TakeoffState.setLaborBookPreselectedItemId(itemId || null);
     const modal = document.getElementById('labor-book-modal');
     modal.setAttribute('aria-hidden', 'false');
@@ -45,10 +49,23 @@
     TakeoffLaborBookView.attachListeners();
   }
 
-  function hideLaborBookModal() {
-    TakeoffState.clearLaborBookPreselectedItemId();
+  function showLaborBookModalForDeviceRow(section, index) {
+    TakeoffState.setLaborBookPreselectedItemId(null);
+    TakeoffState.setLaborBookTargetDeviceRow({ section, index });
     const modal = document.getElementById('labor-book-modal');
-    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('aria-hidden', 'false');
+    TakeoffLaborBookView.render();
+    TakeoffLaborBookView.attachListeners();
+  }
+
+  function hideLaborBookModal() {
+    const modal = document.getElementById('labor-book-modal');
+    if (modal?.contains(document.activeElement)) {
+      document.activeElement?.blur();
+    }
+    TakeoffState.clearLaborBookPreselectedItemId();
+    TakeoffState.clearLaborBookTargetDeviceRow();
+    modal?.setAttribute('aria-hidden', 'true');
   }
 
   function navigateToManifest() {
@@ -56,6 +73,7 @@
     TakeoffState.clearConduitTempData();
     TakeoffState.clearDeviceTempData();
     TakeoffState.clearWireTempData();
+    TakeoffState.clearLaborBookTargetDeviceRow();
     render();
   }
 
@@ -122,6 +140,7 @@
     showTypeModal,
     hideTypeModal,
     showLaborBookModal,
+    showLaborBookModalForDeviceRow,
     hideLaborBookModal,
     navigateToManifest,
     navigateToDevice,
@@ -146,7 +165,9 @@
 
   // Form modal for Print with Form
   document.getElementById('form-modal-cancel')?.addEventListener('click', () => {
-    document.getElementById('form-modal').setAttribute('aria-hidden', 'true');
+    const formModal = document.getElementById('form-modal');
+    if (formModal?.contains(document.activeElement)) document.activeElement?.blur();
+    formModal?.setAttribute('aria-hidden', 'true');
   });
 
   document.getElementById('form-modal-print')?.addEventListener('click', () => {
@@ -158,7 +179,9 @@
       electricalCount: form?.electricalCount?.value ?? '',
     };
     TakeoffPDF.printWithForm(data);
-    document.getElementById('form-modal').setAttribute('aria-hidden', 'true');
+    const formModal = document.getElementById('form-modal');
+    if (formModal?.contains(document.activeElement)) document.activeElement?.blur();
+    formModal?.setAttribute('aria-hidden', 'true');
   });
 
   // Ensure at least one row exists on load
