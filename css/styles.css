@@ -45,12 +45,6 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
 header h1 {
   margin: 0;
   font-family: 'Instrument Serif', serif;
@@ -116,11 +110,17 @@ header h1 {
 
 .manifest-view col.col-remove { width: 3%; }
 .manifest-view col.col-desc { width: 28%; }
-.manifest-view col.col-qty { width: 9%; }
+.manifest-view col.col-qty { width: 4.5%; }
+
+.manifest-view .qty-cell input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .manifest-view col.col-labor { width: 9%; }
 .manifest-view col.col-plan { width: 14%; }
 .manifest-view col.col-type { width: 20%; }
-.manifest-view col.col-price { width: 17%; }
+.manifest-view col.col-price { width: 8.5%; }
 
 .manifest-view th,
 .manifest-view td {
@@ -182,6 +182,45 @@ header h1 {
 .remove-cell:not(.visible) .remove-btn {
   visibility: hidden;
   pointer-events: none;
+}
+
+.labor-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.labor-cell input {
+  flex: 1;
+  min-width: 0;
+}
+
+.labor-cell .labor-book-icon-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.labor-cell .labor-book-icon-btn.icon-btn:hover {
+  color: var(--accent);
+}
+
+.labor-cell .labor-book-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.labor-book-preselected {
+  font-size: 0.9rem;
+  color: var(--text2);
+  padding: 0.4rem 0;
 }
 
 .manifest-view tr.child-row {
@@ -250,8 +289,45 @@ header h1 {
   flex-wrap: wrap;
 }
 
-.manifest-actions.print-actions {
+.print-options {
+  margin-top: 1rem;
+}
+
+.print-options-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.print-options-toggle:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
+.print-options-toggle::after {
+  content: '▼';
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.print-options.expanded .print-options-toggle::after {
+  transform: rotate(180deg);
+}
+
+.print-options-content {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.print-options.expanded .print-options-content {
+  display: flex;
 }
 
 .btn {
@@ -289,6 +365,26 @@ header h1 {
 
 .btn-success:hover {
   background: var(--accent2);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: var(--accent2);
+}
+
+.labor-book-btn {
+  font-size: 0.85em;
+  margin-left: 0.25rem;
 }
 
 .btn:disabled {
@@ -380,6 +476,230 @@ header h1 {
   border-radius: 4px;
   color: var(--text2);
   font-family: inherit;
+}
+
+/* Labor Book modal */
+.labor-book-modal-content {
+  width: 98vw;
+  max-width: 98vw;
+  height: 95vh;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.labor-book-apply-to {
+  margin-bottom: 1rem;
+}
+
+.labor-book-apply-to label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.labor-book-apply-to select {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.labor-book-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.labor-book-tab {
+  padding: 0.4rem 0.8rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.labor-book-tab:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.labor-book-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.labor-book-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.labor-book-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.labor-book-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  color: var(--text);
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface2);
+  user-select: none;
+}
+
+.labor-book-section-header:hover {
+  background: var(--surface3);
+}
+
+.labor-book-section-chevron {
+  display: inline-block;
+  width: 0.6em;
+  font-size: 0.8em;
+  transition: transform 0.2s ease;
+}
+
+.labor-book-section-collapsed .labor-book-section-chevron::before {
+  content: '\25B6';
+}
+
+.labor-book-section:not(.labor-book-section-collapsed) .labor-book-section-chevron::before {
+  content: '\25BC';
+}
+
+.labor-book-section-body {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.labor-book-section-collapsed .labor-book-section-body {
+  display: none;
+}
+
+.labor-book-section h3.labor-book-section-header {
+  text-align: left;
+}
+
+.labor-book-subsection {
+  font-size: 1.2rem;
+  color: var(--text2);
+  margin: 1.25rem 0 0.5rem 0;
+  font-weight: 600;
+  text-align: center;
+}
+
+.labor-book-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+.labor-book-section th,
+.labor-book-section td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.labor-book-add-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.labor-book-add-btn:hover,
+.labor-book-add-btn:focus {
+  background: rgba(232, 197, 71, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.labor-book-panel-row td {
+  vertical-align: middle;
+}
+
+.labor-book-add-1ph-btn,
+.labor-book-add-3ph-btn {
+  min-width: 44px;
+}
+
+.labor-book-section input {
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.labor-book-row {
+  cursor: pointer;
+}
+
+.labor-book-row:hover {
+  background: var(--surface2);
+}
+
+.labor-book-remove-row.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.labor-book-remove-row.icon-btn:hover {
+  background: rgba(232, 84, 71, 0.2);
+  color: var(--red);
+}
+
+.labor-book-remove-row .trash-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.labor-book-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text2);
+}
+
+.labor-book-empty p {
+  margin: 0 0 0.5rem 0;
 }
 
 /* Form modal */

@@ -4,6 +4,7 @@
 
 const TakeoffManifestView = (function () {
   const TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>';
+  const BOOK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="labor-book-icon"><path d="M480 576L192 576C139 576 96 533 96 480L96 160C96 107 139 64 192 64L496 64C522.5 64 544 85.5 544 112L544 400C544 420.9 530.6 438.7 512 445.3L512 512C529.7 512 544 526.3 544 544C544 561.7 529.7 576 512 576L480 576zM192 448C174.3 448 160 462.3 160 480C160 497.7 174.3 512 192 512L448 512L448 448L192 448zM224 216C224 229.3 234.7 240 248 240L424 240C437.3 240 448 229.3 448 216C448 202.7 437.3 192 424 192L248 192C234.7 192 224 202.7 224 216zM248 288C234.7 288 224 298.7 224 312C224 325.3 234.7 336 248 336L424 336C437.3 336 448 325.3 448 312C448 298.7 437.3 288 424 288L248 288z"/></svg>';
 
   const TYPE_LABELS = {
     lighting: 'Lighting',
@@ -40,11 +41,11 @@ const TakeoffManifestView = (function () {
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
         ${removeCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Description" /></td>
-        <td><input type="number" data-field="quantity" data-id="${item.id}" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /></td>
-        <td><input type="number" data-field="labor" data-id="${item.id}" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /></td>
+        <td class="qty-cell"><input type="number" data-field="quantity" data-id="${item.id}" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /></td>
+        <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open labor book">${BOOK_SVG}</button></td>
+        <td><input type="text" data-field="price" data-id="${item.id}" value="${item.price !== undefined && item.price !== null ? item.price : ''}" placeholder="Price" /></td>
         ${planPageCell}
         ${typeCell}
-        <td><input type="text" data-field="price" data-id="${item.id}" value="${item.price !== undefined && item.price !== null ? item.price : ''}" placeholder="Price (opt)" /></td>
       </tr>
     `;
   }
@@ -74,9 +75,9 @@ const TakeoffManifestView = (function () {
             <col class="col-desc" />
             <col class="col-qty" />
             <col class="col-labor" />
+            <col class="col-price" />
             <col class="col-plan" />
             <col class="col-type" />
-            <col class="col-price" />
           </colgroup>
           <thead>
             <tr>
@@ -84,9 +85,9 @@ const TakeoffManifestView = (function () {
               <th>Description</th>
               <th>Quantity</th>
               <th>Labor</th>
+              <th>Price</th>
               <th>Plan Page</th>
               <th>Type</th>
-              <th>Price (opt)</th>
             </tr>
           </thead>
           <tbody>
@@ -99,10 +100,15 @@ const TakeoffManifestView = (function () {
         <div class="totals">
           <p><strong>Total Labor:</strong> ${totalLabor.toFixed(1)} hrs &nbsp; <strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
         </div>
-        <div class="manifest-actions print-actions">
-          <button type="button" class="btn" id="print-review-btn">Print for Review</button>
-          <button type="button" class="btn" id="print-po-btn">Print for Purchase Order</button>
-          <button type="button" class="btn" id="print-form-btn">Print with Form</button>
+        <div class="print-options ${TakeoffState.getShowPrintOptions() ? 'expanded' : ''}">
+          <button type="button" class="btn print-options-toggle" id="print-options-toggle" aria-expanded="${TakeoffState.getShowPrintOptions()}">
+            Print Options
+          </button>
+          <div class="print-options-content">
+            <button type="button" class="btn" id="print-review-btn">Print for Review</button>
+            <button type="button" class="btn" id="print-po-btn">Print for Purchase Order</button>
+            <button type="button" class="btn" id="print-form-btn">Print with Form</button>
+          </div>
         </div>
       </div>
     `;
@@ -131,6 +137,17 @@ const TakeoffManifestView = (function () {
 
     document.getElementById('print-form-btn')?.addEventListener('click', () => {
       document.getElementById('form-modal').setAttribute('aria-hidden', 'false');
+    });
+
+    document.getElementById('print-options-toggle')?.addEventListener('click', () => {
+      TakeoffState.toggleShowPrintOptions();
+      TakeoffApp.render();
+    });
+
+    document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        TakeoffApp.showLaborBookModal(e.currentTarget.dataset.id);
+      });
     });
 
     document.querySelectorAll('[data-field]').forEach((input) => {
