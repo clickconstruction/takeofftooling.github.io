@@ -22,6 +22,14 @@
       mainContent.innerHTML = TakeoffWireView.render(itemId);
       TakeoffWireView.attachListeners(itemId);
     }
+    updateUndoRedoButtons();
+  }
+
+  function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    if (undoBtn) undoBtn.disabled = !TakeoffState.canUndo();
+    if (redoBtn) redoBtn.disabled = !TakeoffState.canRedo();
   }
 
   function showTypeModal(itemId) {
@@ -148,9 +156,28 @@
     navigateToWire,
   };
 
+  // App title - navigate to manifest
+  document.getElementById('app-title')?.addEventListener('click', () => {
+    TakeoffApp.navigateToManifest();
+  });
+
   // Import From Count Tooling
   document.getElementById('import-count-tooling-btn')?.addEventListener('click', () => {
     TakeoffImport.importFromClipboard();
+  });
+
+  // Undo
+  document.getElementById('undo-btn')?.addEventListener('click', () => {
+    if (TakeoffState.undo()) {
+      TakeoffApp.navigateToManifest();
+    }
+  });
+
+  // Redo
+  document.getElementById('redo-btn')?.addEventListener('click', () => {
+    if (TakeoffState.redo()) {
+      TakeoffApp.navigateToManifest();
+    }
   });
 
   // Header trash toggle

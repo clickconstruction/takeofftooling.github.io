@@ -22,7 +22,7 @@ const TakeoffDeviceView = (function () {
       <tr>
         <td><input type="text" data-section="boxes" data-index="${i}" data-field="description" value="${escapeHtml(b.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-section="boxes" data-index="${i}" data-field="quantity" value="${b.quantity || ''}" min="0" /></td>
-        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="boxes" data-index="${i}" title="Open labor book">${BOOK_SVG}</button></td>
+        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="boxes" data-index="${i}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>
         <td><input type="number" data-section="boxes" data-index="${i}" data-field="labor" value="${b.labor !== undefined ? b.labor : ''}" min="0" step="0.1" /></td>
         <td><button type="button" class="remove-child-btn icon-btn" data-section="boxes" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
@@ -36,7 +36,7 @@ const TakeoffDeviceView = (function () {
       <tr>
         <td><input type="text" data-section="covers" data-index="${i}" data-field="description" value="${escapeHtml(c.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-section="covers" data-index="${i}" data-field="quantity" value="${c.quantity || ''}" min="0" /></td>
-        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="covers" data-index="${i}" title="Open labor book">${BOOK_SVG}</button></td>
+        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="covers" data-index="${i}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>
         <td><input type="number" data-section="covers" data-index="${i}" data-field="labor" value="${c.labor !== undefined ? c.labor : ''}" min="0" step="0.1" /></td>
         <td><button type="button" class="remove-child-btn icon-btn" data-section="covers" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
@@ -50,7 +50,7 @@ const TakeoffDeviceView = (function () {
         <div class="parent-summary">
           <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
           <div class="parent-summary-line">Quantity: ${item.quantity}</div>
-          <div class="parent-summary-line">Labor: ${(item.labor || 0) * 0.1} hrs</div>
+          <div class="parent-summary-line">Labor: ${(item.labor || 0)} hrs</div>
         </div>
         <div class="flow-section">
           <h3>Boxes (at least one required)</h3>

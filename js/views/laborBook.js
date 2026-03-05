@@ -1,5 +1,5 @@
 /**
- * Labor Book modal - tabs per item type, labor rate rows, apply to manifest item
+ * Labor and Price Book modal - tabs per item type, labor rate rows, apply to manifest item
  */
 
 const TakeoffLaborBookView = (function () {
@@ -24,33 +24,11 @@ const TakeoffLaborBookView = (function () {
       .join('');
   }
 
-  function renderContent() {
-    const type = TakeoffState.getActiveLaborBookTab();
-    const data = TakeoffState.getLaborBookType(type);
-    const sections = Object.keys(data);
-
-    if (sections.length === 0) {
-      return `
-        <div class="labor-book-empty">
-          <p>No sections yet.</p>
-          <button type="button" class="btn add-section-btn" data-type="${type}">Add Section</button>
-        </div>
-      `;
-    }
-
-    let html = '';
-    const transformersSections = sections.filter((s) => s.startsWith('Transformers.'));
-    const panelsSections = sections.filter((s) => s.startsWith('Panels.'));
-    const cableTraySections = sections.filter((s) => s.startsWith('Cable Tray.'));
-    const otherSections = sections.filter(
-      (s) => !s.startsWith('Transformers.') && !s.startsWith('Panels.') && !s.startsWith('Cable Tray.')
-    );
-
-    for (const section of otherSections) {
-      const rows = data[section] || [];
-      const rowHtml = rows
-        .map(
-          (r, i) => `
+  function renderSectionRows(type, section, data) {
+    const rows = data[section] || [];
+    return rows
+      .map(
+        (r, i) => `
         <tr class="labor-book-row" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" data-labor="${r.labor || 0}">
           <td><button type="button" class="btn labor-book-add-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Add as child to fixture">+ Add</button></td>
           <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
@@ -59,9 +37,13 @@ const TakeoffLaborBookView = (function () {
           <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
         </tr>
       `
-        )
-        .join('');
-      html += `
+      )
+      .join('');
+  }
+
+  function renderSectionBlock(type, section, data) {
+    const rowHtml = renderSectionRows(type, section, data);
+    return `
         <div class="labor-book-section labor-book-section-collapsed" data-section="${escapeHtml(section)}">
           <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(section)}</h3>
           <div class="labor-book-section-body">
@@ -73,26 +55,59 @@ const TakeoffLaborBookView = (function () {
           </div>
         </div>
       `;
+  }
+
+  function renderContent() {
+    const type = TakeoffState.getActiveLaborBookTab();
+    const data = TakeoffState.getLaborBookType(type);
+    const sections = Object.keys(data);
+    const groups = TakeoffState.getLaborBookGroups(type);
+
+    if (sections.length === 0) {
+      return `
+        <div class="labor-book-empty">
+          <p>No sections yet.</p>
+          <button type="button" class="btn add-section-btn" data-type="${type}">Add Section</button>
+        </div>
+      `;
     }
+
+    let html = '';
+
+    if (groups && type === 'conduit') {
+      for (const group of groups) {
+        let groupSectionsHtml = '';
+        for (const section of group.sections) {
+          if (!data[section]) continue;
+          groupSectionsHtml += renderSectionBlock(type, section, data);
+        }
+        if (groupSectionsHtml) {
+          html += `
+        <div class="labor-book-group labor-book-group-collapsed" data-group="${escapeHtml(group.name)}">
+          <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>${escapeHtml(group.name)}</h2>
+          <div class="labor-book-group-body">
+            ${groupSectionsHtml}
+          </div>
+        </div>
+      `;
+        }
+      }
+    } else {
+      const transformersSections = sections.filter((s) => s.startsWith('Transformers.'));
+      const panelsSections = sections.filter((s) => s.startsWith('Panels.'));
+      const otherSections = sections.filter(
+        (s) => !s.startsWith('Transformers.') && !s.startsWith('Panels.') && !s.startsWith('Cable Tray.')
+      );
+
+      for (const section of otherSections) {
+        html += renderSectionBlock(type, section, data);
+      }
 
     if (panelsSections.length > 0 && type === 'gear') {
       let panelsHtml = '<div class="labor-book-section labor-book-section-collapsed" data-section="Panels"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Panels</h3><div class="labor-book-section-body">';
       for (const section of panelsSections) {
-        const rows = data[section] || [];
         const subLabel = section.replace('Panels.', '');
-        const rowHtml = rows
-          .map(
-            (r, i) => `
-        <tr class="labor-book-row" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" data-labor="${r.labor || 0}">
-          <td><button type="button" class="btn labor-book-add-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Add as child to fixture">+ Add</button></td>
-          <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
-          <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
-          <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
-          <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
-        </tr>
-      `
-          )
-          .join('');
+        const rowHtml = renderSectionRows(type, section, data);
         panelsHtml += `
           <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
@@ -106,55 +121,11 @@ const TakeoffLaborBookView = (function () {
       html += panelsHtml;
     }
 
-    if (cableTraySections.length > 0 && type === 'conduit') {
-      let cableTrayHtml = '<div class="labor-book-section labor-book-section-collapsed" data-section="Cable Tray"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Cable Tray</h3><div class="labor-book-section-body">';
-      for (const section of cableTraySections) {
-        const rows = data[section] || [];
-        const subLabel = section.replace('Cable Tray.', '');
-        const rowHtml = rows
-          .map(
-            (r, i) => `
-        <tr class="labor-book-row" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" data-labor="${r.labor || 0}">
-          <td><button type="button" class="btn labor-book-add-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Add as child to fixture">+ Add</button></td>
-          <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
-          <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
-          <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
-          <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
-        </tr>
-      `
-          )
-          .join('');
-        cableTrayHtml += `
-          <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
-          <table>
-            <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th></th></tr></thead>
-            <tbody>${rowHtml}</tbody>
-          </table>
-          <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>
-        `;
-      }
-      cableTrayHtml += '</div></div>';
-      html += cableTrayHtml;
-    }
-
     if (transformersSections.length > 0 && type === 'gear') {
       let transformersHtml = '<div class="labor-book-section labor-book-section-collapsed" data-section="Transformers"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Transformers</h3><div class="labor-book-section-body">';
       for (const section of transformersSections) {
-        const rows = data[section] || [];
         const subLabel = section.replace('Transformers.', '');
-        const rowHtml = rows
-          .map(
-            (r, i) => `
-        <tr class="labor-book-row" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" data-labor="${r.labor || 0}">
-          <td><button type="button" class="btn labor-book-add-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Add as child to fixture">+ Add</button></td>
-          <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
-          <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
-          <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
-          <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
-        </tr>
-      `
-          )
-          .join('');
+        const rowHtml = renderSectionRows(type, section, data);
         transformersHtml += `
           <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
@@ -166,6 +137,7 @@ const TakeoffLaborBookView = (function () {
       }
       transformersHtml += '</div></div>';
       html += transformersHtml;
+    }
     }
 
     return html;
@@ -214,6 +186,80 @@ const TakeoffLaborBookView = (function () {
     }
   }
 
+  function exportGroupsAndSectionsAsText() {
+    const tabs = TakeoffState.getLaborBookTabOrder();
+    const labels = TakeoffState.LABOR_BOOK_TYPE_LABELS || {};
+    const lines = [];
+
+    for (const type of tabs) {
+      const data = TakeoffState.getLaborBookType(type);
+      const sections = Object.keys(data);
+      const groups = TakeoffState.getLaborBookGroups(type);
+
+      if (sections.length === 0) continue;
+
+      lines.push(labels[type] || type);
+      lines.push('');
+
+      if (groups && type === 'conduit') {
+        for (const group of groups) {
+          lines.push('  ' + group.name);
+          for (const section of group.sections) {
+            if (data[section]) lines.push('    - ' + section);
+          }
+          lines.push('');
+        }
+      } else {
+        const panelsSections = sections.filter((s) => s.startsWith('Panels.'));
+        const transformersSections = sections.filter((s) => s.startsWith('Transformers.'));
+        const cableTraySections = sections.filter((s) => s.startsWith('Cable Tray.'));
+        const otherSections = sections.filter(
+          (s) => !s.startsWith('Panels.') && !s.startsWith('Transformers.') && !s.startsWith('Cable Tray.')
+        );
+
+        for (const section of otherSections) {
+          lines.push('  - ' + section);
+        }
+        if (panelsSections.length > 0) {
+          lines.push('  Panels');
+          for (const s of panelsSections) {
+            lines.push('    - ' + s.replace('Panels.', ''));
+          }
+        }
+        if (transformersSections.length > 0) {
+          lines.push('  Transformers');
+          for (const s of transformersSections) {
+            lines.push('    - ' + s.replace('Transformers.', ''));
+          }
+        }
+        if (cableTraySections.length > 0) {
+          lines.push('  Cable Tray');
+          for (const s of cableTraySections) {
+            lines.push('    - ' + s.replace('Cable Tray.', ''));
+          }
+        }
+        lines.push('');
+      }
+    }
+
+    const text = lines.join('\n').trim();
+    if (!text) return;
+
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        const btn = document.getElementById('labor-book-export-structure-btn');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+      })
+      .catch((err) => {
+        alert('Failed to copy: ' + (err.message || 'Unknown error'));
+      });
+  }
+
   function attachListeners() {
     document.getElementById('labor-book-close-btn')?.addEventListener('click', () => {
       TakeoffApp.hideLaborBookModal();
@@ -252,7 +298,7 @@ const TakeoffLaborBookView = (function () {
         const laborHours = parseFloat(row.dataset.labor) || 0;
         targetRow.description = targetRow.description ? `${targetRow.description}, ${itemDesc}` : itemDesc;
         targetRow.quantity = (targetRow.quantity || 0) + 1;
-        targetRow.labor = (targetRow.labor || 0) + Math.round(laborHours * 10);
+        targetRow.labor = (targetRow.labor || 0) + laborHours;
         TakeoffState.setDeviceTempData(temp);
         TakeoffApp.render();
         return;
@@ -279,7 +325,7 @@ const TakeoffLaborBookView = (function () {
         parentId: targetId,
         description,
         quantity: 1,
-        labor: Math.round(labor * 10),
+        labor: labor,
         planPage: '',
         type: null,
         price: price,
@@ -359,7 +405,34 @@ const TakeoffLaborBookView = (function () {
         if (section) section.classList.toggle('labor-book-section-collapsed');
       });
     });
+
+    document.querySelectorAll('.labor-book-group-header').forEach((header) => {
+      header.addEventListener('click', () => {
+        const group = header.closest('.labor-book-group');
+        if (group) group.classList.toggle('labor-book-group-collapsed');
+      });
+    });
   }
+
+  document.getElementById('labor-book-export-structure-btn')?.addEventListener('click', () => {
+    exportGroupsAndSectionsAsText();
+  });
+
+  document.getElementById('labor-book-abbreviation-key-btn')?.addEventListener('click', () => {
+    const modal = document.getElementById('abbreviation-key-modal');
+    if (modal) modal.setAttribute('aria-hidden', 'false');
+  });
+
+  document.getElementById('abbreviation-key-close-btn')?.addEventListener('click', () => {
+    const modal = document.getElementById('abbreviation-key-modal');
+    if (modal) modal.setAttribute('aria-hidden', 'true');
+  });
+
+  document.getElementById('abbreviation-key-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'abbreviation-key-modal') {
+      e.target.setAttribute('aria-hidden', 'true');
+    }
+  });
 
   return { render, attachListeners };
 })();

@@ -265,7 +265,7 @@ const TakeoffConduitView = (function () {
               type: 'trenchingAddon',
               description: a.description,
               quantity: parseFloat(a.quantity) || 0,
-              labor: Math.round((parseFloat(a.labor) || 0) * 10),
+              labor: parseFloat(a.labor) || 0,
               price: parseFloat(a.price) || null,
               parentId: itemId,
             });

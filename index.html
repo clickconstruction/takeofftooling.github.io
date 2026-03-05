@@ -12,11 +12,15 @@
 <body>
   <div id="app">
     <header>
-      <h1>Takeoff Tooling</h1>
+      <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
       <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Import From CountTooling.com</button>
-      <button type="button" id="remove-toggle-btn" class="header-trash-toggle" title="Toggle remove icons" aria-pressed="false">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
-      </button>
+      <div class="header-right-controls">
+        <button type="button" id="undo-btn" class="btn btn-secondary header-undo-btn" title="Undo" disabled>Undo</button>
+        <button type="button" id="redo-btn" class="btn btn-secondary header-redo-btn" title="Redo" disabled>Redo</button>
+        <button type="button" id="remove-toggle-btn" class="header-trash-toggle" title="Toggle remove icons" aria-pressed="false">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
+        </button>
+      </div>
     </header>
     <main id="main-content">
       <!-- Views rendered here by app.js -->
@@ -67,17 +71,43 @@
     </div>
   </div>
 
-  <!-- Labor Book modal -->
+  <!-- Labor and Price Book modal -->
   <div id="labor-book-modal" class="modal" aria-hidden="true">
     <div class="modal-content labor-book-modal-content">
-      <h2>Labor and Price Book</h2>
+      <div class="labor-book-modal-header">
+        <h2>Labor and Price Book</h2>
+        <button type="button" id="labor-book-abbreviation-key-btn" class="btn btn-link labor-book-abbreviation-key-btn">Abbreviation Key</button>
+      </div>
       <div id="labor-book-apply-to" class="labor-book-apply-to">
         <label>Add to fixture: <select id="labor-book-target-select"><option value="">-- Select fixture --</option></select></label>
       </div>
       <div id="labor-book-tabs" class="labor-book-tabs"></div>
       <div id="labor-book-content" class="labor-book-content"></div>
+      <div class="labor-book-modal-actions">
+        <button type="button" class="btn btn-secondary labor-book-export-structure-btn" id="labor-book-export-structure-btn">Export Groups & Sections</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="labor-book-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abbreviation Key modal (Labor and Price Book) -->
+  <div id="abbreviation-key-modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h2>Abbreviation Key</h2>
+      <dl class="abbreviation-key-list">
+        <dt>SS</dt><dd>set screw</dd>
+        <dt>st</dt><dd>next to connectors and couplings is steel</dd>
+        <dt>cn</dt><dd>connector</dd>
+        <dt>insl.</dt><dd>insulated throat</dd>
+        <dt>RGS</dt><dd>rigid steel</dd>
+        <dt>RT</dt><dd>Raintight</dd>
+        <dt>N3R</dt><dd>Raintight for enclosures</dd>
+        <dt>N4R</dt><dd>dusttight for enclosures</dd>
+      </dl>
       <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" id="labor-book-close-btn">Close</button>
+        <button type="button" id="abbreviation-key-close-btn" class="btn btn-secondary">Close</button>
       </div>
     </div>
   </div>

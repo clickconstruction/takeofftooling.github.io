@@ -17,8 +17,85 @@ const TakeoffState = (function () {
   let showPrintOptions = false;
   let laborRate = 0;
 
+  const UNDO_STACK_SIZE = 5;
+  let undoStack = [];
+  let redoStack = [];
+
   const LABOR_BOOK_TAB_ORDER = ['gear', 'lighting', 'devices', 'conduit', 'wire', 'specialSystems'];
   const LABOR_BOOK_TYPE_LABELS = { gear: 'Gear', lighting: 'Lighting', devices: 'Devices', conduit: 'Conduit', wire: 'Wire', specialSystems: 'Special Systems' };
+  const LABOR_BOOK_GROUPS = {
+    conduit: [
+      {
+        name: 'Fittings',
+        sections: [
+          'EMT fittings (SS) Elbows',
+          'EMT fittings (SS) - Couplings',
+          'EMT fittings (RT) - Connectors',
+          'EMT fittings (RT) - Couplings',
+          'RIGID fittings - Set 1',
+          'LOCK NUTS',
+          'BUSHINGS',
+          'GROUNDINGS',
+          'WEATHERHEAD',
+          'LB Die Cast',
+          'PVC Male Adapter',
+          'PVC Female Adapter',
+          'PVC BI',
+          'PVC fitting',
+        ],
+      },
+      {
+        name: 'Connectors',
+        sections: [
+          'EMT Die Cast Set Screw connector insulated throat',
+          'EMT Die Cast Raintight connector insulated throat',
+          'EMT Steel Set Screw connector insulated throat',
+          'EMT raintight steel connector insulated throat',
+          'Flexible conduit (available in aluminum or steel)',
+          'Weatherproof flexible conduit (Steel or aluminum) PVC exterior',
+          'PVC 90 (Available in different sized sweeps) also there are pvc 45s And 30 degrees',
+        ],
+      },
+      {
+        name: 'Couplings',
+        sections: [
+          'EMT(SS)CP.INSL',
+          'EMT(RT)CP.INSL',
+          'EMT(SS)ST.CP.INSL',
+          'EMT(RT)ST.CP.INSL',
+          'Meyers Hubs',
+          'Bolt on Hubs',
+          'RIGID fittings - Set 2',
+        ],
+      },
+      {
+        name: 'Tubing',
+        sections: [
+          'EMT (Electro Mechanical Tubing)',
+          'PVC (Tubing)',
+          'FLEX Tubing (available in steel or aluminum)',
+          'RGS (Ridgid Steel)',
+          'IMC (Intermediate Medial Conduit)',
+          'ST (Seal Tight)',
+          "RGS (Smaller sizes under 10')",
+          'PVC C',
+        ],
+      },
+      {
+        name: 'Special',
+        sections: [
+          'PVC GLUE',
+          'Grounding rod',
+          'PITCH PAN',
+          'STRAP',
+          'BOX Supports',
+          'Cable Tray.3" DEEP',
+          'Cable Tray.4" DEEP',
+          'Cable Tray.6" DEEP',
+        ],
+      },
+    ],
+  };
   let activeLaborBookTab = 'gear';
   let laborBook = {
     gear: {
@@ -110,7 +187,7 @@ const TakeoffState = (function () {
     lighting: {},
     devices: {},
     conduit: {
-      EMT: [
+      'EMT (Electro Mechanical Tubing)': [
         { name: '1/2 EMT', labor: 0.033, price: '75.00' },
         { name: '3/4 EMT', labor: 0.036, price: '134.00' },
         { name: '1 EMT', labor: 0.04, price: '228.00' },
@@ -122,7 +199,7 @@ const TakeoffState = (function () {
         { name: '3 1/2 EMT', labor: 0.175, price: '1346.00' },
         { name: '4 EMT', labor: 0.196, price: '1377.00' },
       ],
-      PVC: [
+      'PVC (Tubing)': [
         { name: '1/2 PVC', labor: 0.025, price: '96.00' },
         { name: '3/4 PVC', labor: 0.025, price: '116.00' },
         { name: '1 PVC', labor: 0.035, price: '170.00' },
@@ -134,7 +211,7 @@ const TakeoffState = (function () {
         { name: '3 1/2 PVC', labor: 0.08, price: '840.00' },
         { name: '4 PVC', labor: 0.088, price: '930.00' },
       ],
-      FLX: [
+      'FLEX Tubing (available in steel or aluminum)': [
         { name: '1/2 FLX', labor: 0.042, price: '72.00' },
         { name: '3/4 FLX', labor: 0.05, price: '130.00' },
         { name: '1 FLX', labor: 0.06, price: '156.00' },
@@ -146,7 +223,7 @@ const TakeoffState = (function () {
         { name: '3 1/2 FLX', labor: 0.112, price: '800.00' },
         { name: '4 FLX', labor: 0.12, price: '1200.00' },
       ],
-      RGS: [
+      'RGS (Ridgid Steel)': [
         { name: '1/2 RGS', labor: 0.037, price: '189.00' },
         { name: '3/4 RGS', labor: 0.04, price: '182.00' },
         { name: '1 RGS', labor: 0.047, price: '232.00' },
@@ -158,7 +235,7 @@ const TakeoffState = (function () {
         { name: '3 1/2 RGS', labor: 0.18, price: '1278.00' },
         { name: '4 RGS', labor: 0.225, price: '1740.00' },
       ],
-      IMC: [
+      'IMC (Intermediate Medial Conduit)': [
         { name: '1/2 IMC', labor: 0.035, price: '92.00' },
         { name: '3/4 IMC', labor: 0.038, price: '114.00' },
         { name: '1 IMC', labor: 0.045, price: '171.00' },
@@ -170,7 +247,7 @@ const TakeoffState = (function () {
         { name: '3 1/2 IMC', labor: 0.178, price: '1060.00' },
         { name: '4 IMC', labor: 0.2, price: '1165.00' },
       ],
-      ST: [
+      'ST (Seal Tight)': [
         { name: '1/2 ST', labor: 0.05, price: '80.00' },
         { name: '3/4 ST', labor: 0.06, price: '120.00' },
         { name: '1 ST', labor: 0.072, price: '120.00' },
@@ -209,7 +286,7 @@ const TakeoffState = (function () {
         { name: '30" WIDE', labor: 0.12, price: '' },
         { name: '36" WIDE', labor: 0.13, price: '' },
       ],
-      'EMT fittings (S) - Set 1': [
+      'EMT fittings (SS) Elbows': [
         { name: '1/2" EMT(S)', labor: 0.18, price: '' },
         { name: '3/4" EMT(S)', labor: 0.29, price: '' },
         { name: '1" EMT(S)', labor: 0.52, price: '' },
@@ -221,7 +298,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(S)', labor: 10.98, price: '' },
         { name: '4" EMT(S)', labor: 12.24, price: '' },
       ],
-      'EMT fittings (S) - Set 2': [
+      'EMT fittings (SS) - Couplings': [
         { name: '1/2" EMT(S)', labor: 0.23, price: '' },
         { name: '3/4" EMT(S)', labor: 0.36, price: '' },
         { name: '1" EMT(S)', labor: 0.6, price: '' },
@@ -233,7 +310,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(S)', labor: 6.81, price: '' },
         { name: '4" EMT(S)', labor: 8.1, price: '' },
       ],
-      'EMT fittings (R) - Set 1': [
+      'EMT fittings (RT) - Connectors': [
         { name: '1/2" EMT(R)', labor: 0.33, price: '' },
         { name: '3/4" EMT(R)', labor: 0.47, price: '' },
         { name: '1" EMT(R)', labor: 0.75, price: '' },
@@ -245,7 +322,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(R)', labor: 21.53, price: '' },
         { name: '4" EMT(R)', labor: 22.03, price: '' },
       ],
-      'EMT fittings (R) - Set 2': [
+      'EMT fittings (RT) - Couplings': [
         { name: '1/2" EMT(R)', labor: 0.38, price: '' },
         { name: '3/4" EMT(R)', labor: 0.54, price: '' },
         { name: '1" EMT(R)', labor: 0.79, price: '' },
@@ -257,7 +334,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(R)', labor: 23.45, price: '' },
         { name: '4" EMT(R)', labor: 25.84, price: '' },
       ],
-      'EMT(SS)CN.INSL': [
+      'EMT Die Cast Set Screw connector insulated throat': [
         { name: '1/2" EMT(SS)CN.INSL', labor: 0.18, price: '' },
         { name: '3/4" EMT(SS)CN.INSL', labor: 0.28, price: '' },
         { name: '1" EMT(SS)CN.INSL', labor: 0.44, price: '' },
@@ -269,7 +346,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(SS)CN.INSL', labor: 0, price: '' },
         { name: '4" EMT(SS)CN.INSL', labor: 0, price: '' },
       ],
-      'EMT(RT)CN.INSL': [
+      'EMT Die Cast Raintight connector insulated throat': [
         { name: '1/2" EMT(RT)CN.INSL', labor: 0.23, price: '' },
         { name: '3/4" EMT(RT)CN.INSL', labor: 0.34, price: '' },
         { name: '1" EMT(RT)CN.INSL', labor: 0.53, price: '' },
@@ -281,7 +358,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(RT)CN.INSL', labor: 0, price: '' },
         { name: '4" EMT(RT)CN.INSL', labor: 0, price: '' },
       ],
-      'EMT(SS)ST.CN.INSL': [
+      'EMT Steel Set Screw connector insulated throat': [
         { name: '1/2" EMT(SS)ST.CN.INSL', labor: 0.25, price: '' },
         { name: '3/4" EMT(SS)ST.CN.INSL', labor: 0.4, price: '' },
         { name: '1" EMT(SS)ST.CN.INSL', labor: 0.62, price: '' },
@@ -293,7 +370,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(SS)ST.CN.INSL', labor: 18.37, price: '' },
         { name: '4" EMT(SS)ST.CN.INSL', labor: 20.06, price: '' },
       ],
-      'EMT(RT)ST.CN.INSL': [
+      'EMT raintight steel connector insulated throat': [
         { name: '1/2" EMT(RT)ST.CN.INSL', labor: 0.45, price: '' },
         { name: '3/4" EMT(RT)ST.CN.INSL', labor: 0.65, price: '' },
         { name: '1" EMT(RT)ST.CN.INSL', labor: 1, price: '' },
@@ -305,7 +382,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" EMT(RT)ST.CN.INSL', labor: 31.3, price: '' },
         { name: '4" EMT(RT)ST.CN.INSL', labor: 32.35, price: '' },
       ],
-      'FLEX C': [
+      'Flexible conduit (available in aluminum or steel)': [
         { name: '1/2" FLEX C', labor: 0.2, price: '' },
         { name: '3/4" FLEX C', labor: 0.61, price: '' },
         { name: '1" FLEX C', labor: 0.97, price: '' },
@@ -317,7 +394,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" FLEX C', labor: 75.9, price: '' },
         { name: '4" FLEX C', labor: 99.75, price: '' },
       ],
-      SEALT: [
+      'Weatherproof flexible conduit (Steel or aluminum) PVC exterior': [
         { name: '1/2" SEALT', labor: 0.69, price: '' },
         { name: '3/4" SEALT', labor: 1.05, price: '' },
         { name: '1" SEALT', labor: 1.87, price: '' },
@@ -341,6 +418,11 @@ const TakeoffState = (function () {
         { name: '3 1/2" RIGID', labor: 23.48, price: '' },
         { name: '4" RIGID', labor: 27.24, price: '' },
       ],
+      'EMT(SS)CP.INSL': [],
+      'EMT(RT)CP.INSL': [],
+      'EMT(SS)ST.CP.INSL': [],
+      'EMT(RT)ST.CP.INSL': [],
+      'Bolt on Hubs': [],
       'RIGID fittings - Set 2': [
         { name: '1/2" RIGID', labor: 0.36, price: '' },
         { name: '3/4" RIGID', labor: 0.44, price: '' },
@@ -353,7 +435,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" RIGID', labor: 5.55, price: '' },
         { name: '4" RIGID', labor: 5.59, price: '' },
       ],
-      LOCKN: [
+      'LOCK NUTS': [
         { name: '1/2" LOCKN', labor: 0.04, price: '' },
         { name: '3/4" LOCKN', labor: 0.05, price: '' },
         { name: '1" LOCKN', labor: 0.09, price: '' },
@@ -365,7 +447,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" LOCKN', labor: 1.03, price: '' },
         { name: '4" LOCKN', labor: 1.24, price: '' },
       ],
-      BUSHI: [
+      BUSHINGS: [
         { name: '1/2" BUSHI', labor: 0.04, price: '' },
         { name: '3/4" BUSHI', labor: 0.05, price: '' },
         { name: '1" BUSHI', labor: 0.1, price: '' },
@@ -377,7 +459,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" BUSHI', labor: 0.64, price: '' },
         { name: '4" BUSHI', labor: 0.72, price: '' },
       ],
-      GROUI: [
+      GROUNDINGS: [
         { name: '1/2" GROUI', labor: 0, price: '' },
         { name: '3/4" GROUI', labor: 0, price: '' },
         { name: '1" GROUI', labor: 0, price: '' },
@@ -389,7 +471,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" GROUI', labor: 0, price: '' },
         { name: '4" GROUI', labor: 13.8, price: '' },
       ],
-      NIPPLE: [
+      "RGS (Smaller sizes under 10')": [
         { name: '1/2" NIPPLE', labor: 0.65, price: '' },
         { name: '3/4" NIPPLE', labor: 0.8, price: '' },
         { name: '1" NIPPLE', labor: 1.25, price: '' },
@@ -401,7 +483,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" NIPPLE', labor: 9.8, price: '' },
         { name: '4" NIPPLE', labor: 11.55, price: '' },
       ],
-      WEATH: [
+      WEATHERHEAD: [
         { name: '1/2" WEATH', labor: 1.3, price: '' },
         { name: '3/4" WEATH', labor: 1.55, price: '' },
         { name: '1" WEATH', labor: 1.85, price: '' },
@@ -413,7 +495,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" WEATH', labor: 37.15, price: '' },
         { name: '4" WEATH', labor: 38.95, price: '' },
       ],
-      MEYER: [
+      'Meyers Hubs': [
         { name: '1/2" MEYER', labor: 2.85, price: '' },
         { name: '3/4" MEYER', labor: 3.2, price: '' },
         { name: '1" MEYER', labor: 4, price: '' },
@@ -425,7 +507,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" MEYER', labor: 27.75, price: '' },
         { name: '4" MEYER', labor: 34.8, price: '' },
       ],
-      'LB W/C': [
+      'LB Die Cast': [
         { name: '1/2" LB W/C', labor: 2.2, price: '' },
         { name: '3/4" LB W/C', labor: 2.8, price: '' },
         { name: '1" LB W/C', labor: 4, price: '' },
@@ -437,7 +519,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" LB W/C', labor: 59.25, price: '' },
         { name: '4" LB W/C', labor: 66.4, price: '' },
       ],
-      'PVC M': [
+      'PVC Male Adapter': [
         { name: '1/2" PVC M', labor: 0.24, price: '' },
         { name: '3/4" PVC M', labor: 0.41, price: '' },
         { name: '1" PVC M', labor: 0.54, price: '' },
@@ -449,7 +531,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" PVC M', labor: 4.22, price: '' },
         { name: '4" PVC M', labor: 6.39, price: '' },
       ],
-      'PVC FI': [
+      'PVC Female Adapter': [
         { name: '1/2" PVC FI', labor: 0.2, price: '' },
         { name: '3/4" PVC FI', labor: 0.33, price: '' },
         { name: '1" PVC FI', labor: 0.45, price: '' },
@@ -461,7 +543,7 @@ const TakeoffState = (function () {
         { name: '3 1/2" PVC FI', labor: 3.19, price: '' },
         { name: '4" PVC FI', labor: 3.57, price: '' },
       ],
-      'PVC 90': [
+      'PVC 90 (Available in different sized sweeps) also there are pvc 45s And 30 degrees': [
         { name: '1/2" PVC 90', labor: 0.48, price: '' },
         { name: '3/4" PVC 90', labor: 0.55, price: '' },
         { name: '1" PVC 90', labor: 0.83, price: '' },
@@ -514,12 +596,30 @@ const TakeoffState = (function () {
         { name: 'PVC GLUE', labor: 5, price: '' },
       ],
       'Grounding rod': [
-        { name: '5/8" X 8\' GF', labor: 15, price: '' },
+        { name: '1/2" X 8\'', labor: 12, price: '' },
+        { name: '1/2" X 10\'', labor: 15, price: '' },
+        { name: '5/8" X 8\'', labor: 15, price: '' },
         { name: '5/8" X 10\'', labor: 18, price: '' },
+        { name: '3/4" X 8\'', labor: 18, price: '' },
         { name: '3/4" X 10\'', labor: 20, price: '' },
+        { name: 'Acorn nut 1/2"', labor: 0.1, price: '' },
+        { name: 'Acorn nut 5/8"', labor: 0.1, price: '' },
+        { name: 'Acorn nut 3/4"', labor: 0.1, price: '' },
+        { name: 'Ground clamp 1"', labor: 0.1, price: '' },
+        { name: 'Ground clamp 1 1/4"', labor: 0.1, price: '' },
+        { name: 'Ground clamp 1 1/2"', labor: 0.1, price: '' },
+        { name: 'Ground clamp 2"', labor: 0.1, price: '' },
+        { name: 'Exothermic weld molds', labor: 0.1, price: '' },
+        { name: 'Exothermic weld shots', labor: 0.1, price: '' },
       ],
       'PITCH PAN': [
         { name: 'PITCH PAN', labor: 12, price: '' },
+        { name: 'Roofing pitch pan 4"x4"', labor: 12, price: '' },
+        { name: 'Roofing pitch pan 6"x6"', labor: 12, price: '' },
+      ],
+      'BOX Supports': [
+        { name: 'CADDY box support far side', labor: 0.1, price: '' },
+        { name: 'CADDY complete support', labor: 0.1, price: '' },
       ],
       STRAP: [
         { name: '1/2" STRAP', labor: 0.04, price: '' },
@@ -532,6 +632,16 @@ const TakeoffState = (function () {
         { name: '3" STRAP', labor: 2.75, price: '' },
         { name: '3 1/2" STRAP', labor: 3.5, price: '' },
         { name: '4" STRAP', labor: 5, price: '' },
+        { name: 'Kindorf/Bline 1/2"', labor: 0.1, price: '' },
+        { name: 'Kindorf/Bline 3/4" up to 4"', labor: 0.1, price: '' },
+        { name: 'PVC strap 1 hole 1/2" to 2 1/2"', labor: 0.1, price: '' },
+        { name: 'PVC strap 2 hole 1/2" to 2 1/2"', labor: 0.1, price: '' },
+        { name: 'EMT strap 1 hole 1/2"', labor: 0.1, price: '' },
+        { name: 'EMT strap 1 hole 3/4"', labor: 0.1, price: '' },
+        { name: 'EMT strap 1 hole 1" to 4"', labor: 0.1, price: '' },
+        { name: 'EMT strap 2 hole 1/2" to 4"', labor: 0.1, price: '' },
+        { name: 'CADDY K8 flexible conduit strap to ceiling grid wire', labor: 0.1, price: '' },
+        { name: 'CADDY bang-on type to 1/8" steel 1/2" thru 4" EMT conduit', labor: 0.1, price: '' },
       ],
     },
     wire: {
@@ -617,7 +727,40 @@ const TakeoffState = (function () {
     return getTopLevelParentId(item.parentId);
   }
 
+  function deepCloneManifest() {
+    return JSON.parse(JSON.stringify(manifest));
+  }
+
+  function pushUndo() {
+    undoStack.push(deepCloneManifest());
+    if (undoStack.length > UNDO_STACK_SIZE) undoStack.shift();
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return false;
+    redoStack.push(deepCloneManifest());
+    manifest = undoStack.pop();
+    return true;
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return false;
+    undoStack.push(deepCloneManifest());
+    manifest = redoStack.pop();
+    return true;
+  }
+
+  function canUndo() {
+    return undoStack.length > 0;
+  }
+
+  function canRedo() {
+    return redoStack.length > 0;
+  }
+
   function addItem(item) {
+    pushUndo();
     const newItem = {
       id: item.id || generateId(),
       type: item.type || null,
@@ -645,6 +788,7 @@ const TakeoffState = (function () {
   }
 
   function updateItem(id, updates) {
+    pushUndo();
     const item = getItemById(id);
     if (!item) return null;
     const parent = item.parentId ? getItemById(item.parentId) : null;
@@ -656,6 +800,7 @@ const TakeoffState = (function () {
   }
 
   function removeItem(id) {
+    pushUndo();
     const item = getItemById(id);
     if (!item) return false;
     const parent = item.parentId ? getItemById(item.parentId) : null;
@@ -803,6 +948,10 @@ const TakeoffState = (function () {
     return LABOR_BOOK_TAB_ORDER;
   }
 
+  function getLaborBookGroups(type) {
+    return LABOR_BOOK_GROUPS[type] || null;
+  }
+
   function getLaborBookType(type) {
     return laborBook[type] || {};
   }
@@ -837,7 +986,7 @@ const TakeoffState = (function () {
     function sumLabor(items) {
       let total = 0;
       for (const item of items) {
-        total += (item.labor || 0) * 0.1;
+        total += (item.labor || 0);
         if (item.children && item.children.length) {
           total += sumLabor(item.children);
         }
@@ -894,7 +1043,7 @@ const TakeoffState = (function () {
         const priceVal = Number(item.price);
         const effectiveQty = qty > 0 ? qty : (!isNaN(priceVal) && priceVal > 0 ? 1 : 0);
         const priceAmount = !isNaN(priceVal) && priceVal > 0 ? priceVal * effectiveQty : 0;
-        const laborHrs = (item.labor || 0) * 0.1;
+        const laborHrs = (item.labor || 0);
 
         if (OTHER_TYPES.includes(effectiveType)) {
           otherCharges[effectiveType] = (otherCharges[effectiveType] || 0) + priceAmount;
@@ -942,6 +1091,10 @@ const TakeoffState = (function () {
     updateItem,
     removeItem,
     setType,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     setCurrentView,
     getCurrentView,
     getCurrentItemId,
@@ -979,6 +1132,7 @@ const TakeoffState = (function () {
     toggleShowPrintOptions,
     getLaborBook,
     getLaborBookTabOrder,
+    getLaborBookGroups,
     getLaborBookType,
     setLaborBookSection,
     addLaborBookRow,

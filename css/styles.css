@@ -53,6 +53,15 @@ header h1 {
   color: var(--accent);
 }
 
+.app-title-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-title-clickable:hover {
+  color: var(--accent2);
+}
+
 .header-import-btn {
   font-size: 0.85rem;
   padding: 0.4rem 0.8rem;
@@ -87,6 +96,18 @@ header h1 {
   width: 20px;
   height: 20px;
   fill: currentColor;
+}
+
+.header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-undo-btn,
+.header-redo-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
 }
 
 #main-content {
@@ -576,6 +597,21 @@ header h1 {
 }
 
 /* Labor Book modal */
+.labor-book-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.labor-book-modal-header h2 {
+  margin: 0;
+}
+
+.labor-book-abbreviation-key-btn {
+  font-size: 0.9rem;
+}
+
 .labor-book-modal-content {
   width: 98vw;
   max-width: 98vw;
@@ -642,6 +678,57 @@ header h1 {
   min-height: 0;
   overflow-y: auto;
   margin-bottom: 1rem;
+}
+
+.labor-book-group {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.labor-book-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--accent);
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface2);
+  user-select: none;
+}
+
+.labor-book-group-header:hover {
+  background: var(--surface3);
+}
+
+.labor-book-group-body {
+  padding: 0.5rem 1rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.labor-book-group-collapsed .labor-book-group-body {
+  display: none;
+}
+
+.labor-book-group-collapsed .labor-book-group-header .labor-book-section-chevron::before {
+  content: '\25B6';
+}
+
+.labor-book-group:not(.labor-book-group-collapsed) .labor-book-group-header .labor-book-section-chevron::before {
+  content: '\25BC';
+}
+
+.labor-book-group .labor-book-section {
+  margin-bottom: 1rem;
+}
+
+.labor-book-group .labor-book-section:last-child {
+  margin-bottom: 0;
 }
 
 .labor-book-section {
@@ -799,6 +886,22 @@ header h1 {
   margin: 0 0 0.5rem 0;
 }
 
+.labor-book-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.labor-book-modal-actions .modal-actions {
+  margin-left: auto;
+}
+
+.labor-book-export-structure-btn {
+  font-size: 0.85rem;
+}
+
 /* Form modal */
 #form-details {
   display: flex;
@@ -856,6 +959,23 @@ header h1 {
 
 .modal-actions button:last-child:hover {
   background: var(--accent2);
+}
+
+.abbreviation-key-list {
+  margin: 0 0 1.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1.5rem;
+  max-width: 32rem;
+}
+
+.abbreviation-key-list dt {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.abbreviation-key-list dd {
+  margin: 0;
 }
 
 /* Flow pages (Device, Conduit, Wire) */

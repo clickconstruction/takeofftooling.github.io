@@ -50,7 +50,7 @@ const TakeoffPDF = (function () {
       const typeLabel = item.type || '-';
       const desc = (item.description || '').substring(0, 45);
       const qty = String(item.quantity ?? 0);
-      const labor = ((item.labor || 0) * 0.1).toFixed(1);
+      const labor = ((item.labor || 0)).toFixed(1);
       const planPage = (item.planPage || '').substring(0, 15);
       const price = item.price != null ? String(item.price) : '';
 

@@ -4,7 +4,7 @@ A static web app for electrical estimators to create manifest-based bids. Enter 
 
 ## Features
 
-- **Manifest table**: Add items with Description, Quantity (whole numbers), Labor (0.1 hr units), Plan Page, and optional Price
+- **Manifest table**: Add items with Description, Quantity (whole numbers), Labor (hours), Plan Page, and optional Price
 - **Item types**: Lighting, Gear, Devices, Conduit, Wire, Special Systems
 - **Devices**: Add at least one Box and one Cover as child items
 - **Conduit**: Multi-step flow — Trenching → Fittings → Overage
