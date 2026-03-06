@@ -489,6 +489,15 @@ header h1 {
   display: flex;
 }
 
+.modal-fullscreen {
+  z-index: 1100;
+}
+
+.modal-fullscreen .modal-content {
+  max-width: 98vw;
+  max-height: 98vh;
+}
+
 .modal-content {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -594,6 +603,119 @@ header h1 {
   border-radius: 4px;
   color: var(--text2);
   font-family: inherit;
+}
+
+/* MC Price Book modal */
+.mc-price-book-modal-content {
+  display: flex;
+  flex-direction: column;
+  width: 98vw;
+  max-width: 98vw;
+  height: 95vh;
+  max-height: 95vh;
+  overflow: hidden;
+}
+
+.mc-price-book-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.mc-price-book-header h2 {
+  margin: 0;
+}
+
+.mc-price-book-search-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.mc-price-book-search-row input {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.mc-price-book-legend {
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.mc-price-book-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mc-price-book-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mc-price-book-table th,
+.mc-price-book-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-price-book-table th {
+  background: var(--surface2);
+  font-weight: 600;
+  color: var(--text);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.mc-price-book-table tr:hover {
+  background: var(--surface2);
+}
+
+.mc-price-book-row-excluded {
+  background: var(--surface2);
+}
+
+.mc-price-book-row-excluded:hover {
+  background: var(--surface3);
+}
+
+.mc-price-book-x-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  background: var(--text2);
+  color: var(--bg);
+  border-radius: 4px;
+  margin-left: 0.25rem;
+}
+
+.mc-price-book-results-count {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.mc-price-book-loading,
+.mc-price-book-error,
+.mc-price-book-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text2);
+}
+
+.mc-price-book-error {
+  color: var(--accent);
 }
 
 /* Labor Book modal */
