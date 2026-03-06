@@ -14,7 +14,7 @@
     <header>
       <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
       <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Import From CountTooling.com</button>
-      <button type="button" id="search-mc-price-book-btn" class="btn btn-secondary header-import-btn">Search MC Price Book</button>
+      <button type="button" id="search-mc-prince-btn" class="btn btn-secondary header-import-btn">Search MC Prince Book</button>
       <div class="header-right-controls">
         <button type="button" id="undo-btn" class="btn btn-secondary header-undo-btn" title="Undo" disabled>Undo</button>
         <button type="button" id="redo-btn" class="btn btn-secondary header-redo-btn" title="Redo" disabled>Redo</button>
@@ -93,23 +93,6 @@
     </div>
   </div>
 
-  <!-- MC Price Book modal (full-screen search) -->
-  <div id="mc-price-book-modal" class="modal modal-fullscreen" aria-hidden="true">
-    <div class="modal-content mc-price-book-modal-content">
-      <div class="mc-price-book-header">
-        <h2>MC Price Book</h2>
-        <button type="button" id="mc-price-book-close-btn" class="btn btn-secondary">Close</button>
-      </div>
-      <div class="mc-price-book-search-row">
-        <input type="search" id="mc-price-book-search" placeholder="Search by item name, #, or UPC..." />
-        <div class="mc-price-book-legend">
-          E=each | M=1000 | C=100 | X=exclude | Q=quoted
-        </div>
-      </div>
-      <div class="mc-price-book-results" id="mc-price-book-results"></div>
-    </div>
-  </div>
-
   <!-- Abbreviation Key modal (Labor and Price Book) -->
   <div id="abbreviation-key-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
@@ -127,6 +110,24 @@
       <div class="modal-actions">
         <button type="button" id="abbreviation-key-close-btn" class="btn btn-secondary">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MC Prince Book search modal -->
+  <div id="mc-prince-modal" class="modal mc-prince-modal" aria-hidden="true">
+    <div class="modal-content mc-prince-modal-content">
+      <div class="mc-prince-header">
+        <h2>MC Prince Book</h2>
+        <input type="text" id="mc-prince-search" placeholder="Search..." autocomplete="off" />
+        <button type="button" id="mc-prince-close-btn" class="btn btn-secondary">Close</button>
+      </div>
+      <div class="mc-prince-table-wrapper">
+        <table id="mc-prince-table">
+          <thead id="mc-prince-thead"></thead>
+          <tbody id="mc-prince-tbody"></tbody>
+        </table>
+      </div>
+      <div class="mc-prince-footer" id="mc-prince-result-count"></div>
     </div>
   </div>
 
@@ -151,11 +152,11 @@
   <script src="js/data/fittings.js"></script>
   <script src="js/state.js"></script>
   <script src="js/import.js"></script>
+  <script src="js/mcPrinceBook.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/views/manifest.js"></script>
   <script src="js/views/modal.js"></script>
   <script src="js/views/laborBook.js"></script>
-  <script src="js/views/mcPriceBook.js"></script>
   <script src="js/views/device.js"></script>
   <script src="js/views/conduit.js"></script>
   <script src="js/views/wire.js"></script>

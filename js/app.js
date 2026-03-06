@@ -66,14 +66,6 @@
     TakeoffLaborBookView.attachListeners();
   }
 
-  function showMcPriceBookModal() {
-    if (window.TakeoffMcPriceBookView) TakeoffMcPriceBookView.show();
-  }
-
-  function hideMcPriceBookModal() {
-    if (window.TakeoffMcPriceBookView) TakeoffMcPriceBookView.hide();
-  }
-
   function hideLaborBookModal() {
     const modal = document.getElementById('labor-book-modal');
     if (modal?.contains(document.activeElement)) {
@@ -158,8 +150,6 @@
     showLaborBookModal,
     showLaborBookModalForDeviceRow,
     hideLaborBookModal,
-    showMcPriceBookModal,
-    hideMcPriceBookModal,
     navigateToManifest,
     navigateToDevice,
     navigateToConduit,
