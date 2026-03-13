@@ -25,7 +25,7 @@ const TakeoffManifestView = (function () {
 
     const planPageCell = isChild
       ? '<td></td>'
-      : `<td><input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page" /></td>`;
+      : `<td><input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></td>`;
 
     const typeLabelDisplay = item.type ? (TYPE_LABELS[item.type] || item.type) : '';
     const parentId = item.parentId || null;
@@ -35,20 +35,23 @@ const TakeoffManifestView = (function () {
     const editFlowTargetId = isChild && parentHasFlow ? parentId : item.id;
     const typeCell = item.type
       ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span><button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
-      : `<td><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
+      : `<td class="type-cell-add"><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
 
     const showRemove = TakeoffState.getShowRemoveIcons();
     const removeCell = `<td class="remove-cell ${showRemove ? 'visible' : ''}"><button type="button" class="remove-btn icon-btn" data-id="${item.id}" title="Remove">${TRASH_SVG}</button></td>`;
 
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>`;
+
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
         ${removeCell}
+        ${laborBookCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Description" /></td>
-        <td class="qty-cell"><div class="qty-spinner"><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div></td>
-        <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>
-        <td><input type="number" data-field="price" data-id="${item.id}" dir="ltr" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" /></td>
-        ${planPageCell}
+        <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn" data-id="${item.id}" title="Subtract 1">−</button><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div></td>
+        <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /></td>
+        <td class="price-cell"><input type="number" data-field="price" data-id="${item.id}" dir="ltr" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" /></td>
         ${typeCell}
+        ${planPageCell}
       </tr>
     `;
   }
@@ -149,22 +152,24 @@ const TakeoffManifestView = (function () {
         <table>
           <colgroup>
             <col class="col-remove" />
+            <col class="col-labor-book" />
             <col class="col-desc" />
             <col class="col-qty" />
             <col class="col-labor" />
             <col class="col-price" />
-            <col class="col-plan" />
             <col class="col-type" />
+            <col class="col-plan" />
           </colgroup>
           <thead>
             <tr>
+              <th></th>
               <th></th>
               <th>Description</th>
               <th>Quantity</th>
               <th>Labor</th>
               <th>Price</th>
-              <th>Plan Page</th>
               <th>Type</th>
+              <th>Plan Page / Location</th>
             </tr>
           </thead>
           <tbody>
@@ -253,6 +258,19 @@ const TakeoffManifestView = (function () {
           const val = parseFloat(input.value) || 0;
           input.value = val + 1;
           TakeoffState.updateItem(id, { quantity: val + 1 });
+          updateSummaryOnly();
+        }
+      });
+    });
+
+    document.querySelectorAll('.qty-down-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const input = document.querySelector(`.qty-cell input[data-field="quantity"][data-id="${id}"]`);
+        if (input) {
+          const val = Math.max(0, (parseFloat(input.value) || 0) - 1);
+          input.value = val;
+          TakeoffState.updateItem(id, { quantity: val });
           updateSummaryOnly();
         }
       });

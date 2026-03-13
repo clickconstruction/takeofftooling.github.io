@@ -102,11 +102,24 @@
   function navigateToDevice(itemId) {
     TakeoffState.setCurrentView('device', itemId);
     const item = TakeoffState.getItemById(itemId);
-    const boxes = (item?.children || []).filter((c) => c.type === 'box' || (c.description || '').toLowerCase().includes('box'));
-    const covers = (item?.children || []).filter((c) => c.type === 'cover' || (c.description || '').toLowerCase().includes('cover'));
+    const children = item?.children || [];
+    const boxes = children.filter((c) => c.type === 'box' || (c.description || '').toLowerCase().includes('box'));
+    const backBoxSupport = children.filter((c) => c.type === 'backBoxSupport' || (c.description || '').toLowerCase().includes('back box support'));
+    const covers = children.filter((c) => c.type === 'cover' || (c.description || '').toLowerCase().includes('cover'));
+    const conduit = children.filter((c) => c.type === 'conduit');
+    const wire = children.filter((c) => c.type === 'wire');
+    const screws = children.filter((c) => c.type === 'screws');
+    const misc = children.filter((c) => c.type === 'misc');
+    const parentQty = item?.quantity ?? 0;
+    const toRows = (arr) => (arr.length ? arr.map((x) => ({ description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' })) : [{ description: '', quantity: parentQty, labor: 0, price: '' }]);
     TakeoffState.setDeviceTempData({
-      boxes: boxes.length ? boxes.map((b) => ({ description: b.description, quantity: b.quantity, labor: b.labor })) : [{ description: '', quantity: 0, labor: 0 }],
-      covers: covers.length ? covers.map((c) => ({ description: c.description, quantity: c.quantity, labor: c.labor })) : [{ description: '', quantity: 0, labor: 0 }],
+      boxes: toRows(boxes),
+      backBoxSupport: toRows(backBoxSupport),
+      covers: toRows(covers),
+      conduit: toRows(conduit),
+      wire: toRows(wire),
+      screws: toRows(screws),
+      misc: toRows(misc),
     });
     render();
   }

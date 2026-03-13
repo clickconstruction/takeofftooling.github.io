@@ -11,8 +11,14 @@ const TakeoffState = (function () {
   let modalItemId = null;
   let conduitStep = 1; // 1: trenching, 2: fittings, 3: overage
   let conduitTempData = {};
-  let deviceTempData = { boxes: [], covers: [] };
+  let deviceTempData = { boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
   let wireTempData = { overagePercent: null, macAdapters: [] };
+  const ASSEMBLIES_STORAGE_KEY = 'takeoff-assemblies';
+  let assemblies = [];
+  try {
+    const stored = localStorage.getItem(ASSEMBLIES_STORAGE_KEY);
+    if (stored) assemblies = JSON.parse(stored);
+  } catch (_) {}
   let showRemoveIcons = false;
   let showPrintOptions = false;
   let laborRate = 0;
@@ -898,7 +904,27 @@ const TakeoffState = (function () {
   }
 
   function clearDeviceTempData() {
-    deviceTempData = { boxes: [], covers: [] };
+    deviceTempData = { boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
+  }
+
+  function getAssemblies() {
+    return assemblies;
+  }
+
+  function addAssembly(assembly) {
+    const a = { id: generateId(), name: assembly.name || 'Unnamed', sections: assembly.sections || {}, createdAt: new Date().toISOString() };
+    assemblies.push(a);
+    try {
+      localStorage.setItem(ASSEMBLIES_STORAGE_KEY, JSON.stringify(assemblies));
+    } catch (_) {}
+    return a;
+  }
+
+  function removeAssembly(id) {
+    assemblies = assemblies.filter((a) => a.id !== id);
+    try {
+      localStorage.setItem(ASSEMBLIES_STORAGE_KEY, JSON.stringify(assemblies));
+    } catch (_) {}
   }
 
   function setWireTempData(data) {
@@ -1129,6 +1155,9 @@ const TakeoffState = (function () {
     setDeviceTempData,
     getDeviceTempData,
     clearDeviceTempData,
+    getAssemblies,
+    addAssembly,
+    removeAssembly,
     setWireTempData,
     getWireTempData,
     clearWireTempData,

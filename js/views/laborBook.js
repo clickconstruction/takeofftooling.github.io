@@ -163,7 +163,8 @@ const TakeoffLaborBookView = (function () {
     const preselectedId = TakeoffState.getLaborBookPreselectedItemId();
     const applyToEl = document.getElementById('labor-book-apply-to');
     if (deviceTarget) {
-      const label = deviceTarget.section === 'boxes' ? 'Box' : 'Cover';
+      const sectionLabels = { boxes: 'Box', covers: 'Cover', conduit: 'Conduit', wire: 'Wire', screws: 'Screws', misc: 'Misc.' };
+      const label = sectionLabels[deviceTarget.section] || deviceTarget.section;
       const temp = TakeoffState.getDeviceTempData();
       const row = temp[deviceTarget.section]?.[deviceTarget.index];
       const desc = (row?.description || '').slice(0, 40) + ((row?.description || '').length > 40 ? '...' : '');
@@ -298,9 +299,16 @@ const TakeoffLaborBookView = (function () {
           itemDesc = `${name} Cable Tray (${depth})`;
         } else if (lbSection) itemDesc = `${name} ${lbSection}`;
         const laborHours = parseFloat(row.dataset.labor) || 0;
+        const priceEl = row.querySelector('.labor-book-price');
+        const priceVal = priceEl?.value?.trim() || '';
+        const priceNum = priceVal ? parseFloat(priceVal) : null;
         targetRow.description = targetRow.description ? `${targetRow.description}, ${itemDesc}` : itemDesc;
         targetRow.quantity = (targetRow.quantity || 0) + 1;
         targetRow.labor = (targetRow.labor || 0) + laborHours;
+        if (priceNum != null && !isNaN(priceNum)) {
+          const existingPrice = targetRow.price != null && targetRow.price !== '' ? parseFloat(targetRow.price) : 0;
+          targetRow.price = existingPrice + priceNum;
+        }
         TakeoffState.setDeviceTempData(temp);
         TakeoffApp.render();
         return;

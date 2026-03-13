@@ -51,6 +51,11 @@ const TakeoffModal = (function () {
     document.addEventListener('keydown', function typeModalKeyHandler(e) {
       const modal = document.getElementById('type-modal');
       if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        TakeoffApp.hideTypeModal();
+        return;
+      }
       const key = e.key?.toUpperCase();
       const btn = document.querySelector(`#type-modal [data-macro="${key}"]`);
       if (btn) {
