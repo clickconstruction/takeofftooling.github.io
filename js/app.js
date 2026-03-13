@@ -238,6 +238,16 @@
     }
   });
 
+  // Cache clear and hard reload
+  document.getElementById('cache-clear-reload-btn')?.addEventListener('click', async () => {
+    localStorage.removeItem('takeoff-assemblies');
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    window.location.replace(window.location.pathname + window.location.search);
+  });
+
   // Form modal for Print with Form
   document.getElementById('form-modal-cancel')?.addEventListener('click', () => {
     const formModal = document.getElementById('form-modal');
