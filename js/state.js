@@ -858,6 +858,17 @@ const TakeoffState = (function () {
     laborBookTargetDeviceRow = null;
   }
 
+  let laborBookExpandGroup = null;
+  function setLaborBookExpandGroup(name) {
+    laborBookExpandGroup = name;
+  }
+  function getLaborBookExpandGroup() {
+    return laborBookExpandGroup;
+  }
+  function clearLaborBookExpandGroup() {
+    laborBookExpandGroup = null;
+  }
+
   function setConduitStep(step) {
     conduitStep = step;
   }
@@ -1106,6 +1117,9 @@ const TakeoffState = (function () {
     setLaborBookTargetDeviceRow,
     getLaborBookTargetDeviceRow,
     clearLaborBookTargetDeviceRow,
+    setLaborBookExpandGroup,
+    getLaborBookExpandGroup,
+    clearLaborBookExpandGroup,
     getTopLevelParentId,
     setConduitStep,
     getConduitStep,

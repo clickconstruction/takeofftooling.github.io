@@ -75,6 +75,7 @@ const TakeoffLaborBookView = (function () {
     let html = '';
 
     if (groups && type === 'conduit') {
+      const expandGroup = TakeoffState.getLaborBookExpandGroup?.() || null;
       for (const group of groups) {
         let groupSectionsHtml = '';
         for (const section of group.sections) {
@@ -82,8 +83,9 @@ const TakeoffLaborBookView = (function () {
           groupSectionsHtml += renderSectionBlock(type, section, data);
         }
         if (groupSectionsHtml) {
+          const collapsedClass = expandGroup === group.name ? '' : ' labor-book-group-collapsed';
           html += `
-        <div class="labor-book-group labor-book-group-collapsed" data-group="${escapeHtml(group.name)}">
+        <div class="labor-book-group${collapsedClass}" data-group="${escapeHtml(group.name)}">
           <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>${escapeHtml(group.name)}</h2>
           <div class="labor-book-group-body">
             ${groupSectionsHtml}
@@ -294,7 +296,7 @@ const TakeoffLaborBookView = (function () {
         else if (lbSection.startsWith('Cable Tray.')) {
           const depth = lbSection.replace('Cable Tray.', '');
           itemDesc = `${name} Cable Tray (${depth})`;
-        }
+        } else if (lbSection) itemDesc = `${name} ${lbSection}`;
         const laborHours = parseFloat(row.dataset.labor) || 0;
         targetRow.description = targetRow.description ? `${targetRow.description}, ${itemDesc}` : itemDesc;
         targetRow.quantity = (targetRow.quantity || 0) + 1;
@@ -317,19 +319,31 @@ const TakeoffLaborBookView = (function () {
       else if (section.startsWith('Cable Tray.')) {
         const depth = section.replace('Cable Tray.', '');
         description = `${name} Cable Tray (${depth})`;
-      }
+      } else if (section) description = `${name} ${section}`;
       const labor = parseFloat(row.dataset.labor) || 0;
       const priceEl = row.querySelector('.labor-book-price');
       const price = priceEl?.value?.trim() || null;
-      TakeoffState.addItem({
-        parentId: targetId,
-        description,
-        quantity: 1,
-        labor: labor,
-        planPage: '',
-        type: null,
-        price: price,
-      });
+
+      if (
+        targetId === TakeoffState.getCurrentItemId() &&
+        TakeoffState.getCurrentView() === 'conduit' &&
+        TakeoffState.getConduitStep() === 2
+      ) {
+        const temp = TakeoffState.getConduitTempData();
+        temp.fittings = temp.fittings || [];
+        temp.fittings.push({ description, quantity: 1, labor, price: price || '' });
+        TakeoffState.setConduitTempData(temp);
+      } else {
+        TakeoffState.addItem({
+          parentId: targetId,
+          description,
+          quantity: 1,
+          labor: labor,
+          planPage: '',
+          type: null,
+          price: price,
+        });
+      }
       TakeoffApp.render();
     }
 

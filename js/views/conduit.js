@@ -6,6 +6,16 @@ const TakeoffConduitView = (function () {
   const BOOK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="labor-book-icon"><path d="M480 576L192 576C139 576 96 533 96 480L96 160C96 107 139 64 192 64L496 64C522.5 64 544 85.5 544 112L544 400C544 420.9 530.6 438.7 512 445.3L512 512C529.7 512 544 526.3 544 544C544 561.7 529.7 576 512 576L480 576zM192 448C174.3 448 160 462.3 160 480C160 497.7 174.3 512 192 512L448 512L448 448L192 448zM224 216C224 229.3 234.7 240 248 240L424 240C437.3 240 448 229.3 448 216C448 202.7 437.3 192 424 192L248 192C234.7 192 224 202.7 224 216zM248 288C234.7 288 224 298.7 224 312C224 325.3 234.7 336 248 336L424 336C437.3 336 448 325.3 448 312C448 298.7 437.3 288 424 288L248 288z"/></svg>';
   const TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>';
 
+  const TRENCHING_QUICK_ADD = [
+    { label: 'Dirt to 24in - $15', material: 'Dirt', depth: '24in', price: 15 },
+    { label: 'Dirt to 36in - $30', material: 'Dirt', depth: '36in', price: 30 },
+    { label: 'Dirt to 48in - $45', material: 'Dirt', depth: '48in', price: 45 },
+    { label: 'Rock to 24in - $150', material: 'Rock', depth: '24in', price: 150 },
+    { label: 'Rock to 36in - $175', material: 'Rock', depth: '36in', price: 175 },
+    { label: 'Asphalt/Concrete to 24in - $200', material: 'Asphalt/Concrete', depth: '24in', price: 200 },
+    { label: 'Asphalt/Concrete to 36in - $250', material: 'Asphalt/Concrete', depth: '36in', price: 250 },
+  ];
+
   function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
@@ -28,15 +38,30 @@ const TakeoffConduitView = (function () {
         </div>
         <div class="flow-section">
           <h3>Trenching</h3>
-          <p>How much trenching (feet)? Through what material? At what depth?</p>
-          <div class="trenching-fields">
-            <label>Quantity (Feet Of Trenching) <input type="number" id="trench-qty" value="${temp.trenchQty ?? ''}" min="0" placeholder="0" /></label>
-            <label>Material to Dig Through <input type="text" id="trench-material" value="${escapeHtml(temp.trenchMaterial || '')}" placeholder="e.g. asphalt, concrete" /></label>
-            <label>Depth <input type="text" id="trench-depth" value="${escapeHtml(temp.trenchDepth || '')}" placeholder="e.g. 18 inches" /></label>
-            <label>Price per Foot of Trenching ($) <input type="number" id="trench-price-per-foot" value="${temp.trenchPricePerFoot ?? ''}" min="0" step="0.01" placeholder="0" /></label>
+          <p class="trenching-intro">How much trenching (feet)? Through what material? At what depth?</p>
+          <div class="trenching-row">
+            <div class="trenching-fields">
+              <label>Quantity (Feet Of Trenching) <input type="number" id="trench-qty" value="${temp.trenchQty ?? ''}" min="0" placeholder="0" /></label>
+              <label>Material to Dig Through <input type="text" id="trench-material" value="${escapeHtml(temp.trenchMaterial || '')}" placeholder="e.g. asphalt, concrete" /></label>
+              <label>Depth <input type="text" id="trench-depth" value="${escapeHtml(temp.trenchDepth || '')}" placeholder="e.g. 18 inches" /></label>
+              <label>Price per Foot of Trenching ($) <input type="number" id="trench-price-per-foot" value="${temp.trenchPricePerFoot ?? ''}" min="0" step="0.01" placeholder="0" /></label>
+            </div>
+            <div class="trenching-quick-add">
+              <p class="trenching-quick-add-title">Quick Add:</p>
+              <table class="trenching-quick-add-table">
+                <tbody>
+                  ${TRENCHING_QUICK_ADD.map(
+                    (p) => `
+                  <tr class="trenching-quick-add-row" data-material="${escapeHtml(p.material)}" data-depth="${escapeHtml(p.depth)}" data-price="${p.price}" role="button" tabindex="0">
+                    <td>${escapeHtml(p.label)}</td>
+                  </tr>
+                `
+                  ).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div class="trenching-addons">
-            <p>Add additional child items:</p>
             <div class="trenching-addon-section">
               <p class="trenching-addon-section-title">Rentals</p>
               <div class="trenching-addon-buttons">
@@ -57,8 +82,9 @@ const TakeoffConduitView = (function () {
                 <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="MANHOLES">+ MANHOLES</button>
               </div>
             </div>
+            ${(temp.trenchingAddons || []).length > 0 ? `
             <table class="trenching-addons-table">
-              <thead><tr><th>Description</th><th>Quantity<br>(Hours or Days)</th><th>Additional Labor</th><th>Charge (per Hour or Day)</th><th></th></tr></thead>
+              <thead><tr><th>Description</th><th>Quantity<br><span class="th-sub">(Hours or Days)</span></th><th>Additional Labor</th><th>Charge<br><span class="th-sub">(per Hour or Day)</span></th><th></th></tr></thead>
               <tbody>${(temp.trenchingAddons || []).map((a, i) => `
       <tr>
         <td>${escapeHtml(a.description || '')}</td>
@@ -69,6 +95,7 @@ const TakeoffConduitView = (function () {
       </tr>
     `).join('')}</tbody>
             </table>
+            ` : ''}
           </div>
         </div>
         <div class="flow-actions">
@@ -116,7 +143,7 @@ const TakeoffConduitView = (function () {
           <div class="parent-summary-line">Quantity: ${item.quantity}</div>
         </div>
         <div class="flow-section">
-          <h3>Fittings</h3>
+          <h3 class="fittings-section-header">Fittings <button type="button" class="labor-book-icon-btn icon-btn" id="conduit-fittings-labor-book-btn" title="Open Labor and Price Book - Conduit Fittings">${BOOK_SVG}</button></h3>
           <p>Add items manually or select from list:</p>
           <select id="fittings-preset">
             <option value="">-- Select from list --</option>
@@ -185,6 +212,32 @@ const TakeoffConduitView = (function () {
     if (step === 1) {
       document.getElementById('conduit-cancel-btn')?.addEventListener('click', () => {
         TakeoffApp.navigateToManifest();
+      });
+
+      document.querySelectorAll('.trenching-quick-add-row').forEach((row) => {
+        const applyQuickAdd = () => {
+          const material = row.dataset.material || '';
+          const depth = row.dataset.depth || '';
+          const price = row.dataset.price || '';
+          const materialInput = document.getElementById('trench-material');
+          const depthInput = document.getElementById('trench-depth');
+          const priceInput = document.getElementById('trench-price-per-foot');
+          if (materialInput) materialInput.value = material;
+          if (depthInput) depthInput.value = depth;
+          if (priceInput) priceInput.value = price;
+          const temp = TakeoffState.getConduitTempData();
+          temp.trenchMaterial = material;
+          temp.trenchDepth = depth;
+          temp.trenchPricePerFoot = price;
+          TakeoffState.setConduitTempData(temp);
+        };
+        row.addEventListener('click', applyQuickAdd);
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            applyQuickAdd();
+          }
+        });
       });
 
       document.querySelectorAll('.trenching-addon-btn').forEach((btn) => {
@@ -280,6 +333,10 @@ const TakeoffConduitView = (function () {
       document.getElementById('conduit-back-trench')?.addEventListener('click', () => {
         TakeoffState.setConduitStep(1);
         TakeoffApp.render();
+      });
+
+      document.getElementById('conduit-fittings-labor-book-btn')?.addEventListener('click', () => {
+        TakeoffApp.showLaborBookModalForConduitFittings(itemId);
       });
 
       document.getElementById('fittings-preset')?.addEventListener('change', (e) => {

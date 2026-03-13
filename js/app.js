@@ -50,6 +50,7 @@
 
   function showLaborBookModal(itemId) {
     TakeoffState.clearLaborBookTargetDeviceRow();
+    TakeoffState.clearLaborBookExpandGroup();
     TakeoffState.setLaborBookPreselectedItemId(itemId || null);
     const modal = document.getElementById('labor-book-modal');
     modal.setAttribute('aria-hidden', 'false');
@@ -60,6 +61,18 @@
   function showLaborBookModalForDeviceRow(section, index) {
     TakeoffState.setLaborBookPreselectedItemId(null);
     TakeoffState.setLaborBookTargetDeviceRow({ section, index });
+    TakeoffState.clearLaborBookExpandGroup();
+    const modal = document.getElementById('labor-book-modal');
+    modal.setAttribute('aria-hidden', 'false');
+    TakeoffLaborBookView.render();
+    TakeoffLaborBookView.attachListeners();
+  }
+
+  function showLaborBookModalForConduitFittings(itemId) {
+    TakeoffState.clearLaborBookTargetDeviceRow();
+    TakeoffState.setLaborBookPreselectedItemId(itemId || null);
+    TakeoffState.setActiveLaborBookTab('conduit');
+    TakeoffState.setLaborBookExpandGroup('Fittings');
     const modal = document.getElementById('labor-book-modal');
     modal.setAttribute('aria-hidden', 'false');
     TakeoffLaborBookView.render();
@@ -73,6 +86,7 @@
     }
     TakeoffState.clearLaborBookPreselectedItemId();
     TakeoffState.clearLaborBookTargetDeviceRow();
+    TakeoffState.clearLaborBookExpandGroup();
     modal?.setAttribute('aria-hidden', 'true');
   }
 
@@ -149,6 +163,7 @@
     hideTypeModal,
     showLaborBookModal,
     showLaborBookModalForDeviceRow,
+    showLaborBookModalForConduitFittings,
     hideLaborBookModal,
     navigateToManifest,
     navigateToDevice,
