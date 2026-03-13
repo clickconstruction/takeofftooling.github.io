@@ -103,6 +103,7 @@
     TakeoffState.setCurrentView('device', itemId);
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
+    const outletsAndSwitches = children.filter((c) => c.type === 'outletsAndSwitches');
     const boxes = children.filter((c) => c.type === 'box' || (c.description || '').toLowerCase().includes('box'));
     const backBoxSupport = children.filter((c) => c.type === 'backBoxSupport' || (c.description || '').toLowerCase().includes('back box support'));
     const covers = children.filter((c) => c.type === 'cover' || (c.description || '').toLowerCase().includes('cover'));
@@ -110,9 +111,11 @@
     const wire = children.filter((c) => c.type === 'wire');
     const screws = children.filter((c) => c.type === 'screws');
     const misc = children.filter((c) => c.type === 'misc');
-    const parentQty = item?.quantity ?? 0;
+    const hasParentDesc = (item?.description || '').trim().length > 0;
+    const parentQty = hasParentDesc ? 1 : (item?.quantity ?? 0);
     const toRows = (arr) => (arr.length ? arr.map((x) => ({ description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' })) : [{ description: '', quantity: parentQty, labor: 0, price: '' }]);
     TakeoffState.setDeviceTempData({
+      outletsAndSwitches: toRows(outletsAndSwitches),
       boxes: toRows(boxes),
       backBoxSupport: toRows(backBoxSupport),
       covers: toRows(covers),
@@ -194,6 +197,23 @@
     TakeoffImport.importFromClipboard();
   });
 
+  // Export via link
+  document.getElementById('export-link-btn')?.addEventListener('click', async () => {
+    const manifest = TakeoffState.getManifest();
+    const json = JSON.stringify(manifest);
+    const base64 = btoa(unescape(encodeURIComponent(json)));
+    const url = window.location.origin + window.location.pathname + '#d=' + base64;
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.getElementById('export-link-btn');
+      const orig = btn?.textContent;
+      if (btn) btn.textContent = 'Link copied!';
+      setTimeout(() => { if (btn) btn.textContent = orig || 'Export via link'; }, 2000);
+    } catch (err) {
+      alert('Could not copy link. Try selecting and copying manually.');
+    }
+  });
+
   // Undo
   document.getElementById('undo-btn')?.addEventListener('click', () => {
     if (TakeoffState.undo()) {
@@ -239,9 +259,22 @@
     formModal?.setAttribute('aria-hidden', 'true');
   });
 
+  // Load from export link (hash)
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#d=')) {
+    try {
+      const base64 = hash.slice(3);
+      const json = decodeURIComponent(escape(atob(base64)));
+      const data = JSON.parse(json);
+      if (TakeoffState.loadManifestFromExport(data)) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } catch (_) {}
+  }
+
   // Ensure at least one row exists on load
   if (TakeoffState.getTopLevelItems().length === 0) {
-    TakeoffState.addItem({ type: null, description: '', quantity: 0, labor: 0, planPage: '', parentId: null });
+    TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
   }
 
   // Initial render

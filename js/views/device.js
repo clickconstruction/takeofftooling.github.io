@@ -7,6 +7,7 @@ const TakeoffDeviceView = (function () {
   const BOOK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="labor-book-icon"><path d="M480 576L192 576C139 576 96 533 96 480L96 160C96 107 139 64 192 64L496 64C522.5 64 544 85.5 544 112L544 400C544 420.9 530.6 438.7 512 445.3L512 512C529.7 512 544 526.3 544 544C544 561.7 529.7 576 512 576L480 576zM192 448C174.3 448 160 462.3 160 480C160 497.7 174.3 512 192 512L448 512L448 448L192 448zM224 216C224 229.3 234.7 240 248 240L424 240C437.3 240 448 229.3 448 216C448 202.7 437.3 192 424 192L248 192C234.7 192 224 202.7 224 216zM248 288C234.7 288 224 298.7 224 312C224 325.3 234.7 336 248 336L424 336C437.3 336 448 325.3 448 312C448 298.7 437.3 288 424 288L248 288z"/></svg>';
 
   const DEVICE_SECTIONS = [
+    { key: 'outletsAndSwitches', label: 'Outlets and Switches', addLabel: '+ Outlet/Switch' },
     { key: 'boxes', label: 'Boxes', addLabel: '+ Box' },
     { key: 'backBoxSupport', label: 'Back Box Support', addLabel: '+ Back Box Support' },
     { key: 'covers', label: 'Covers', addLabel: '+ Cover' },
@@ -78,19 +79,32 @@ const TakeoffDeviceView = (function () {
           <button type="button" class="btn btn-secondary assemblies-load-btn" id="assemblies-load-btn" ${assembliesList.length ? '' : 'disabled'}>Load into Ledger</button>
         </h3>
         <div class="assemblies-section-body">
-          ${assembliesList.length === 0 ? '<p class="assemblies-empty">No assemblies saved. Fill the form below and click "Save as Assembly →" to create one.</p>' : assembliesList.map((a) => `
+          ${assembliesList.length === 0 ? '<p class="assemblies-empty">No assemblies saved. Fill the form below and click "Save as Assembly →" to create one.</p>' : assembliesList.map((a) => {
+            let assemblyPrice = 0;
+            if (a.sections) {
+              for (const s of DEVICE_SECTIONS) {
+                const rows = a.sections[s.key] || [];
+                for (const r of rows) assemblyPrice += parseFloat(r.price) || 0;
+              }
+            }
+            const priceStr = assemblyPrice > 0 ? assemblyPrice.toFixed(2) : '0';
+            return `
             <div class="assembly-card assembly-card-collapsed" data-assembly-id="${a.id}">
-              <h4 class="assembly-card-header"><span class="assemblies-chevron"></span>${escapeHtml(a.name || 'Unnamed')}</h4>
+              <h4 class="assembly-card-header"><span class="assemblies-chevron"></span>${escapeHtml(a.name || 'Unnamed')} <span class="assembly-card-price">$${priceStr}</span></h4>
               <div class="assembly-card-body">
                 ${DEVICE_SECTIONS.map((s) => {
                   const rows = (a.sections && a.sections[s.key]) || [];
                   if (rows.length === 0) return '';
                   return `<div class="assembly-subsection"><strong>${s.label}</strong><ul>${rows.map((r) => `<li>${escapeHtml(r.description || '-')} × ${r.quantity ?? 0} | Labor: ${r.labor ?? 0} | Price: ${r.price ?? ''}</li>`).join('')}</ul></div>`;
                 }).join('')}
-                <button type="button" class="btn btn-small assembly-load-btn" data-assembly-id="${a.id}">Load into Ledger</button>
+                <div class="assembly-card-actions">
+                  <button type="button" class="btn btn-small assembly-load-btn" data-assembly-id="${a.id}">Load into Ledger</button>
+                  <button type="button" class="btn btn-link assembly-delete-btn icon-btn" data-assembly-id="${a.id}" title="Delete assembly">${TRASH_SVG}</button>
+                </div>
               </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -99,15 +113,13 @@ const TakeoffDeviceView = (function () {
       <div class="flow-page device-flow">
         <div class="device-header-row">
           <h2>Devices - Add Boxes and Covers</h2>
-          <button type="button" class="btn btn-secondary" id="device-save-assembly-btn">Save as Assembly →</button>
+          <button type="button" class="btn btn-success" id="device-save-assembly-btn">Save as Assembly →</button>
         </div>
         ${assembliesHtml}
         <div class="device-summary-row">
           <div class="parent-summary">
             <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
             <div class="parent-summary-line">Quantity: ${item.quantity ?? 0}</div>
-            <div class="parent-summary-line">Labor: ${(item.labor || 0)} hrs</div>
-            <div class="parent-summary-line">Price: ${item.price != null && item.price !== '' ? (parseFloat(item.price) || 0).toFixed(2) : '0'}</div>
           </div>
           <div class="child-summary">
             <div class="parent-summary-line"><strong>Cumulative Child:</strong></div>
@@ -135,7 +147,8 @@ const TakeoffDeviceView = (function () {
     const item = TakeoffState.getItemById(itemId);
     if (!item) return;
 
-    const parentQty = item.quantity ?? 0;
+    const hasParentDesc = (item.description || '').trim().length > 0;
+    const parentQty = hasParentDesc ? 1 : (item.quantity ?? 0);
     document.querySelectorAll('.add-device-section-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const section = e.currentTarget.dataset.section;
@@ -192,7 +205,8 @@ const TakeoffDeviceView = (function () {
         temp[section].splice(index, 1);
         if (temp[section].length === 0) {
           const parent = TakeoffState.getItemById(itemId);
-          const qty = parent?.quantity ?? 0;
+          const hasDesc = (parent?.description || '').trim().length > 0;
+          const qty = hasDesc ? 1 : (parent?.quantity ?? 0);
           temp[section].push({ description: '', quantity: qty, labor: 0, price: '' });
         }
         TakeoffState.setDeviceTempData(temp);
@@ -252,8 +266,17 @@ const TakeoffDeviceView = (function () {
 
     document.querySelectorAll('.assembly-card-header').forEach((h) => {
       h.addEventListener('click', (e) => {
-        if (e.target.closest('.assembly-load-btn')) return;
+        if (e.target.closest('.assembly-load-btn') || e.target.closest('.assembly-delete-btn')) return;
         h.closest('.assembly-card')?.classList.toggle('assembly-card-collapsed');
+      });
+    });
+
+    document.querySelectorAll('.assembly-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm('Delete this assembly?')) return;
+        TakeoffState.removeAssembly(e.currentTarget.dataset.assemblyId);
+        TakeoffApp.render();
       });
     });
 
@@ -271,7 +294,8 @@ const TakeoffDeviceView = (function () {
       const temp = {};
       for (const s of DEVICE_SECTIONS) {
         const rows = (a.sections[s.key] || []);
-        temp[s.key] = rows.length ? rows.map((r) => ({ ...r })) : [{ description: '', quantity: item.quantity ?? 0, labor: 0, price: '' }];
+        const hasDesc = (item.description || '').trim().length > 0;
+        temp[s.key] = rows.length ? rows.map((r) => ({ ...r })) : [{ description: '', quantity: hasDesc ? 1 : (item.quantity ?? 0), labor: 0, price: '' }];
       }
       TakeoffState.setDeviceTempData(temp);
       TakeoffApp.render();
@@ -279,9 +303,9 @@ const TakeoffDeviceView = (function () {
 
     document.getElementById('device-save-btn')?.addEventListener('click', () => {
       const temp = TakeoffState.getDeviceTempData();
-      const allTypes = ['box', 'backBoxSupport', 'cover', 'conduit', 'wire', 'screws', 'misc'];
-      const sectionToType = { boxes: 'box', backBoxSupport: 'backBoxSupport', covers: 'cover', conduit: 'conduit', wire: 'wire', screws: 'screws', misc: 'misc' };
-      const defaultLabels = { box: 'Box', backBoxSupport: 'Back Box Support', cover: 'Cover', conduit: 'Conduit', wire: 'Wire', screws: 'Screws', misc: 'Misc.' };
+      const allTypes = ['outletsAndSwitches', 'box', 'backBoxSupport', 'cover', 'conduit', 'wire', 'screws', 'misc'];
+      const sectionToType = { outletsAndSwitches: 'outletsAndSwitches', boxes: 'box', backBoxSupport: 'backBoxSupport', covers: 'cover', conduit: 'conduit', wire: 'wire', screws: 'screws', misc: 'misc' };
+      const defaultLabels = { outletsAndSwitches: 'Outlets and Switches', box: 'Box', backBoxSupport: 'Back Box Support', cover: 'Cover', conduit: 'Conduit', wire: 'Wire', screws: 'Screws', misc: 'Misc.' };
 
       if (!DEVICE_SECTIONS.every((s) => (temp[s.key] || []).length >= 1)) return;
 

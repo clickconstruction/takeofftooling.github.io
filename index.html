@@ -26,6 +26,9 @@
     <main id="main-content">
       <!-- Views rendered here by app.js -->
     </main>
+    <div class="export-link-footer">
+      <button type="button" class="btn btn-export-link" id="export-link-btn">Export via link</button>
+    </div>
   </div>
 
   <!-- Type selection modal (shown when adding/editing item type) -->
@@ -128,6 +131,29 @@
         </table>
       </div>
       <div class="mc-prince-footer" id="mc-prince-result-count"></div>
+    </div>
+  </div>
+
+  <!-- Import preview modal (CountTooling.com) -->
+  <div id="import-preview-modal" class="modal" aria-hidden="true">
+    <div class="modal-content import-preview-modal-content">
+      <h2>Import Preview</h2>
+      <p class="import-preview-intro">Compare what's in your manifest with the import. Choose how to add items.</p>
+      <div class="import-preview-columns">
+        <div class="import-preview-col">
+          <h3>In Manifest</h3>
+          <div id="import-preview-manifest-list" class="import-preview-list"></div>
+        </div>
+        <div class="import-preview-col">
+          <h3>Import</h3>
+          <div id="import-preview-import-list" class="import-preview-list"></div>
+        </div>
+      </div>
+      <div class="import-preview-actions">
+        <button type="button" class="btn btn-secondary" id="import-preview-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-success" id="import-preview-overages-btn">Add Overages Only</button>
+        <button type="button" class="btn btn-success" id="import-preview-all-btn">Add All</button>
+      </div>
     </div>
   </div>
 

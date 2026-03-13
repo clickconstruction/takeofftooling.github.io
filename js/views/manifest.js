@@ -46,11 +46,11 @@ const TakeoffManifestView = (function () {
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
         ${removeCell}
         ${laborBookCell}
-        <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Description" /></td>
+        <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Assembly Description" /></td>
+        ${typeCell}
         <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn" data-id="${item.id}" title="Subtract 1">−</button><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div></td>
         <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /></td>
         <td class="price-cell"><input type="number" data-field="price" data-id="${item.id}" dir="ltr" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" /></td>
-        ${typeCell}
         ${planPageCell}
       </tr>
     `;
@@ -154,21 +154,21 @@ const TakeoffManifestView = (function () {
             <col class="col-remove" />
             <col class="col-labor-book" />
             <col class="col-desc" />
+            <col class="col-type" />
             <col class="col-qty" />
             <col class="col-labor" />
             <col class="col-price" />
-            <col class="col-type" />
             <col class="col-plan" />
           </colgroup>
           <thead>
             <tr>
               <th></th>
               <th></th>
-              <th>Description</th>
+              <th>Assembly Description</th>
+              <th>Type</th>
               <th>Quantity</th>
               <th>Labor</th>
               <th>Price</th>
-              <th>Type</th>
               <th>Plan Page / Location</th>
             </tr>
           </thead>
@@ -199,7 +199,7 @@ const TakeoffManifestView = (function () {
       TakeoffState.addItem({
         type: null,
         description: '',
-        quantity: 0,
+        quantity: 1,
         labor: 0,
         planPage: '',
         parentId: null,
@@ -241,8 +241,18 @@ const TakeoffManifestView = (function () {
       let value = e.target.value;
       if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
       if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
-      TakeoffState.updateItem(id, { [field]: value });
-      if (['quantity', 'price', 'labor'].includes(field)) updateSummaryOnly();
+      const updates = { [field]: value };
+      if (field === 'description') {
+        const item = TakeoffState.getItemById(id);
+        const descVal = (value || '').trim();
+        if (descVal && item && (item.quantity ?? 0) === 0) {
+          updates.quantity = 1;
+          const qtyInput = document.querySelector(`.qty-cell input[data-field="quantity"][data-id="${id}"]`);
+          if (qtyInput) qtyInput.value = 1;
+        }
+      }
+      TakeoffState.updateItem(id, updates);
+      if (['quantity', 'price', 'labor'].includes(field) || updates.quantity !== undefined) updateSummaryOnly();
     }
 
     document.querySelectorAll('[data-field]').forEach((input) => {
@@ -306,7 +316,7 @@ const TakeoffManifestView = (function () {
           const wasTopLevel = item && !item.parentId;
           TakeoffState.removeItem(e.target.dataset.id);
           if (wasTopLevel && TakeoffState.getTopLevelItems().length === 0) {
-            TakeoffState.addItem({ type: null, description: '', quantity: 0, labor: 0, planPage: '', parentId: null });
+            TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
           }
           TakeoffApp.render();
         }

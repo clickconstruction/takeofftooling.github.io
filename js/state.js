@@ -11,7 +11,7 @@ const TakeoffState = (function () {
   let modalItemId = null;
   let conduitStep = 1; // 1: trenching, 2: fittings, 3: overage
   let conduitTempData = {};
-  let deviceTempData = { boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
+  let deviceTempData = { outletsAndSwitches: [], boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
   let wireTempData = { overagePercent: null, macAdapters: [] };
   const ASSEMBLIES_STORAGE_KEY = 'takeoff-assemblies';
   let assemblies = [];
@@ -112,13 +112,6 @@ const TakeoffState = (function () {
         { name: '1600a', labor: 36, price: '' },
         { name: '2000a', labor: 54, price: '' },
         { name: '4000a', labor: 90, price: '' },
-      ],
-      'Wire Terminations': [
-        { name: '# 22-6', labor: 0.2, price: '' },
-        { name: '# 4-1', labor: 0.3, price: '' },
-        { name: '# 1/0-4/0', labor: 0.5, price: '' },
-        { name: '# 250-500', labor: 1, price: '' },
-        { name: '# 600-1000', labor: 1.5, price: '' },
       ],
       'Conduit Holes': [
         { name: '1/2" - 1"', labor: 0.3, price: '' },
@@ -693,6 +686,13 @@ const TakeoffState = (function () {
         { name: 'WP 352', labor: 0.01, price: '90.00' },
         { name: 'PW', labor: 0.005, price: '0.03' },
       ],
+      'Wire Terminations': [
+        { name: '# 22-6', labor: 0.2, price: '' },
+        { name: '# 4-1', labor: 0.3, price: '' },
+        { name: '# 1/0-4/0', labor: 0.5, price: '' },
+        { name: '# 250-500', labor: 1, price: '' },
+        { name: '# 600-1000', labor: 1.5, price: '' },
+      ],
     },
     specialSystems: {},
   };
@@ -703,6 +703,14 @@ const TakeoffState = (function () {
 
   function getManifest() {
     return manifest;
+  }
+
+  function loadManifestFromExport(data) {
+    if (!Array.isArray(data)) return false;
+    manifest = data;
+    undoStack = [];
+    redoStack = [];
+    return true;
   }
 
   function getTopLevelItems() {
@@ -904,7 +912,7 @@ const TakeoffState = (function () {
   }
 
   function clearDeviceTempData() {
-    deviceTempData = { boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
+    deviceTempData = { outletsAndSwitches: [], boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
   }
 
   function getAssemblies() {
@@ -1121,6 +1129,7 @@ const TakeoffState = (function () {
     ITEM_TYPES,
     LABOR_BOOK_TYPE_LABELS,
     getManifest,
+    loadManifestFromExport,
     getTopLevelItems,
     getItemById,
     getParentItem,
