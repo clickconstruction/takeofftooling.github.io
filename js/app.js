@@ -49,9 +49,15 @@
   }
 
   function showLaborBookModal(itemId) {
+    document.body.classList.add('lb-modal-open');
     TakeoffState.clearLaborBookTargetDeviceRow();
     TakeoffState.clearLaborBookExpandGroup();
     TakeoffState.setLaborBookPreselectedItemId(itemId || null);
+    // open on the tab matching the item's type
+    const itemType = itemId ? TakeoffState.getItemById(itemId)?.type : null;
+    if (itemType && TakeoffState.getLaborBookTabOrder().includes(itemType)) {
+      TakeoffState.setActiveLaborBookTab(itemType);
+    }
     const modal = document.getElementById('labor-book-modal');
     modal.setAttribute('aria-hidden', 'false');
     TakeoffLaborBookView.render();
@@ -59,6 +65,7 @@
   }
 
   function showLaborBookModalForDeviceRow(section, index) {
+    document.body.classList.add('lb-modal-open');
     TakeoffState.setLaborBookPreselectedItemId(null);
     TakeoffState.setLaborBookTargetDeviceRow({ section, index });
     TakeoffState.clearLaborBookExpandGroup();
@@ -69,6 +76,7 @@
   }
 
   function showLaborBookModalForConduitFittings(itemId) {
+    document.body.classList.add('lb-modal-open');
     TakeoffState.clearLaborBookTargetDeviceRow();
     TakeoffState.setLaborBookPreselectedItemId(itemId || null);
     TakeoffState.setActiveLaborBookTab('conduit');
@@ -87,7 +95,9 @@
     TakeoffState.clearLaborBookPreselectedItemId();
     TakeoffState.clearLaborBookTargetDeviceRow();
     TakeoffState.clearLaborBookExpandGroup();
+    TakeoffState.clearLaborBookFillTarget();
     modal?.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('lb-modal-open');
   }
 
   function navigateToManifest() {
@@ -104,9 +114,9 @@
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
     const outletsAndSwitches = children.filter((c) => c.type === 'outletsAndSwitches');
-    const boxes = children.filter((c) => c.type === 'box' || (c.description || '').toLowerCase().includes('box'));
-    const backBoxSupport = children.filter((c) => c.type === 'backBoxSupport' || (c.description || '').toLowerCase().includes('back box support'));
-    const covers = children.filter((c) => c.type === 'cover' || (c.description || '').toLowerCase().includes('cover'));
+    const boxes = children.filter((c) => c.type === 'box');
+    const backBoxSupport = children.filter((c) => c.type === 'backBoxSupport');
+    const covers = children.filter((c) => c.type === 'cover');
     const conduit = children.filter((c) => c.type === 'conduit');
     const wire = children.filter((c) => c.type === 'wire');
     const screws = children.filter((c) => c.type === 'screws');
@@ -127,11 +137,20 @@
     render();
   }
 
+  // Prefer structured meta on the child item; fall back to parsing the display
+  // string only for legacy items saved before meta existed.
+  function overagePercentFrom(overage) {
+    if (overage?.meta && typeof overage.meta.overagePercent === 'number') return overage.meta.overagePercent;
+    const match = (overage?.description || '').match(/([\d.]+)%/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
   function navigateToConduit(itemId) {
     TakeoffState.setCurrentView('conduit', itemId);
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
     const trenching = children.find((c) => c.type === 'trenching' || (c.description || '').includes('Trenching'));
+    const trenchingAddons = children.filter((c) => c.type === 'trenchingAddon');
     const fittings = children.filter((c) => c.type === 'fitting');
     const overage = children.find((c) => c.type === 'overage' || (c.description || '').includes('overage'));
 
@@ -139,18 +158,38 @@
     let tempData = {};
     if (trenching) {
       tempData.trenching = { description: trenching.description, quantity: trenching.quantity, labor: trenching.labor };
+      if (trenching.meta) {
+        tempData.trenchQty = trenching.meta.feet ?? trenching.quantity ?? '';
+        tempData.trenchMaterial = trenching.meta.material ?? '';
+        tempData.trenchDepth = trenching.meta.depth ?? '';
+        tempData.trenchPricePerFoot = trenching.meta.pricePerFoot ?? trenching.price ?? '';
+      } else {
+        // legacy: best-effort parse of "Trenching: {feet} - {material} @ {depth}"
+        const m = (trenching.description || '').match(/^Trenching:\s*(.*?)\s*-\s*(.*?)\s*@\s*(.*)$/);
+        tempData.trenchQty = trenching.quantity ?? '';
+        tempData.trenchMaterial = m && m[2] !== 'N/A' ? m[2] : '';
+        tempData.trenchDepth = m && m[3] !== 'N/A' ? m[3] : '';
+        tempData.trenchPricePerFoot = trenching.price ?? '';
+      }
       step = 2;
     }
+    if (trenchingAddons.length) {
+      tempData.trenchingAddons = trenchingAddons.map((a) => ({
+        description: a.description,
+        quantity: a.quantity,
+        labor: a.labor,
+        price: a.price ?? '',
+      }));
+    }
     if (fittings.length) {
-      tempData.fittings = fittings.map((f) => ({ description: f.description, quantity: f.quantity, labor: f.labor }));
+      tempData.fittings = fittings.map((f) => ({ description: f.description, quantity: f.quantity, labor: f.labor, price: f.price ?? '' }));
       step = 2;
     } else if (step === 2 || trenching) {
-      tempData.fittings = [{ description: '', quantity: 0, labor: 0 }];
+      tempData.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
       step = 2;
     }
     if (overage) {
-      const match = (overage.description || '').match(/(\d+)%/);
-      tempData.overagePercent = match ? parseInt(match[1], 10) : 0;
+      tempData.overagePercent = overagePercentFrom(overage);
       step = 3;
     }
     TakeoffState.setConduitTempData(tempData);
@@ -164,12 +203,45 @@
     const children = item?.children || [];
     const overage = children.find((c) => c.type === 'overage');
     const macAdapters = children.filter((c) => c.type === 'macAdapter');
-    const overageMatch = overage?.description?.match(/(\d+)%/);
     TakeoffState.setWireTempData({
-      overagePercent: overageMatch ? parseInt(overageMatch[1], 10) : null,
-      macAdapters: macAdapters.length ? macAdapters.map((m) => ({ description: m.description, quantity: m.quantity, labor: m.labor })) : [{ description: '', quantity: 0, labor: 0 }],
+      overagePercent: overage ? overagePercentFrom(overage) : null,
+      macAdapters: macAdapters.length
+        ? macAdapters.map((m) => ({ description: m.description, quantity: m.quantity, labor: m.labor, price: m.price ?? '' }))
+        : [{ description: '', quantity: 0, labor: 0 }],
     });
     render();
+  }
+
+  // "PB" buttons: open the Labor & Price Book in FILL mode — + Add fills the
+  // clicked row in place instead of adding children. (Replaces the old
+  // standalone Part Book search.)
+  function openLaborBookFill(target) {
+    document.body.classList.add('lb-modal-open');
+    TakeoffState.clearLaborBookTargetDeviceRow();
+    TakeoffState.clearLaborBookExpandGroup();
+    TakeoffState.setLaborBookPreselectedItemId(null);
+    TakeoffState.setLaborBookFillTarget(target);
+    const modal = document.getElementById('labor-book-modal');
+    modal.setAttribute('aria-hidden', 'false');
+    TakeoffLaborBookView.render();
+    TakeoffLaborBookView.attachListeners();
+    document.getElementById('labor-book-global-search')?.focus();
+  }
+
+  function showPartBookSearchForManifestItem(itemId) {
+    openLaborBookFill({ kind: 'manifest-row', id: itemId });
+  }
+
+  function showPartBookSearchForDeviceRow(section, index) {
+    openLaborBookFill({ kind: 'device-row', section, index });
+  }
+
+  function showPartBookSearchForConduitFitting(index) {
+    openLaborBookFill({ kind: 'conduit-fitting', index });
+  }
+
+  function showPartBookSearchForWireMac(index) {
+    openLaborBookFill({ kind: 'wire-mac', index });
   }
 
   // Expose for views
@@ -181,6 +253,10 @@
     showLaborBookModalForDeviceRow,
     showLaborBookModalForConduitFittings,
     hideLaborBookModal,
+    showPartBookSearchForManifestItem,
+    showPartBookSearchForDeviceRow,
+    showPartBookSearchForConduitFitting,
+    showPartBookSearchForWireMac,
     navigateToManifest,
     navigateToDevice,
     navigateToConduit,
@@ -197,10 +273,15 @@
     TakeoffImport.importFromClipboard();
   });
 
-  // Export via link
+  // Export via link (versioned envelope; import still accepts legacy bare arrays)
   document.getElementById('export-link-btn')?.addEventListener('click', async () => {
-    const manifest = TakeoffState.getManifest();
-    const json = JSON.stringify(manifest);
+    const envelope = {
+      v: 2,
+      app: 'takeoff-tooling',
+      exportedAt: new Date().toISOString(),
+      manifest: TakeoffState.getManifest(),
+    };
+    const json = JSON.stringify(envelope);
     const base64 = btoa(unescape(encodeURIComponent(json)));
     const url = window.location.origin + window.location.pathname + '#d=' + base64;
     try {
@@ -238,15 +319,45 @@
     }
   });
 
-  // Cache clear and hard reload
+  // New Takeoff: clear the manifest, keep the books
+  document.getElementById('new-takeoff-btn')?.addEventListener('click', () => {
+    const hasWork = TakeoffState.getTopLevelItems().some(
+      (i) => (i.description || '').trim() || (i.children && i.children.length)
+    );
+    if (
+      hasWork &&
+      !confirm('Start a new takeoff? This clears the current manifest. Your Labor Book, assemblies, and labor rate are kept.')
+    ) {
+      return;
+    }
+    TakeoffState.loadManifestFromExport([]);
+    TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
+    TakeoffState.persistNow();
+    navigateToManifest();
+  });
+
+  // Cache clear and hard reload (code caches only — never user data)
   document.getElementById('cache-clear-reload-btn')?.addEventListener('click', async () => {
-    localStorage.removeItem('takeoff-assemblies');
+    TakeoffState.persistNow();
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
     }
     window.location.replace(window.location.pathname + window.location.search);
   });
+
+  // Flush pending workspace saves before the page goes away
+  window.addEventListener('beforeunload', () => {
+    TakeoffState.persistNow();
+  });
+
+  // One-time cleanup: retired features (old Import MC triage, standalone Part Book)
+  try {
+    localStorage.removeItem('labor-book-import-progress');
+    for (const key of ['part-book', 'part-book-elliot-mappings', 'part-book-unmatched', 'part-book-structure', 'part-book-category-mapping', 'part-book-create-destination']) {
+      localStorage.removeItem(key);
+    }
+  } catch (_) {}
 
   // Form modal for Print with Form
   document.getElementById('form-modal-cancel')?.addEventListener('click', () => {
@@ -276,10 +387,18 @@
       const base64 = hash.slice(3);
       const json = decodeURIComponent(escape(atob(base64)));
       const data = JSON.parse(json);
-      if (TakeoffState.loadManifestFromExport(data)) {
+      const hasWork = TakeoffState.getTopLevelItems().some(
+        (i) => (i.description || '').trim() || (i.children && i.children.length)
+      );
+      const proceed = !hasWork || confirm('Loading this link will replace your current takeoff. Continue?');
+      if (proceed && TakeoffState.loadManifestFromExport(data)) {
+        window.history.replaceState(null, '', window.location.pathname);
+      } else if (!proceed) {
         window.history.replaceState(null, '', window.location.pathname);
       }
-    } catch (_) {}
+    } catch (err) {
+      alert('This shared link could not be loaded — it may be truncated or corrupted.');
+    }
   }
 
   // Ensure at least one row exists on load

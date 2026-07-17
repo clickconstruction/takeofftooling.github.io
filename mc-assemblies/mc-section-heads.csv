@@ -1,0 +1,4630 @@
+level1,level2,level3,assmNum,assmName
+,,,1,Electrical Database
+,,,3,copper wire
+,,,4,cu thhn solid wire
+,,,9,cu thhn stranded wire
+,,,32,cu xhhw solid wire
+,,,37,cu xhhw stranded wire
+,,,61,cu use-rhw solid wire
+,,,65,cu use-rhw stranded wire
+,,,88,cu bare solid wire
+,,,97,cu bare stranded wire
+,,,113,cu mtw stranded wire
+,,,120,cu tffn stranded wire
+,,,124,al thhn stranded wire
+,,,127,3 AL THHN STRANDED WIRE 85
+,,,144,al xhhw stranded wire
+,,,162,al use rhh rhw stranded wir
+,,,181,5kv 1c cu xlp-pvc non-shiel
+,,,196,5kv 1c cu xlp-pvc shield ca
+,,,212,5kv 3c cu xlp-pvc non grd s
+,,,226,5kv 3c cu xlp-pvc grd shiel
+,,,240,15kv 1c cu xlp-pvc shield c
+,,,253,15kv 3c cu xlp-pvc no grd s
+Branch,EMT,EMT Strap,267,emt d/s strap
+Branch,EMT,EMT Strap Concrete,279,emt d/s strap concrete
+,,,291,emt d/s beam clamp
+,,,303,5' drop emt d/s strap
+,,,315,11' drop emt d/s strap
+,,,327,emt d/s branch parts
+,,,328,emt 1/2 d/s misc
+,,,345,emt 3/4 d/s misc
+,,,362,emt 1 d/s misc
+,,,379,emt d/s feeder parts
+,,,380,emt 1 1/4 d/s misc
+,,,401,emt 1 1/2 d/s misc
+,,,422,emt 2 d/s misc
+,,,442,emt 2 1/2 d/s misc
+,,,459,emt 3 d/s misc
+,,,476,emt 3 1/2 d/s misc
+,,,492,emt 4 d/s misc
+,,,510,n14 emt d/s strap
+,,,519,n12 emt d/s strap
+,,,528,n10 emt d/s strap
+,,,537,n8 emt d/s strap
+,,,544,n6 emt d/s strap
+,,,550,n4 emt d/s strap
+,,,555,d/s emt feeder w/wire
+,,,556,n3 emt d/s strap
+,,,562,n2 emt d/s strap
+,,,568,n1 emt d/s strap
+,,,574,n1/0 emt d/s strap
+,,,580,n2/0 emt d/s strap
+,,,586,n3/0 emt d/s strap
+,,,592,n4/0 emt d/s strap
+,,,598,n250 emt d/s strap
+,,,604,n300 emt d/s strap
+,,,610,n350 emt d/s strap
+,,,616,n400 emt d/s strap
+,,,622,n500 emt d/s strap
+,,,628,n600 emt d/s strap
+,,,634,n750 emt d/s strap
+,,,642,n14 emt d/s strap concrete
+,,,651,n12 emt d/s strap concrete
+,,,660,n10 emt d/s strap concrete
+,,,669,n8 emt d/s strap concrete
+,,,676,n6 emt d/s strap concrete
+,,,682,n4 emt d/s strap concrete
+,,,687,d/s feeder w/wire
+,,,688,n3 emt d/s strap concrete
+,,,694,n2 emt d/s strap concrete
+,,,700,n1 emt d/s strap concrete
+,,,706,n1/0 emt d/s strap concrete
+,,,712,n2/0 emt d/s strap concrete
+,,,718,n3/0 emt d/s strap concrete
+,,,724,n4/0 emt d/s strap concrete
+,,,730,n250 emt d/s strap concrete
+,,,736,n300 emt d/s strap concrete
+,,,742,n350 emt d/s strap concrete
+,,,748,n400 emt d/s strap concrete
+,,,754,n500 emt d/s strap concrete
+,,,760,n600 emt d/s strap concrete
+,,,766,n750 emt d/s strap concrete
+,,,774,feeder drops w/wire & 9' ma
+,,,775,5' drop n3 emt d/s strap 9'
+,,,781,5' drop n2 emt d/s strap 9'
+,,,787,5' drop n1 emt d/s strap 9'
+,,,793,5' drop n1/0 emt d/s strap
+,,,799,5' drop n2/0 emt d/s strap
+,,,805,5' drop n3/0 emt d/s strap
+,,,811,5' drop n4/0 emt d/s strap
+,,,817,5' drop n250 emt d/s strap
+,,,823,5' drop n300 emt d/s strap
+,,,829,5' drop n350 emt d/s strap
+,,,835,5' drop n400 emt d/s strap
+,,,841,5' drop n500 emt d/s strap
+,,,847,5' drop n600 emt d/s strap
+,,,853,5' drop n750 emt d/s strap
+,,,860,n14 emt d/s beam clamp
+,,,869,n12 emt d/s beam clamp
+,,,878,n10 emt d/s beam clamp
+,,,887,n8 emt d/s beam clamp
+,,,894,n6 emt d/s beam clamp
+,,,900,n4 emt d/s beam clamp
+,,,905,d/s emt feeder beam clamp w
+,,,906,n3 emt d/s beam clamp
+,,,912,n2 emt d/s beam clamp
+,,,918,n1 emt d/s beam clamp
+,,,924,n1/0 emt d/s beam clamp
+,,,930,n2/0 emt d/s beam clamp
+,,,936,n3/0 emt d/s beam clamp
+,,,942,n4/0 emt d/s beam clamp
+,,,948,n250 emt d/s beam clamp
+,,,954,n300 emt d/s beam clamp
+,,,960,n350 emt d/s beam clamp
+,,,966,n400 emt d/s beam clamp
+,,,972,n500 emt d/s beam clamp
+,,,978,n600 emt d/s beam clamp
+,,,984,n750 emt d/s beam clamp
+,,,993,n14 emt d/c beam clamp
+,,,1002,n12 emt d/c beam clamp
+,,,1011,n10 emt d/c beam clamp
+,,,1020,n8 emt d/c beam clamp
+,,,1027,n6 emt d/c beam clamp
+,,,1033,n4 emt d/c beam clamp
+,,,1038,n3 emt d/c beam clamp
+,,,1044,n2 emt d/c beam clamp
+,,,1050,n1 emt d/c beam clamp
+,,,1056,n1/0 emt d/c beam clamp
+,,,1062,n2/0 emt d/c beam clamp
+,,,1068,n3/0 emt d/c beam clamp
+,,,1074,n4/0 emt d/c beam clamp
+,,,1080,n250 emt d/c beam clamp
+,,,1086,n300 emt d/c beam clamp
+,,,1092,n350 emt d/c beam clamp
+,,,1098,n400 emt d/c beam clamp
+,,,1104,n500 emt d/c beam clamp
+,,,1110,n600 emt d/c beam clamp
+,,,1116,n750 emt d/c beam clamp
+,,,1125,n14 emt s/s beam clamp
+,,,1134,n12 emt s/s beam clamp
+,,,1143,n10 emt s/s beam clamp
+,,,1152,n8 emt s/s beam clamp
+,,,1159,n6 emt s/s beam clamp
+,,,1165,n4 emt s/s beam clamp
+,,,1170,s/s emt feeder beam clamp w
+,,,1171,n3 emt s/s beam clamp
+,,,1177,n2 emt s/s beam clamp
+,,,1183,n1 emt s/s beam clamp
+,,,1189,n1/0 emt s/s beam clamp
+,,,1195,n2/0 emt s/s beam clamp
+,,,1201,n3/0 emt s/s beam clamp
+,,,1207,n4/0 emt s/s beam clamp
+,,,1213,n250 emt s/s beam clamp
+,,,1219,n300 emt s/s beam clamp
+,,,1225,n350 emt s/s beam clamp
+,,,1231,n400 emt s/s beam clamp
+,,,1237,n500 emt s/s beam clamp
+,,,1243,n600 emt s/s beam clamp
+,,,1249,n750 emt s/s beam clamp
+,,,1257,n14 emt s/c beam clamp
+,,,1266,n12 emt s/c beam clamp
+,,,1275,n10 emt s/c beam clamp
+,,,1284,n8 emt s/c beam clamp
+,,,1291,n6 emt s/c beam clamp
+,,,1297,n4 emt s/c beam clamp
+,,,1302,s/c emt feeder beam clamp w
+,,,1303,n3 emt s/c beam clamp
+,,,1309,n2 emt s/c beam clamp
+,,,1315,n1 emt s/c beam clamp
+,,,1321,n1/0 emt s/c beam clamp
+,,,1327,n2/0 emt s/c beam clamp
+,,,1333,n3/0 emt s/c beam clamp
+,,,1339,n4/0 emt s/c beam clamp
+,,,1345,n250 emt s/c beam clamp
+,,,1351,n300 emt s/c beam clamp
+,,,1357,n350 emt s/c beam clamp
+,,,1363,n400 emt s/c beam clamp
+,,,1369,n500 emt s/c beam clamp
+,,,1375,n600 emt s/c beam clamp
+,,,1381,n750 emt s/c beam clamp
+,,,1389,5' drop n14 emt d/s strap
+,,,1398,5' drop n12 emt d/s strap
+,,,1407,5' drop n10 emt d/s strap
+,,,1416,5' drop n8 emt d/s strap
+,,,1423,5' drop n6 emt d/s strap
+,,,1430,5' drop n4 emt d/s strap
+,,,1438,11' drop n14 emt d/s strap
+,,,1447,11' drop n12 emt d/s strap
+,,,1456,11' drop n10 emt d/s strap
+,,,1465,11' drop n8 emt d/s strap
+,,,1472,11' drop n6 emt d/s strap
+,,,1479,11' drop n4 emt d/s strap
+,,,1486,11' drop n2 emt d/s strap
+,,,1493,n14 emt d/s/i strap
+,,,1502,n12 emt d/s/i strap
+,,,1511,n10 emt d/s/i strap
+,,,1520,n8 emt d/s/i strap
+,,,1527,n6 emt d/s/i strap
+,,,1534,n4 emt d/s/i strap
+,,,1541,n2 emt d/s/i strap
+,,,1556,emt d/c strap
+,,,1568,emt d/c strap concrete
+,,,1580,emt d/c beam clamp
+,,,1593,emt d/c branch parts
+,,,1594,emt 1/2 d/c branch parts
+,,,1611,emt 3/4 d/c misc
+,,,1629,emt 1 d/c misc
+,,,1645,emt d/c feeder parts
+,,,1646,emt 1 1/4 d/c misc
+,,,1667,emt 1 1/2 d/c misc
+,,,1689,emt 2 d/c misc
+,,,1709,emt 2 1/2 d/c misc
+,,,1726,emt 3 d/c misc
+,,,1743,emt 3 1/2 d/c misc
+,,,1759,emt 4 d/c misc
+,,,1777,n14 emt d/c strap
+,,,1786,n12 emt d/c strap
+,,,1795,n10 emt d/c strap
+,,,1804,n8 emt d/c strap
+,,,1811,n6 emt d/c strap
+,,,1817,n4 emt d/c strap
+,,,1822,d/c feeder w/wire
+,,,1823,n3 emt d/c strap
+,,,1829,n2 emt d/c strap
+,,,1835,n1 emt d/c strap
+,,,1841,n1/0 emt d/c strap
+,,,1847,n2/0 emt d/c strap
+,,,1853,n3/0 emt d/c strap
+,,,1859,n4/0 emt d/c strap
+,,,1865,n250 emt d/c strap
+,,,1871,n300 emt d/c strap
+,,,1877,n350 emt d/c strap
+,,,1883,n400 emt d/c strap
+,,,1889,n500 emt d/c strap
+,,,1895,n600 emt d/c strap
+,,,1901,n750 emt d/c strap
+,,,1910,n14 emt d/c strap concrete
+,,,1919,n12 emt d/c strap concrete
+,,,1928,n10 emt d/c strap concrete
+,,,1937,n8 emt d/c strap concrete
+,,,1944,n6 emt d/c strap concrete
+,,,1950,n4 emt d/c strap concrete
+,,,1956,d/c feeder w/wire
+,,,1957,n3 emt d/c strap concrete
+,,,1963,n2 emt d/c strap concrete
+,,,1969,n1 emt d/c strap concrete
+,,,1975,n1/0 emt d/c strap concrete
+,,,1981,n2/0 emt d/c strap concrete
+,,,1987,n3/0 emt d/c strap concrete
+,,,1993,n4/0 emt d/c strap concrete
+,,,1999,n250 emt d/c strap concrete
+,,,2005,n300 emt d/c strap concrete
+,,,2011,n350 emt d/c strap concrete
+,,,2017,n400 emt d/c strap concrete
+,,,2023,n500 emt d/c strap concrete
+,,,2029,n600 emt d/c strap concrete
+,,,2035,n750 emt d/c strap concrete
+,,,2043,feeder drops w/wire & 9' ma
+,,,2044,5' drop n3 emt d/c strap 9'
+,,,2050,5' drop n2 emt d/c strap 9'
+,,,2056,5' drop n1 emt d/c strap 9'
+,,,2062,5' drop n1/0 emt d/c strap
+,,,2068,5' drop n2/0 emt d/c strap
+,,,2074,5' drop n3/0 emt d/c strap
+,,,2080,5' drop n4/0 emt d/c strap
+,,,2086,5' drop n250 emt d/c strap
+,,,2092,5' drop n300 emt d/c strap
+,,,2098,5' drop n350 emt d/c strap
+,,,2104,5' drop n400 emt d/c strap
+,,,2110,5' drop n500 emt d/c strap
+,,,2116,5' drop n600 emt d/c strap
+,,,2122,5' drop n750 emt d/c strap
+,,,2135,n14 emt d/c/i strap
+,,,2144,n12 emt d/c/i strap
+,,,2153,n10 emt d/c/i strap
+,,,2162,n8 emt d/c/i strap
+,,,2169,n6 emt d/c/i strap
+,,,2176,n4 emt d/c/i strap
+,,,2183,n2 emt d/c/i strap
+,,,2195,emt s/s strap
+,,,2207,emt s/s strap concrete
+,,,2219,emt s/s beam clamp
+,,,2232,emt s/s branch parts
+,,,2233,emt 1/2 s/s branch parts
+,,,2250,emt 3/4 s/s misc
+,,,2267,emt 1 s/s misc
+,,,2283,emt s/s feeder parts
+,,,2284,emt 1 1/4 s/s misc
+,,,2305,emt 1 1/2 s/s misc
+,,,2326,emt 2 s/s misc
+,,,2346,emt 2 1/2 s/s misc
+,,,2363,emt 3 s/s misc
+,,,2380,emt 3 1/2 s/s misc
+,,,2396,emt 4 s/s misc
+,,,2414,n14 emt s/s strap
+,,,2423,n12 emt s/s strap
+,,,2432,n10 emt s/s strap
+,,,2441,n8 emt s/s strap
+,,,2448,n6 emt s/s strap
+,,,2454,n4 emt s/s strap
+,,,2459,s/s feeder w/wire
+,,,2460,n3 emt s/s strap
+,,,2466,n2 emt s/s strap
+,,,2472,n1 emt s/s strap
+,,,2478,n1/0 emt s/s strap
+,,,2484,n2/0 emt s/s strap
+,,,2490,n3/0 emt s/s strap
+,,,2496,n4/0 emt s/s strap
+,,,2502,n250 emt s/s strap
+,,,2508,n300 emt s/s strap
+,,,2514,n350 emt s/s strap
+,,,2520,n400 emt s/s strap
+,,,2526,n500 emt s/s strap
+,,,2532,n600 emt s/s strap
+,,,2538,n750 emt s/s strap
+,,,2547,n14 emt s/s strap concrete
+,,,2556,n12 emt s/s strap concrete
+,,,2565,n10 emt s/s strap concrete
+,,,2574,n8 emt s/s strap concrete
+,,,2581,n6 emt s/s strap concrete
+,,,2587,n4 emt s/s strap concrete
+,,,2592,s/s feeder w/wire
+,,,2593,n3 emt s/s strap concrete
+,,,2599,n2 emt s/s strap concrete
+,,,2605,n1 emt s/s strap concrete
+,,,2611,n1/0 emt s/s strap concrete
+,,,2617,n2/0 emt s/s strap concrete
+,,,2623,n3/0 emt s/s strap concrete
+,,,2629,n4/0 emt s/s strap concrete
+,,,2635,n250 emt s/s strap concrete
+,,,2641,n300 emt s/s strap concrete
+,,,2647,n350 emt s/s strap concrete
+,,,2653,n400 emt s/s strap concrete
+,,,2659,n500 emt s/s strap concrete
+,,,2665,n600 emt s/s strap concrete
+,,,2671,n750 emt s/s strap concrete
+,,,2679,feeder drops w/wire & 9' ma
+,,,2680,5' drop n3 emt s/s strap 9'
+,,,2686,5' drop n2 emt s/s strap 9'
+,,,2692,5' drop n1 emt s/s strap 9'
+,,,2698,5' drop n1/0 emt s/s strap
+,,,2704,5' drop n2/0 emt s/s strap
+,,,2710,5' drop n3/0 emt s/s strap
+,,,2716,5' drop n4/0 emt s/s strap
+,,,2722,5' drop n250 emt s/s strap
+,,,2728,5' drop n300 emt s/s strap
+,,,2734,5' drop n350 emt s/s strap
+,,,2740,5' drop n400 emt s/s strap
+,,,2746,5' drop n500 emt s/s strap
+,,,2752,5' drop n600 emt s/s strap
+,,,2758,5' drop n750 emt s/s strap
+,,,2764,n14 emt s/s/i strap
+,,,2773,n12 emt s/s/i strap
+,,,2782,n10 emt s/s/i strap
+,,,2791,n8 emt s/s/i strap
+,,,2798,n6 emt s/s/i strap
+,,,2805,n4 emt s/s/i strap
+,,,2812,n2 emt s/s/i strap
+,,,2819,emt s/c strap
+,,,2831,emt s/c strap concrete
+,,,2843,emt s/c beam clamp
+,,,2857,emt s/c branch parts
+,,,2858,emt 1/2 s/c misc
+,,,2875,emt 3/4 s/c misc
+,,,2892,emt 1 s/c misc
+,,,2908,emt s/c feeder parts
+,,,2909,emt 1 1/4 s/c misc
+,,,2930,emt 1 1/2 s/c misc
+,,,2951,emt 2 s/c misc
+,,,2972,emt 2 1/2 s/c misc
+,,,2989,emt 3 s/c misc
+,,,3006,emt 3 1/2 s/c misc
+,,,3022,emt 4 s/c misc
+,,,3041,n14 emt s/c strap
+,,,3050,n12 emt s/c strap
+,,,3059,n10 emt s/c strap
+,,,3068,n8 emt s/c strap
+,,,3075,n6 emt s/c strap
+,,,3081,n4 emt s/c strap
+,,,3086,s/c feeder w/wire
+,,,3087,n3 emt s/c strap
+,,,3093,n2 emt s/c strap
+,,,3099,n1 emt s/c strap
+,,,3105,n1/0 emt s/c strap
+,,,3111,n2/0 emt s/c strap
+,,,3117,n3/0 emt s/c strap
+,,,3123,n4/0 emt s/c strap
+,,,3129,n250 emt s/c strap
+,,,3135,n300 emt s/c strap
+,,,3141,n350 emt s/c strap
+,,,3147,n400 emt s/c strap
+,,,3153,n500 emt s/c strap
+,,,3159,n600 emt s/c strap
+,,,3165,n750 emt s/c strap
+,,,3174,n14 emt s/c strap concrete
+,,,3183,n12 emt s/c strap concrete
+,,,3192,n10 emt s/c strap concrete
+,,,3201,n8 emt s/c strap concrete
+,,,3208,n6 emt s/c strap concrete
+,,,3214,n4 emt s/c strap concrete
+,,,3219,s/c feeder w/wire
+,,,3220,n3 emt s/c strap concrete
+,,,3226,n2 emt s/c strap concrete
+,,,3232,n1 emt s/c strap concrete
+,,,3238,n1/0 emt s/c strap concrete
+,,,3244,n2/0 emt s/c strap concrete
+,,,3250,n3/0 emt s/c strap concrete
+,,,3256,n4/0 emt s/c strap concrete
+,,,3262,n250 emt s/c strap concrete
+,,,3268,n300 emt s/c strap concrete
+,,,3274,n350 emt s/c strap concrete
+,,,3280,n400 emt s/c strap concrete
+,,,3286,n500 emt s/c strap concrete
+,,,3292,n600 emt s/c strap concrete
+,,,3298,n750 emt s/c strap concrete
+,,,3306,feeder drops w/wire & 9' ma
+,,,3307,5' drop n3 emt s/c strap 9'
+,,,3313,5' drop n2 emt s/c strap 9'
+,,,3319,5' drop n1 emt s/c strap 9'
+,,,3325,5' drop n1/0 emt s/c strap
+,,,3331,5' drop n2/0 emt s/c strap
+,,,3337,5' drop n3/0 emt s/c strap
+,,,3343,5' drop n4/0 emt s/c strap
+,,,3349,5' drop n250 emt s/c strap
+,,,3355,5' drop n300 emt s/c strap
+,,,3361,5' drop n350 emt s/c strap
+,,,3367,5' drop n400 emt s/c strap
+,,,3373,5' drop n500 emt s/c strap
+,,,3379,5' drop n600 emt s/c strap
+,,,3385,5' drop n750 emt s/c strap
+,,,3391,n14 emt s/c/i strap
+,,,3400,n12 emt s/c/i strap
+,,,3409,n10 emt s/c/i strap
+,,,3418,n8 emt s/c/i strap
+,,,3425,n6 emt s/c/i strap
+,,,3432,n4 emt s/c/i strap
+,,,3439,n2 emt s/c/i strap
+,,,3453,emt d/s rack
+,,,3467,n14 emt d/s racks
+,,,3476,n12 emt d/s rack
+,,,3485,n10 emt d/s racks
+,,,3494,n8 emt d/s rack
+,,,3501,n6 emt d/s rack
+,,,3507,n4 emt d/s racks
+,,,3512,d/s feeder rack w/wire
+,,,3513,n3 emt d/s rack
+,,,3519,n2 emt d/s rack
+,,,3525,n1 emt d/s rack
+,,,3531,n1/0 emt d/s rack
+,,,3537,n2/0 emt d/s rack
+,,,3543,n3/0 emt d/s rack
+,,,3549,n4/0 emt d/s rack
+,,,3555,n250 emt d/s rack
+,,,3561,n300 emt d/s rack
+,,,3567,n350 emt d/s rack
+,,,3573,n400 emt d/s rack
+,,,3579,n500 emt d/s rack
+,,,3585,n600 emt d/s rack
+,,,3591,n750 emt d/s rack
+,,,3599,n14 emt d/s i racks
+,,,3608,n12 emt d/s i rack
+,,,3617,n10 emt d/s/i racks
+,,,3626,n8 emt d/s/i racks
+,,,3633,n6 emt d/s/i racks
+,,,3640,n4 emt d/s/i rack
+,,,3647,n2 emt d/s/i rack
+,,,3655,emt d/c rack
+,,,3668,n14 emt d/c racks
+,,,3677,n12 emt d/c racks
+,,,3686,n10 emt d/c racks
+,,,3695,n8 emt d/c racks
+,,,3702,n6 emt d/c racks
+,,,3708,n4 emt d/c racks
+,,,3713,d/c feeder rack w/wire
+,,,3714,n3 emt d/c rack
+,,,3720,n2 emt d/c rack
+,,,3726,n1 emt d/c rack
+,,,3732,n1/0 emt d/c rack
+,,,3738,n2/0 emt d/c rack
+,,,3744,n3/0 emt d/c rack
+,,,3750,n4/0 emt d/c rack
+,,,3756,n250 emt d/c rack
+,,,3762,n300 emt d/c rack
+,,,3768,n350 emt d/c rack
+,,,3774,n400 emt d/c rack
+,,,3780,n500 emt d/c rack
+,,,3786,n600 emt d/c rack
+,,,3792,n750 emt d/c rack
+,,,3800,n14 emt d/c/i rack
+,,,3809,n12 emt d/c/i rack
+,,,3818,n10 emt d/c/i rack
+,,,3827,n8 emt d/c/i racks
+,,,3834,n6 emt d/c/i racks
+,,,3841,n4 emt d/c/i racks
+,,,3848,n2 emt d/c/i racks
+,,,3856,emt s/s rack
+,,,3868,n14 emt s/s racks
+,,,3878,n12 emt s/s racks
+,,,3887,n10 emt s/s racks
+,,,3896,n8 emt s/s racks
+,,,3903,n6 emt s/s racks
+,,,3909,n4 emt s/s racks
+,,,3914,s/s emt feeder rack w/wire
+,,,3915,n3 emt s/s rack
+,,,3921,n2 emt s/s rack
+,,,3927,n1 emt s/s rack
+,,,3933,n1/0 emt s/s rack
+,,,3939,n2/0 emt s/s rack
+,,,3945,n3/0 emt s/s rack
+,,,3951,n4/0 emt s/s rack
+,,,3957,n250 emt s/s rack
+,,,3963,n300 emt s/s rack
+,,,3969,n350 emt s/s rack
+,,,3975,n400 emt s/s rack
+,,,3981,n500 emt s/s rack
+,,,3987,n600 emt s/s rack
+,,,3993,n750 emt s/s rack
+,,,4001,n14 emt s/s/i racks
+,,,4010,n12 emt s/s/i racks
+,,,4019,n10 emt s/s/i racks
+,,,4028,n8 emt s/s/i racks
+,,,4035,n6 emt s/s/i racks
+,,,4042,n4 emt s/s/i racks
+,,,4049,n2 emt s/s/i racks
+,,,4057,emt s/c rack
+,,,4070,n14 emt s/c racks
+,,,4079,n12 emt s/c racks
+,,,4088,n10 emt s/c racks
+,,,4097,n8 emt s/c racks
+,,,4104,n6 emt s/c racks
+,,,4110,n4 emt s/c racks
+,,,4115,s/c emt feeder rack w/wire
+,,,4116,n3 emt s/c rack
+,,,4122,n2 emt s/c rack
+,,,4128,n1 emt s/c rack
+,,,4134,n1/0 emt s/c rack
+,,,4140,n2/0 emt s/c rack
+,,,4146,n3/0 emt s/c rack
+,,,4152,n4/0 emt s/c rack
+,,,4158,n250 emt s/c rack
+,,,4164,n300 emt s/c rack
+,,,4170,n350 emt s/c rack
+,,,4176,n400 emt s/c rack
+,,,4182,n500 emt s/c rack
+,,,4188,n600 emt s/c rack
+,,,4194,n750 emt s/c rack
+,,,4202,n14 emt s/c/i racks
+,,,4211,n12 emt s/c/i racks
+,,,4220,n10 emt s/c/i racks
+,,,4229,n8 emt s/c/i racks
+,,,4236,n6 emt s/c/i racks
+,,,4243,n4 emt s/c/i racks
+,,,4250,n2 emt s/c/i racks
+,,,4257,n14 emt d/s 3/4 strap
+,,,4266,n12 emt d/s 3/4 strap
+,,,4275,n14 emt d/c 3/4 strap
+,,,4284,n12 emt d/c 3/4 strap
+,,,4293,n14 emt s/s 3/4 strap
+,,,4302,n12 emt s/s 3/4 strap
+,,,4311,n14 emt s/c 3/4 strap
+,,,4320,n12 emt s/c 3/4 strap
+,,,4330,n14 emt d/s 3/4 concrete
+,,,4339,n12 emt d/s 3/4 concrete
+,,,4348,n14 emt d/c 3/4 concrete
+,,,4357,n12 emt d/c 3/4 concrete
+,,,4366,n14 emt s/s 3/4 concrete
+,,,4375,n12 emt s/s 3/4 concrete
+,,,4384,n14 emt s/c 3/4 concrete
+,,,4393,n12 emt s/c 3/4 concrete
+,,,4403,n14 emt d/s 3/4 rack
+,,,4412,n12 emt d/s 3/4 rack
+,,,4421,n14 emt d/c 3/4 rack
+,,,4430,n12 emt d/c 3/4 rack
+,,,4439,n14 emt s/s 3/4 rack
+,,,4448,n12 emt s/s 3/4 rack
+,,,4457,n14 emt s/c 3/4 rack
+,,,4466,n12 emt s/c 3/4 rack
+,,,4476,n14 emt d/s 3/4 beam clamp
+,,,4485,n12 emt d/s 3/4 beam clamp
+,,,4494,n14 emt d/c 3/4 beam clamp
+,,,4503,n12 emt d/c 3/4 beam clamp
+,,,4512,n14 emt s/s 3/4 beam clamp
+,,,4521,n12 emt s/s 3/4 beam clamp
+,,,4530,n14 emt s/c 3/4 beam clamp
+,,,4539,n12 emt s/c 3/4 beam clamp
+,,,4548,liquidtight flex
+,,,4549,wp flex exposed
+,,,4550,sealtite flex
+,,,4563,liquidtight connector
+,,,4576,liquidtight 90 connector
+,,,4589,liquidtight non-metallic fl
+,,,4598,liquidtight non-metallic co
+,,,4607,liquidtight 90 non-metallic
+,,,4616,grc branch
+,,,4617,grc 1/2
+,,,4643,grc 3/4
+,,,4669,grc 1
+,,,4696,grc feeder
+,,,4697,grc 1 1/4
+,,,4732,grc 1 1/2
+,,,4767,grc 2
+,,,4801,grc 2 1/2
+,,,4835,grc 3
+,,,4868,grc 3 1/2
+,,,4903,grc 4
+,,,4935,grc 5
+,,,4963,grc 6
+,,,4987,n14 grc no support
+,,,4996,n12 grc no support
+,,,5005,n10 grc no support
+,,,5014,n8 grc no support
+,,,5021,n6 grc no support
+,,,5027,n4 grc no support
+,,,5032,branch grc strap
+,,,5033,n14 grc strap
+,,,5042,n12 grc strap
+,,,5051,n10 grc strap
+,,,5060,n8 grc strap
+,,,5067,n6 grc strap
+,,,5073,n4 grc strap
+,,,5078,n14 3/4 grc strap
+,,,5087,n12 3/4 grc strap
+,,,5096,feeder grc strap
+,,,5097,n3 grc strap
+,,,5103,n2 grc strap
+,,,5109,n1 grc strap
+,,,5115,n1/0 grc strap
+,,,5121,n2/0 grc strap
+,,,5127,n3/0 grc strap
+,,,5133,n4/0 grc strap
+,,,5139,n250 grc strap
+,,,5145,n300 grc strap
+,,,5151,n350 grc strap
+,,,5157,n400 grc strap
+,,,5163,n500 grc strap
+,,,5169,n600 grc strap
+,,,5175,n750 grc strap
+,,,5182,branch grc strap concrete
+,,,5183,n14 grc strap concrete
+,,,5192,n12 grc strap concrete
+,,,5201,n10  grc strap concrete
+,,,5210,n8 grc strap concrete
+,,,5217,n6 grc strap concrete
+,,,5223,n4 grc strap concrete
+,,,5228,n14 3/4 grc strap concrete
+,,,5237,n12 3/4 grc strap concrete
+,,,5247,grc feeder strap concrete
+,,,5248,n3 grc strap conc.
+,,,5254,n2 grc strap conc.
+,,,5260,n1 grc strap conc.
+,,,5266,n1/0 grc strap conc.
+,,,5272,n2/0 grc strap conc
+,,,5278,n3/0 grc strap conc.
+,,,5284,n4/0 grc strap conc.
+,,,5290,n250 grc strap conc.
+,,,5296,n300 grc strap conc.
+,,,5302,n350 grc strap conc.
+,,,5308,n400 grc strap conc.
+,,,5314,n500 grc  strap conc.
+,,,5320,n600 grc  strap conc.
+,,,5326,n750 grc  strap conc.
+,,,5334,grc branch rack w/wire
+,,,5335,n14 grc rack
+,,,5344,n12 grc rack
+,,,5353,n10 grc rack
+,,,5362,n8 grc rack
+,,,5369,n6 grc rack
+,,,5375,n4 grc rack
+,,,5380,n14 3/4 grc rack
+,,,5389,n12 3/4 grc rack
+,,,5399,grc feeder rack w/wire
+,,,5400,n3 grc rack
+,,,5406,n2 grc rack
+,,,5412,n1 grc rack
+,,,5418,n1/0 grc rack
+,,,5424,n2/0 grc rack
+,,,5430,n3/0 grc rack
+,,,5436,n4/0 grc rack
+,,,5442,n250 grc rack
+,,,5448,n300 grc rack
+,,,5454,n350 grc rack
+,,,5460,n400 grc rack
+,,,5466,n500 grc  rack
+,,,5472,n600 grc rack
+,,,5478,n750 grc  rack
+,,,5487,grc branch underground w/wi
+,,,5488,n14 grc underground
+,,,5497,n12 grc underground
+,,,5506,n10 grc  underground
+,,,5515,n8 grc  underground
+,,,5522,n6 grc  underground
+,,,5528,n4 grc  underground
+,,,5533,n14 3/4 grc underground
+,,,5542,n12 3/4 grc underground
+,,,5552,grc feeder underground w/wi
+,,,5553,n3 grc underground
+,,,5559,n2 grc underground
+,,,5565,n1 grc underground
+,,,5571,n1/0 grc underground
+,,,5577,n2/0 grc underground
+,,,5583,n3/0 grc underground
+,,,5589,n4/0 grc underground
+,,,5595,n250 grc underground
+,,,5601,n300 grc underground
+,,,5607,n350 grc underground
+,,,5613,n400 grc underground
+,,,5619,n500 grc  underground
+,,,5625,n600 grc underground
+,,,5631,n750 grc  underground
+,,,5639,n14 grc beam clamp
+,,,5648,n12 grc beam clamp
+,,,5657,n10 grc beam clamp
+,,,5666,n8 grc beam clamp
+,,,5673,n6 grc beam clamp
+,,,5679,n4 grc beam clamp
+,,,5684,n14 3/4 grc beam clamp
+,,,5693,n12 3/4 grc beam clamp
+,,,5704,grc feeder beam clamp w/wir
+,,,5705,n3 grc beam clamp
+,,,5711,n2 grc beam clamp
+,,,5717,n1 grc beam clamp
+,,,5723,n1/0 grc beam clamp
+,,,5729,n2/0 grc beam clamp
+,,,5735,n3/0 grc beam clamp
+,,,5741,n4/0 grc beam clamp
+,,,5747,n250 grc beam clamp
+,,,5753,n300 grc beam clamp
+,,,5759,n350 grc beam clamp
+,,,5765,n400 grc beam clamp
+,,,5771,n500 grc  beam clamp
+,,,5777,n600 grc beam clamp
+,,,5783,n750 grc  beam clamp
+,,,5792,imc branch
+,,,5793,imc 1/2
+,,,5811,imc 3/4
+,,,5829,imc 1
+,,,5848,imc feeder
+,,,5849,imc 1 1/4
+,,,5878,imc 1 1/2
+,,,5907,imc 2
+,,,5936,imc 2 1/2
+,,,5964,imc 3
+,,,5992,imc 3 1/2
+,,,6020,imc 4
+,,,6050,n14 imc no strap
+,,,6059,n12 imc no strap
+,,,6068,n10 imc no strap
+,,,6077,n8 imc no strap
+,,,6084,n6 imc no strap
+,,,6090,n4 imc no strap
+,,,6095,n14 imc strap
+,,,6104,n12 imc strap
+,,,6113,n10 imc strap
+,,,6122,n8 imc strap
+,,,6129,n6 imc strap
+,,,6135,n4 imc strap
+,,,6140,n14 imc 3/4 strap
+,,,6149,n12 imc 3/4 strap
+,,,6158,imc branch concrete w/wire
+,,,6159,n14 imc strap concrete
+,,,6168,n12 imc strap concrete
+,,,6177,n10 imc strap concrete
+,,,6186,n8 imc strap concrete
+,,,6193,n6 imc strap concrete
+,,,6199,n4 imc strap concrete
+,,,6204,n14 imc 3/4 strap concrete
+,,,6213,n12 imc 3/4 strap concrete
+,,,6223,imc feeder concrete w/wire
+,,,6224,n3 imc strap conc.
+,,,6230,n2 imc strap conc.
+,,,6236,n1 imc strap conc.
+,,,6242,n1/0 imc strap conc.
+,,,6248,n2/0 imc strap conc
+,,,6254,n3/0 imc strap conc.
+,,,6260,n4/0 imc strap conc.
+,,,6266,n250 imc strap conc.
+,,,6272,n300 imc strap conc.
+,,,6278,n350 imc strap conc.
+,,,6284,n400 imc strap conc.
+,,,6290,n500 imc strap conc.
+,,,6296,n600 imc strap conc.
+,,,6302,n750 imc  strap conc.
+,,,6309,imc branch rack w/wire
+,,,6310,n14 imc racks
+,,,6319,n12 imc racks
+,,,6328,n10 imc racks
+,,,6337,n8 imc racks
+,,,6344,n6 imc racks
+,,,6350,n4 imc racks
+,,,6355,n14 3/4 imc racks
+,,,6364,n12 3/4 imc racks
+,,,6374,imc feeder rack w/wire
+,,,6375,n3 imc rack
+,,,6381,n2 imc rack
+,,,6387,n1 imc rack
+,,,6393,n1/0 imc rack
+,,,6399,n2/0 imc rack
+,,,6405,n3/0 imc rack
+,,,6411,n4/0 imc rack
+,,,6417,n250 imc rack
+,,,6423,n300 imc rack
+,,,6429,n350 imc rack
+,,,6435,n400 imc rack
+,,,6441,n500 imc  rack
+,,,6447,n600 imc rack
+,,,6453,n750 imc  rack
+,,,6460,imc feeder underground w/wi
+,,,6461,n3 imc underground
+,,,6467,n2 imc underground
+,,,6473,n1 imc underground
+,,,6479,n1/0 imc underground
+,,,6485,n2/0 imc underground
+,,,6491,n3/0 imc underground
+,,,6497,n4/0 imc underground
+,,,6503,n250 imc underground
+,,,6509,n300 imc underground
+,,,6515,n350 imc underground
+,,,6521,n400 imc underground
+,,,6527,n500 imc  underground
+,,,6533,n600 imc underground
+,,,6539,n750 imc  underground
+,,,6547,imc branch beam clamp w/wir
+,,,6548,n14 imc beam clamp
+,,,6557,n12 imc beam clamp
+,,,6566,n10 imc beam clamp
+,,,6575,n8 imc beam clamp
+,,,6582,n6 imc beam clamp
+,,,6588,n4 imc beam clamp
+,,,6593,n14 3/4 imc beam clamp
+,,,6602,n12 3/4 imc beam clamp
+,,,6612,imc feeder beam clamp w/wir
+,,,6613,n3 imc beam clamp
+,,,6619,n2 imc beam clamp
+,,,6625,n1 imc beam clamp
+,,,6631,n1/0 imc beam clamp
+,,,6637,n2/0 imc beam clamp
+,,,6643,n3/0 imc beam clamp
+,,,6649,n4/0 imc beam clamp
+,,,6655,n250 imc beam clamp
+,,,6661,n300 imc beam clamp
+,,,6667,n350 imc beam clamp
+,,,6673,n400 imc beam clamp
+,,,6679,n500 imc  beam clamp
+,,,6685,n600 imc beam clamp
+,,,6691,n750 imc  beam clamp
+,,,6698,branch aluminum
+,,,6699,1/2 al branch
+,,,6720,3/4 al branch
+,,,6741,1 al branch
+,,,6762,al feeder
+,,,6763,1 1/4 al feeder
+,,,6792,1 1/2 al feeder
+,,,6821,2 al feeder
+,,,6850,2 1/2 al feeder
+,,,6878,3 al feeder
+,,,6906,3 1/2 al feeder
+,,,6933,4 al feeder
+,,,6965,n14 al no strap
+,,,6974,n12 al no strap
+,,,6983,n10 al no strap
+,,,6992,n8 al no strap
+,,,6999,n6 al no strap
+,,,7005,n4 al no strap
+,,,7010,n14 al strap
+,,,7019,n12 al strap
+,,,7028,n10 al strap
+,,,7037,n8 al strap
+,,,7044,n6 al strap
+,,,7050,n4 al strap
+,,,7055,n14 3/4 al strap
+,,,7064,n12 3/4 al strap
+,,,7073,al feeder strap w/wire
+,,,7074,n3 al strap
+,,,7080,n2 al strap
+,,,7086,n1 al strap
+,,,7092,n1/0 al strap
+,,,7098,n2/0 al strap
+,,,7104,n3/0 al strap
+,,,7110,n4/0 al strap
+,,,7116,n250 al strap
+,,,7122,n300 al strap
+,,,7128,n350 al strap
+,,,7134,n400 al strap
+,,,7140,n500 al strap
+,,,7146,n600 al strap
+,,,7152,n750 al strap
+,,,7160,al feeder strap concrete w/
+,,,7161,n3 al strap concrete
+,,,7167,n2 al strap concrete
+,,,7173,n1 al strap concrete
+,,,7179,n1/0 al strap concrete
+,,,7185,n2/0 al strap concrete
+,,,7191,n3/0 al strap concrete
+,,,7197,n4/0 al strap concrete
+,,,7203,n250 al strap concrete
+,,,7209,n300 al strap concrete
+,,,7215,n350 al strap concrete
+,,,7221,n400 al strap concrete
+,,,7227,n500 al strap concrete
+,,,7233,n600 al strap concrete
+,,,7239,n750 al strap concrete
+,,,7246,n14 al rack
+,,,7255,n12 al rack
+,,,7264,n10 al rack
+,,,7273,n8 al rack
+,,,7280,n6 al rack
+,,,7286,n4 al rack
+,,,7291,n14 3/4 al rack
+,,,7300,n12 3/4 al rack
+,,,7310,al feeder rack w/wire
+,,,7311,n3 al rack
+,,,7317,n2 al rack
+,,,7323,n1 al rack
+,,,7329,n1/0 al rack
+,,,7335,n2/0 al rack
+,,,7341,n3/0  al rack
+,,,7347,n4/0 al rack
+,,,7353,n250 al rack
+,,,7359,n300 al rack
+,,,7365,n350 al rack
+,,,7371,n400 al rack
+,,,7377,n500 al rack
+,,,7383,n600 al rack
+,,,7389,n750 al rack
+,,,7396,al feeder beam clamp w/wire
+,,,7397,n3 al beam clamp
+,,,7403,n2 al beam clamp
+,,,7409,n1 al beam clamp
+,,,7415,n1/0 al beam clamp
+,,,7421,n2/0 al beam clamp
+,,,7427,n3/0  al beam clamp
+,,,7433,n4/0 al beam clamp
+,,,7439,n250 al beam clamp
+,,,7445,n300 al beam clamp
+,,,7451,n350 al beam clamp
+,,,7457,n400 al beam clamp
+,,,7463,n500 al beam clamp
+,,,7469,n600 al beam clamp
+,,,7475,n750 al beam clamp
+,,,7482,grc/pvc branch
+,,,7483,1/2 grc/pvc
+,,,7484,branch 1/2 grc/pvc
+,,,7499,3/4 grc/pvc
+,,,7500,branch 3/4 grc/pvc
+,,,7516,1 grc/pvc
+,,,7517,branch 1 grc/pvc
+,,,7533,grc/pvc feeder
+,,,7534,1 1/4 grc/pvc
+,,,7535,feeder 1 1/4 grc/pvc
+,,,7553,1 1/2 grc/pvc
+,,,7554,feeder 1 1/2 grc/pvc
+,,,7572,2 grc/pvc
+,,,7573,feeder 2 grc/pvc
+,,,7591,2 1/2 grc/pvc
+,,,7592,feeder 2 1/2 grc/pvc
+,,,7610,3 grc/pvc
+,,,7611,feeder 3 grc/pvc
+,,,7629,3 1/2 grc/pvc
+,,,7630,feeder 3 1/2 grc/pvc
+,,,7647,4 grc/pvc
+,,,7648,feeder 4 grc/pvc
+,,,7667,grc/pvc branch no strap
+,,,7668,n14 grc/pvc no strap
+,,,7677,n12 grc/pvc no strap
+,,,7686,n10 grc/pvc no strap
+,,,7695,n8 grc/pvc no strap
+,,,7702,n6 grc/pvc no strap
+,,,7708,n4 grc/pvc no strap
+,,,7713,grc/pvc feeder no strap w/w
+,,,7714,n3 grc/pvc no strap
+,,,7720,n2 grc/pvc  no strap
+,,,7726,n1 grc/pvc  no strap
+,,,7732,n1/0 grc/pvc  no strap
+,,,7738,n2/0 grc/pvc  no strap
+,,,7744,n3/0 grc/pvc  no strap
+,,,7750,n4/0 grc/pvc  no strap
+,,,7756,n250 grc/pvc  no strap
+,,,7762,n300 grc/pvc  no strap
+,,,7768,n350 grc/pvc  no strap
+,,,7774,n400 grc/pvc  no strap
+,,,7780,n500 grc/pvc  no strap
+,,,7786,n600 grc/pvc  no strap
+,,,7792,n750 grc/pvc  no strap
+,,,7799,grc/pvc branch strap
+,,,7800,n14 grc/pvc strap
+,,,7809,n12 grc/pvc strap
+,,,7818,n10 grc/pvc strap
+,,,7827,n8 grc/pvc strap
+,,,7834,n6 grc/pvc strap
+,,,7840,n4 grc/pvc strap
+,,,7845,n14 3/4 grc/pvc strap
+,,,7854,n12 3/4 grc/pvc strap
+,,,7864,grc/pvc feeder strap  w/wir
+,,,7865,n3 grc/pvc strap
+,,,7871,n2 grc/pvc strap
+,,,7877,n1 grc/pvc strap
+,,,7883,n1/0 grc/pvc strap
+,,,7889,n2/0 grc/pvc strap
+,,,7895,n3/0 grc/pvc strap
+,,,7901,n4/0 grc/pvc strap
+,,,7907,n250 grc/pvc strap
+,,,7913,n300 grc/pvc strap
+,,,7919,n350 grc/pvc strap
+,,,7925,n400 grc/pvc strap
+,,,7931,n500 grc/pvc strap
+,,,7937,n600 grc/pvc strap
+,,,7943,n750 grc/pvc strap
+,,,7952,grc/pvc branch strap concre
+Branch with Constants,GRC/PVC,GRC/PVC Strap Concrete,7953,n14 grc/pvc strap concrete
+Branch with Constants,GRC/PVC,GRC/PVC Strap Concrete,7962,n12 grc/pvc strap concrete
+,,,7971,n10 grc/pvc strap concrete
+,,,7980,n8 grc/pvc strap concrete
+,,,7987,n6 grc/pvc strap concrete
+,,,7993,n4 grc/pvc strap concrete
+,,,7998,n14 3/4 grc/pvc strap conc
+,,,8007,n12 3/4 grc/pvc strap conc
+,,,8017,grc/pvc feeder strap concre
+,,,8018,n3 grc/pvc strap conc.
+,,,8024,n2 grc/pvc strap conc.
+,,,8030,n1 grc/pvc strap conc.
+,,,8036,n1/0 grc/pvc strap conc.
+,,,8042,n2/0 grc/pvc strap conc.
+,,,8048,n3/0 grc/pvc strap conc.
+,,,8054,n4/0 grc/pvc strap conc.
+,,,8060,n250 grc/pvc strap conc.
+,,,8066,n300 grc/pvc strap conc.
+,,,8072,n350 grc/pvc strap conc.
+,,,8078,n400 grc/pvc strap conc.
+,,,8084,n500 grc/pvc strap conc.
+,,,8090,n600 grc/pvc strap conc.
+,,,8096,n750 grc/pvc strap conc.
+,,,8103,n14 grc/pvc rack
+,,,8112,n12 grc/pvc rack
+,,,8121,n10 grc/pvc rack
+,,,8130,n8 grc/pvc rack
+,,,8137,n6 grc/pvc rack
+,,,8143,n4 grc/pvc rack
+,,,8148,n14 3/4 grc/pvc rack
+,,,8157,n12 3/4 grc/pvc rack
+,,,8167,grc/pvc feeder rack w/wire
+,,,8168,n3 grc/pvc rack
+,,,8174,n2 grc/pvc rack
+,,,8180,n1 grc/pvc rack
+,,,8186,n1/0 grc/pvc rack
+,,,8192,n2/0 grc/pvc rack
+,,,8198,n3/0 grc/pvc rack
+,,,8204,n4/0 grc/pvc rack
+,,,8210,n250 grc/pvc rack
+,,,8216,n300 grc/pvc rack
+,,,8222,n350 grc/pvc rack
+,,,8228,n400 grc/pvc rack
+,,,8234,n500 grc/pvc rack
+,,,8240,n600 grc/pvc rack
+,,,8246,n750 grc/pvc rack
+,,,8253,grc/pvc feeder underground
+,,,8254,n3 grc/pvc underground
+,,,8260,n2 grc/pvc underground
+,,,8266,n1 grc/pvc underground
+,,,8272,n1/0 grc/pvc underground
+,,,8278,n2/0 grc/pvc underground
+,,,8284,n3/0 grc/pvc underground
+,,,8290,n4/0 grc/pvc underground
+,,,8296,n250 grc/pvc underground
+,,,8302,n300 grc/pvc underground
+,,,8308,n350 grc/pvc underground
+,,,8314,n400 grc/pvc underground
+,,,8320,n500 grc/pvc underground
+,,,8326,n600 grc/pvc underground
+,,,8332,n750 grc/pvc underground
+,,,8339,grc/pvc branch 90d bc w/wir
+,,,8340,n14 grc/pvc 90 deg beam cla
+,,,8349,n12 grc/pvc 90 deg beam cla
+,,,8358,n10 grc/pvc 90 deg beam cla
+,,,8367,n8 grc/pvc 90 deg beam clam
+,,,8374,n6 grc/pvc 90 deg beam clam
+,,,8380,n4 grc/pvc 90 deg beam clam
+,,,8385,n14 3/4 grc/pvc 90 deg bea
+,,,8394,n12 3/4 grc/pvc 90 deg bea
+,,,8404,grc/pvc feeder rack w/wire
+,,,8405,n3 grc/pvc rack
+,,,8411,n2 grc/pvc rack
+,,,8417,n1 grc/pvc rack
+,,,8423,n1/0 grc/pvc rack
+,,,8429,n2/0 grc/pvc rack
+,,,8435,n3/0 grc/pvc rack
+,,,8441,n4/0 grc/pvc rack
+,,,8447,n250 grc/pvc rack
+,,,8453,n300 grc/pvc rack
+,,,8459,n350 grc/pvc rack
+,,,8465,n400 grc/pvc rack
+,,,8471,n500 grc/pvc rack
+,,,8477,n600 grc/pvc rack
+,,,8483,n750 grc/pvc rack
+,,,8490,branch pvc 40
+,,,8491,branch 1/2 pvc 40
+,,,8503,branch 3/4 pvc 40
+,,,8515,branch 1 pvc 40
+,,,8528,feeder 1 1/4 pvc 40
+,,,8549,feeder 1 1/2 pvc 40
+,,,8570,feeder 2 pvc 40
+,,,8591,feeder 2 1/2 pvc 40
+,,,8612,feeder 3 pvc 40
+,,,8633,feeder 3 1/2 pvc 40
+,,,8654,feeder 4 pvc 40
+,,,8675,feeder 5 pvc 40
+,,,8695,feeder 6 pvc 40
+,,,8714,pvc 40 no strap
+,,,8715,n14 pvc-40 no strap
+,,,8724,n12 pvc-40 no strap
+,,,8733,n10 pvc-40 no strap
+,,,8742,n8 pvc-40 no strap
+,,,8749,n6 pvc-40 no strap
+,,,8755,n4 pvc-40 no strap
+,,,8760,n14 pvc-40 strap
+,,,8769,n12 pvc-40 strap
+,,,8778,n10 pvc-40 strap
+,,,8787,n8 pvc-40 strap
+,,,8794,n6 pvc-40 strap
+,,,8800,n4 pvc-40 strap
+,,,8805,n14 pvc- 40 3/4 strap
+,,,8814,n12 pvc- 40 3/4 strap
+,,,8824,pvc feeder strap
+,,,8825,n3 pvc strap
+,,,8831,n2 pvc strap
+,,,8837,n1 pvc strap
+,,,8843,n1/0 pvc strap
+,,,8849,n2/0 pvc strap
+,,,8855,n3/0 pvc strap
+,,,8861,n4/0 pvc strap
+,,,8867,n250 pvc strap
+,,,8873,n300 pvc strap
+,,,8879,n350 pvc strap
+,,,8885,n400 pvc strap
+,,,8891,n500 pvc strap
+,,,8897,n600 pvc strap
+,,,8903,n750 pvc strap
+,,,8910,pvc-40 branch strap concret
+,,,8911,n14 pvc-40 strap concrete
+,,,8920,n12 pvc-40 strap concrete
+,,,8929,n10 pvc-40 strap  concrete
+,,,8938,n8 pvc-40 strap concrete
+,,,8945,n6 pvc-40 strap concrete
+,,,8951,n4 pvc-40 strap concrete
+,,,8956,n14 pvc-40 3/4 strap concr
+,,,8965,n12 pvc-40 3/4 strap concr
+,,,8975,pvc feeder strap conc.
+,,,8976,n3 pvc strap conc.
+,,,8982,n2 pvc strap conc.
+,,,8988,n1 pvc strap conc.
+,,,8994,n1/0 pvc strap conc.
+,,,9000,n2/0 pvc strap conc.
+,,,9006,n3/0 pvc strap conc.
+,,,9012,n4/0 pvc strap conc.
+,,,9018,n250 pvc strap conc.
+,,,9024,n300 pvc strap conc.
+,,,9030,n350 pvc strap conc.
+,,,9036,n400 pvc strap conc.
+,,,9042,n500 pvc  strap conc.
+,,,9048,n600 pvc strap conc.
+,,,9054,n750 pvc  strap conc.
+,,,9062,pvc-40 branch underground
+,,,9063,n14 pvc-40 underground
+,,,9072,n12 pvc-40 underground
+,,,9081,n10 pvc-40 underground
+,,,9090,n8 pvc-40 underground
+,,,9097,n6 pvc-40 underground
+,,,9103,n4 pvc-40 underground
+,,,9108,n14 pvc-40 3/4 underground
+,,,9117,n12 pvc-40 3/4 underground
+,,,9127,pvc feeder underground
+,,,9128,n3 pvc underground
+,,,9134,n2 pvc underground
+,,,9140,n1 pvc undergroud
+,,,9146,n1/0 pvc underground
+,,,9152,n2/0 pvc underground
+,,,9158,n3/0 pvc underground
+,,,9164,n4/0 pvc underground
+,,,9170,n250 pvc underground
+,,,9176,n300 pvc underground
+,,,9182,n350 pvc underground
+,,,9188,n400 pvc underground
+,,,9194,n500 pvc underground
+,,,9200,n600 pvc  underground
+,,,9206,n750 pvc  underground
+,,,9213,pvc 40 branch beam clamp
+,,,9214,n14 pvc-40 beam clamp
+,,,9223,n12 pvc-40 beam clamp
+,,,9232,n10 pvc-40 beam clamp
+,,,9241,n8 pvc-40 beam clamp
+,,,9248,n6 pvc-40 beam clamp
+,,,9254,n4 pvc-40 beam clamp
+,,,9259,n14 pvc-40 3/4 beam clamp
+,,,9268,n12 pvc-40 3/4 beam clamp
+,,,9278,pvc 40 feeder beam clamp
+,,,9279,n3 pvc beam clamp
+,,,9285,n2 pvc beam clamp
+,,,9291,n1 pvc beam clamp
+,,,9297,n1/0 pvc beam clamp
+,,,9303,n2/0 pvc beam clamp
+,,,9309,n3/0 pvc beam clamp
+,,,9315,n4/0 pvc beam clamp
+,,,9321,n250 pvc beam clamp
+,,,9327,n300 pvc beam clamp
+,,,9333,n350 pvc beam clamp
+,,,9339,n400 pvc beam clamp
+,,,9345,n500 pvc  beam clamp
+,,,9351,n600 pvc  beam clamp
+,,,9357,n750 pvc  beam clamp
+,,,9365,pvc sch.40 stub-ups pvc
+,,,9379,pvc-grc el stub-ups
+,,,9394,branch 1/2 pvc 80
+,,,9398,branch 3/4 pvc 80
+,,,9402,branch 1 pvc 80
+,,,9406,pvc 80 feeder
+,,,9407,feeder 1 1/4 pvc 80
+,,,9412,feeder 1 1/2 pvc 80
+,,,9418,feeder 2 pvc 80
+,,,9424,feeder 2 1/2 pvc 80
+,,,9430,feeder 3 pvc 80
+,,,9441,feeder 4 pvc 80
+,,,9447,feeder 5 pvc 80
+,,,9454,pvc sch.80 stub-ups pvc
+,,,9463,conduit chair
+,,,9464,duct spacer
+,,,9465,duct chair
+,,,9471,duct bank with concrete $12
+,,,9507,duct bank w/reinf concrete
+,,,9543,duct bank with 2 sand cove
+,,,9579,duct bank with re-use backf
+,,,9615,kindorf strut rack
+,,,9616,rack kindorf
+,,,9617,window rack kindorf
+,,,9627,wood rack kindorf
+,,,9634,conc strut rack kindorf
+,,,9641,toggle bolt rack kindorf
+,,,9648,wood drop trapeze kindorf
+,,,9653,conc drop trapeze kindorf
+,,,9658,ss strut rack
+,,,9659,rack ss
+,,,9660,window rack ss
+,,,9670,wood ss strut rack
+,,,9677,conc ss strut rack
+,,,9684,toggle anchor ss strut rack
+,,,9691,wood drop trapeze ss rack
+,,,9696,conc drop trapeze ss rack
+,,,9702,rack pvc coated
+,,,9716,racks kindorf 3/8 rod
+,,,9753,racks kindorf 1/2 rod
+,,,9790,racks kindorf 5/8 rod
+,,,9826,racks kindorf 3/8 rod beam
+,,,9863,racks kindorf 1/2 rod beam
+,,,9899,racks kindorf 3/8 rod hang
+,,,9936,racks unistrut 3/8 rod
+,,,9973,racks unistrut 1/2 rod
+,,,10010,racks unistrut 5/8 rod
+,,,10046,racks unistrut 3/8 rod bea
+,,,10083,racks unistrut 1/2 rod bea
+,,,10119,racks unistrut 3/8 rod han
+,,,10155,ss racks 3/8 rod drop in a
+,,,10192,ss racks 1/2 rod drop in a
+,,,10229,ss racks 5/8 rod drop in a
+,,,10265,ss racks 3/8 rod beam clam
+,,,10302,ss racks 1/2 rod beam clam
+,,,10338,emt strap hanger
+,,,10350,emt concrete strap hanger
+,,,10363,beam clamp hanger
+,,,10378,emt (rack) chnl strap
+,,,10390,grc/imc strap hanger
+,,,10402,grc/imc concrete strap hang
+,,,10416,grc/imc (rack) chnl strap
+,,,10430,nmc cable with term
+,,,10451,nmc cable with term const
+,,,10471,nmc cable home run w/term c
+,,,10491,bx cable with Term
+,,,10505,mc cable with term
+,,,10528,bx cable with Term const
+,,,10542,mc cable with term const
+,,,10563,mc cable home run w/term co
+,,,10584,mc termination
+,,,10591,termination
+,,,10592,term
+,,,10593,motor termination
+,,,10606,control termination
+,,,10607,cntrl term
+,,,10616,wire termination
+,,,10643,1 wire termination
+,,,10654,1 wire circuit termination
+,,,10668,2 wire termination
+,,,10679,2 wire circuit termination
+,,,10693,3 wire termination
+,,,10704,3 wire circuit termination
+,,,10718,4 wire termination
+,,,10729,4 wire circuit termination
+,,,10743,5 wire termination
+,,,10754,5 wire circuit termination
+,,,10768,6 wire termination
+,,,10779,6 wire circuit termination
+,,,10793,7 wire termination
+,,,10804,7 wire circuit termination
+,,,10818,8 wire termination
+,,,10829,8 wire circuit termination
+,,,10843,box wire termination
+,,,10847,lugs
+,,,10848,lug 1 hole lugs
+,,,10866,cable splice
+,,,10867,split bolt splice
+,,,10881,splice kit
+,,,10896,gutter 3r
+,,,10901,x ray box dis by others
+,,,10923,wireway
+,,,10959,aluminum cable tray
+,,,10960,9 rung spacing 20' str al
+,,,10970,tray horz bend 90 12r al
+,,,10980,tray horz bend 60 12r al
+,,,10990,tray horz bend 45 12r al
+,,,11000,tray horz bend 30 12r al
+,,,11010,tray horz bend 90 24r al
+,,,11020,tray horz bend 60 24r al
+,,,11030,tray horz bend 45 24r al
+,,,11040,tray horz bend 30 24r al
+,,,11050,tray horz bend 90 36r al
+,,,11060,tray horz bend 60 36r al
+,,,11070,tray horz bend 45 36r al
+,,,11080,tray horz bend 30 36r al
+,,,11090,tray horz bend 90 48r al
+,,,11100,tray horz bend 60 48r al
+,,,11110,tray horz bend 45 48r al
+,,,11120,tray horz bend 30 48r al
+,,,11130,tray horz tee 12r al
+,,,11140,tray horz tee 24r al
+,,,11150,tray horz tee 36r al
+,,,11160,tray horz tee 48r al
+,,,11170,tray horz cross 12r al
+,,,11180,tray horz cross 24r al
+,,,11190,tray horz cross 36r al
+,,,11200,tray horz cross 48r al
+,,,11210,tray horz right wye 45 12r
+,,,11220,tray horz right wye 45 24r
+,,,11230,tray horz right wye 45 36r
+,,,11240,tray horz right wye 45 48r
+,,,11250,tray horz left wye 45 12r
+,,,11260,tray horz left wye 45 24r
+,,,11270,tray horz left wye 45 36r
+,,,11280,tray horz left wye 45 48r
+,,,11290,tray vert outside 90 12r a
+,,,11300,tray vert outside 90 24r a
+,,,11310,tray vert outside 90 36r a
+,,,11320,tray vert outside 90 48r a
+,,,11330,tray vert inside 90 12r al
+,,,11340,tray vert inside 90 24r al
+,,,11350,tray vert inside 90 36r al
+,,,11360,tray vert inside 90 48r al
+,,,11370,tray straight reducer 42w
+,,,11379,tray straight reducer 36w
+,,,11387,tray straight reducer 30w
+,,,11394,tray straight reducer 24w
+,,,11400,tray straight reducer 18w
+,,,11405,tray straight reducer 12w
+,,,11409,tray straight reducer 9w a
+,,,11412,tray right reducer 42w al
+,,,11421,tray right reducer 36w al
+,,,11429,tray right reducer 30w al
+,,,11436,tray right reducer 24w al
+,,,11442,tray right reducer 18w al
+,,,11447,tray right reducer 12w al
+,,,11451,tray right reducer 9w al
+,,,11454,tray left reducer 42w al
+,,,11463,tray left reducer 36w al
+,,,11471,tray left reducer 30w al
+,,,11478,tray left reducer 24w al
+,,,11484,tray left reducer 18w al
+,,,11489,tray left reducer 12w al
+,,,11493,tray left reducer 9w al
+,,,11497,enduro 3 high cable tray
+,,,11506,enduro 4 high cable tray
+,,,11515,enduro 6 high cable tray
+,,,11524,enduro 8 high cable tray
+,,,11533,enduro 10 high cable tray
+,,,11542,enduro 4h horz 90 12r frp
+,,,11551,enduro 6h horz 90 12r frp
+,,,11560,enduro 8h horz 90 12r frp
+,,,11569,enduro 4h horz 90 24r frp
+,,,11578,enduro 6h horz 90 24r frp
+,,,11587,enduro 8h horz 90 24r frp
+,,,11596,enduro 4h horz 90 36r frp
+,,,11605,enduro 6h horz 90 36r frp
+,,,11614,enduro 8h horz 90 36r frp
+,,,11623,enduro 4h horz 45 12r frp
+,,,11632,enduro 6h horz 45 12r frp
+,,,11641,enduro 8h horz 45 12r frp
+,,,11650,enduro 4h horz 45 24r frp
+,,,11659,enduro 6h horz 45 24r frp
+,,,11668,enduro 8h horz 45 24r frp
+,,,11677,enduro 4h horz 45 36r frp
+,,,11686,enduro 6h horz 45 36r frp
+,,,11695,enduro 8h horz 45 36r frp
+,,,11704,enduro 4h horz tee 12r fr
+,,,11713,enduro 6h horz tee 12r fr
+,,,11722,enduro 8h horz tee 12r fr
+,,,11731,enduro 4h horz tee 24r fr
+,,,11740,enduro 6h horz tee 24r fr
+,,,11749,enduro 8h horz tee 24r fr
+,,,11758,enduro 4h horz tee 36r fr
+,,,11767,enduro 6h horz tee 36r fr
+,,,11776,enduro 8h horz tee 36r fr
+,,,11785,enduro 4h horz cross 12r
+,,,11794,enduro 6h horz cross 12r
+,,,11803,enduro 8h horz cross 12r
+,,,11812,enduro 4h horz cross 24r
+,,,11821,enduro 6h horz cross 24r
+,,,11830,enduro 8h horz cross 24r
+,,,11839,enduro 4h horz cross 36r
+,,,11848,enduro 6h horz cross 36r
+,,,11857,enduro 8h horz cross 36r
+,,,11866,enduro 4h vert inside 90 1
+,,,11875,enduro 6h vert inside 90 1
+,,,11884,enduro 8h vert inside 90 1
+,,,11893,enduro 4h vert inside 90 2
+,,,11902,enduro 6h vert inside 90 2
+,,,11911,enduro 8h vert inside 90 2
+,,,11920,enduro 4h vert inside 90 3
+,,,11929,enduro 6h vert inside 90 3
+,,,11938,enduro 8h vert inside 90 3
+,,,11947,enduro 4h vert outside 90
+,,,11956,enduro 6h vert outside 90
+,,,11965,enduro 8h vert outside 90
+,,,11974,enduro 4h vert outside 90
+,,,11983,enduro 6h vert outside 90
+,,,11992,enduro 8h vert outside 90
+,,,12001,enduro 4h vert outside 90
+,,,12010,enduro 6h vert outside 90
+,,,12019,enduro 8h vert outside 90
+,,,12029,cablofil cable tray
+,,,12030,cablofil 1 deep wire tray
+,,,12037,cablofil 2 deep wire tray
+,,,12047,cablofil 4 deep wire tray
+,,,12056,cablofil 6 deep wire tray
+,,,12061,cablofil 1 deep wire tray
+,,,12068,cablofil 2 deep wire tray
+,,,12078,cablofil 4 deep wire tray
+,,,12087,cablofil 6 deep wire tray
+,,,12092,cablofil g wire tray bc
+,,,12098,cablofil l wire tray
+,,,12101,cablofil telex rail
+,,,12104,cablofil l fasclic tray
+,,,12108,cablofil tray cover 3.3' l
+,,,12118,cablofil divider strips
+,,,12124,cablofil ceiling mount hang
+,,,12137,cablofil fas trapeze hanger
+,,,12151,cablofil standard trapeze h
+,,,12156,cablofil c brackets
+,,,12167,cablofil standard l bracket
+,,,12175,cablofil mounting rail & br
+,,,12184,cablofil center hangers
+,,,12195,cablofil connectors
+,,,12202,cablofil hardware
+,,,12214,snake tray cable tray
+,,,12215,101 series snake tray
+,,,12228,201 series snake tray
+,,,12234,501 series snake tray
+,,,12238,snake tray components
+,,,12253,snake tray hardware
+,,,12263,snake tray canyon
+,,,12284,snake tray stringers
+,,,12307,wiremold
+,,,12321,wm 700
+,,,12327,wm 2000
+,,,12335,wm 3000
+,,,12343,wm 4000
+,,,12353,cellular flr ftg
+,,,12354,flr o/l ftg
+,,,12359,xfmr 1 phase
+,,,12360,transformer 1 ph
+,,,12361,transf 1ph 240v-120/240v dr
+,,,12367,transf 1ph 480v-120/240v dr
+,,,12375,transf 1ph 600v-120/240v dr
+,,,12384,transf 1ph 240v-120/240v dr
+,,,12390,transf 1ph 480v-120/240v dr
+,,,12398,transf 1ph 600v-120/240v dr
+,,,12407,xfmr 3 phase
+,,,12408,transformer 3 ph
+,,,12409,transf 3ph 240v-120/208v dr
+,,,12416,transf 3ph 480v-120/208v dr
+,,,12423,transf 3ph 600v-120/208v dr
+,,,12430,transf 3ph 240v-120/208v dr
+,,,12437,transf 3ph 480v-120/208v dr
+,,,12444,transf 3ph 600v-120/208v dr
+,,,12451,"isolation transformer, 3ph"
+,,,12452,"iso transf, 3ph"
+,,,12474,buck boost transformer
+,,,12484,ct can
+,,,12499,service switch 600v
+,,,12514,"service switch, 250v"
+,,,12529,masts
+,,,12530,service mast
+,,,12531,service mast grc
+,,,12558,seb 250v
+,,,12568,seb 600v
+,,,12579,mdp
+,,,12608,meter center
+,,,12609,meter center 125a 1 phase
+,,,12616,meter center 200a 1 phase
+,,,12623,meter center 125a 3 phase
+,,,12630,meter center 200a 3 phase
+,,,12637,meter stack sockets
+,,,12638,meter stack 125a 1 phase
+,,,12647,meter stack 200a 1 phase
+,,,12654,meter stack 125a 3 phase
+,,,12662,meter stack 200a 3 phase
+,,,12668,meter can
+,,,12669,meter stack 400a
+,,,12676,meter stacks
+,,,12677,stack mcb 65krms
+,,,12692,stack mcb 100krms
+,,,12700,stack m switch 100krms
+,,,12710,stack term box
+,,,12722,mcc
+,,,12741,load centers 1 phase mlo
+,,,12765,load center 3 ph mlo
+,,,12766,load center qo 3 ph mlo
+,,,12776,load center 3r 1 ph mlo
+,,,12791,load center 3r 3 ph mlo
+,,,12800,load center w/mcb
+,,,12801,"mcb load center,1ph"
+,,,12819,"mcb load center, 3 phase"
+,,,12831,mcb load center 1ph 3r
+,,,12842,mcb load center 3ph 3r
+,,,12853,panels 240v
+,,,12854,panel 120/240v 1ph mlo
+,,,12866,panel 120/208v 3ph mlo
+,,,12879,panel 120/240v 1ph mcb
+,,,12891,panel 120/208v 3ph mcb
+,,,12909,panels 480v
+,,,12910,panel 480v 3ph mlo
+,,,12921,panel 480v 3ph mcb
+,,,12935,encl cb 1p 250v
+,,,12950,encl cb 2p 250v
+,,,12979,encl cb 3p 250v
+,,,13013,encl cb 1p 600v
+,,,13028,encl cb 2p 600v
+,,,13056,encl cb 3p 600v
+,,,13090,ups panel
+,,,13100,iso panel
+,,,13110,comp panel
+,,,13120,motor connction
+,,,13121,mtr h/u 250v
+,,,13137,mtr h/u nf 3 1 250v
+,,,13154,mtr h/u 1 3 250v
+,,,13170,mtr h/u nf 3 3 250v
+,,,13188,mtr h/u f 1 1 250v
+,,,13204,mtr h/u f 3 1 250v
+,,,13221,mtr h/u f 1 3 250v
+,,,13237,mtr h/u f 3 3 250v
+,,,13255,mtr h/u 600v
+,,,13256,mtr h/u nf 1 1 600v
+,,,13272,mtr h/u nf 3 1 480v
+,,,13290,mtr h/u nf 1 3 600v
+,,,13306,mtr h/u nf 3 3 480v
+,,,13324,mtr h/u f 1 1 600v
+,,,13340,mtr h/u f 3 1 480v
+,,,13359,mtr h/u f 1 3 600v
+,,,13375,mtr h/u f 3 3 480v
+,,,13393,nema 4x motor h/u
+,,,13394,mtr h/u 1 n4x 250v
+,,,13410,mtr h/u nf 3 n4x 250v
+,,,13426,mtr h/u f 1 n4x 250v
+,,,13442,mtr h/u f 3 n4x 250v
+,,,13460,mtr h/u nf 1 n4x 600v
+,,,13476,mtr h/u nf 3 n4x 480v
+,,,13494,mtr h/u f 1 n4x 600v
+,,,13510,mtr h/u f 3 n4x 600v
+,,,13527,equip connect
+,,,13528,outdoor 3' 2 wire w/grd equ
+,,,13531,outdoor 3' 3 wire w/grd equ
+,,,13546,outdoor 6' 3 wire w/grd equ
+,,,13561,outdoor 3' 4 wire w/grd equ
+,,,13576,outdoor 6' 4 wire w/grd equ
+,,,13591,3' outdoor empty equipment
+,,,13602,6' outdoor empty equipment
+,,,13613,indoor 3' 2 wire w/grd equi
+,,,13616,indoor 3' 3 wire w/grd equi
+,,,13637,indoor 6' 2 wire w/grd equi
+,,,13640,indoor 6' 3 wire w/grd equi
+,,,13661,indoor 3' 4 wire w/grd equi
+,,,13682,indoor 6' 4 wire w/grd equi
+,,,13703,3' indoor empty equipment c
+,,,13715,6' indoor empty equipment c
+,,,13727,stl flex fixture whip
+,,,13732,mc whip
+,,,13733,whip mc
+,,,13765,so cable drop
+,,,13770,branch flex stl conduit w/t
+,,,13776,feeder flex stl conduit w/t
+,,,13785,branch liquid tite w/term c
+,,,13786,branch liquidtight ua w/ter
+,,,13792,feeder liquid tite w/term c
+,,,13793,feeder liquidtight ua w/ter
+,,,13801,branch flex alum w/term con
+,,,13802,branch alum flex w/term con
+,,,13808,feeder flex alum w/term con
+,,,13809,feeder alum flex w/term con
+,,,13818,switch safety
+,,,13819,safety switch
+,,,13820,general duty switch
+,,,13821,safety switch 250a
+,,,13822,switch gd 1ph n1 nf
+,,,13826,switch gd 3ph n1 nf
+,,,13834,switch gd 1ph n3r nf
+,,,13835,switch gd 3ph n3r nf
+,,,13841,switch gd 1ph n1 f
+,,,13856,switch gd 3ph n1 f
+,,,13871,switch gd 1ph n3r f
+,,,13886,switch gd 3ph n3r f
+,,,13901,switch 250v hd 1ph n1 f
+,,,13919,switch 250v hd 1ph n3r f
+,,,13934,switch 250v hd 3ph n1 f
+,,,13949,switch 250v hd 3ph n3r f
+,,,13964,nema 4x disc sw
+,,,13965,switch 250v 1ph n4x nf
+,,,13973,switch 250v 3ph n4x nf
+,,,13981,switch 250v 1ph n4x f
+,,,13996,switch 250v 3ph n4x f
+,,,14011,nema 12 disc sw
+,,,14012,switch 250v 1ph n12 nf
+,,,14020,switch 250v 3ph n12 nf
+,,,14028,switch 250v 1PH n12 f
+,,,14043,switch 250v 3ph n12 f
+,,,14058,safety switch 600v
+,,,14059,disconnect switch 600v
+,,,14060,switch 250v hd 1ph n1 nf
+,,,14061,switch 600v 1ph n1 nf
+,,,14067,switch 250v hd 3ph n1 nf
+,,,14068,switch 600v 3ph n1 nf
+,,,14078,switch 250v hd 1ph n3r nf
+,,,14079,switch 600v 1ph 3r nf
+,,,14085,switch 250v hd 3ph n3r nf
+,,,14086,switch 600v 3ph 3r nf
+,,,14096,switch 600v 1ph 1 f
+,,,14100,switch 600v 3ph 1 f
+,,,14118,switch 600v 1ph 3r f
+,,,14136,switch 600v 3ph 3r f
+,,,14154,switch 600v 1ph 4x nf
+,,,14164,switch 600v 3ph 4x nf
+,,,14174,switch 600v 1ph 4x f
+,,,14192,switch 600v 3ph 4x f
+,,,14210,switch 600v 1ph 12 nf
+,,,14220,switch 600v 3ph 12 nf
+,,,14230,switch 600v 1ph 12 f
+,,,14248,switch 600v 3ph 12 f
+,,,14266,air conditioning disconnect
+,,,14267,non fuse air cond switch-mo
+,,,14272,fusable air cond switch-mol
+,,,14280,manual transfer switch
+,,,14281,manual transfer sw 600v 2p
+,,,14293,manual transfer sw 600v 3p
+,,,14305,auto xfer switch
+,,,14306,auto-transfer switch
+,,,14307,auto-transfer sw 600v 2p dt
+,,,14319,auto-transfer sw 600v 3p dt
+,,,14333,starter manual
+,,,14334,"man starter,nema 1"
+,,,14335,"man starter 2p,n1"
+,,,14340,"man starter 3p,n1"
+,,,14344,"man starter,nema 4"
+,,,14345,"man starter 2p,n4"
+,,,14350,"man starter 3p,n4"
+,,,14355,"man starter,nema 12"
+,,,14356,"man starter 2p,n12"
+,,,14361,"man starter 3p,n12"
+,,,14366,reversing drum switch
+,,,14371,"full volt cont,n1"
+,,,14383,"full volt cont,n4"
+,,,14394,"full volt cont,n12"
+,,,14405,starters
+,,,14406,starter 2p full voltag n1
+,,,14414,starter 3p full voltag n1
+,,,14426,"start/disc 3p,nema 1"
+,,,14436,"start/cb 3p,nema 1"
+,,,14447,starter 2p full voltage n4
+,,,14454,starter 3p full voltage n4
+,,,14466,"start/disc 3p,nema 4"
+,,,14475,"start/cb 3p,nema 4"
+,,,14485,starter 2p full voltage n12
+,,,14492,starter 3p full voltage n12
+,,,14504,"start/disc 3p,nema 12"
+,,,14513,"start/cb 3p,nema 12"
+,,,14522,reversing starters
+,,,14523,rev starter
+,,,14524,starter 2p reversing n1
+,,,14532,starter 3p reversing n1
+,,,14543,comb starter reversing
+,,,14544,"start/disc 3p,rev,n1"
+,,,14554,"start/cb 3p,rev,n1"
+,,,14563,"starter 2p rev,n4"
+,,,14571,"starter 3p rev,n4"
+,,,14581,"comb starter rev,n4"
+,,,14582,"start/disc 3p,rev,n4"
+,,,14592,"start/cb 3p,rev,n4"
+,,,14601,redv starter
+,,,14602,starter 2p red volt
+,,,14610,starter 3p red volt
+,,,14621,comb starter red volt
+,,,14622,"start/disc 3p,redv,n1"
+,,,14632,"start/cb 3p,redv,n1"
+,,,14641,"starter 2p redv,n4"
+,,,14649,"starter 3p redv,n4"
+,,,14661,"comb starter redv,n4"
+,,,14662,"start/disc 3p,redv,n4"
+,,,14671,"start/cb 3p,redv,n4"
+,,,14681,starter 2 speed
+,,,14682,starter 2p spd
+,,,14683,starter 2p 2 spd n1
+,,,14691,starter 3p 2 spd n1
+,,,14702,comb starter 2 spd
+,,,14703,"start/disc 3p,2spd,n1"
+,,,14713,"start/cb 3p,2spd,n1"
+,,,14722,"starter 2p 2spd,n4"
+,,,14730,"starter 3p 2spd,n4"
+,,,14741,"comb starter 2spd,n4"
+,,,14742,"start/disc 3p,2spd,n4"
+,,,14752,"start/cb 3p,2spd,n4"
+,,,14763,contactors
+,,,14764,"ltg cont elec held,n1"
+,,,14798,"ltg cont mech held,n1"
+,,,14828,"ltg cont, nema4"
+,,,14829,"ltg cont elec held,n4"
+,,,14863,"ltg cont mech held,n4"
+,,,14898,pb station
+,,,14905,pb station oil-tight
+,,,14912,pb station expl-prf
+,,,14920,light
+,,,14921,fixtures
+,,,14922,led lay-in fixtures
+,,,14923,troffers/lay-in led
+,,,14951,troffers/lay-in led emergen
+,,,14979,troffers/lay-in led w/o box
+,,,15009,air boot
+,,,15013,led linear surface fixtures
+,,,15017,light surface led
+,,,15063,light flanged led
+,,,15064,light flanged led linear
+,,,15074,indirect linear led fixt
+,,,15080,led linear cove light
+,,,15090,tube light
+,,,15100,led linear eggcrate fixture
+,,,15107,led industrial reflector fi
+,,,15112,led pendant mtd linear fixt
+,,,15134,led industrial chain hung f
+,,,15156,industrial fixture wire gua
+,,,15163,led surface mount strip fix
+,,,15188,strip fixture wire guards
+,,,15196,led under counter strip fix
+,,,15201,led recessed can fixture
+,,,15205,led recessed can wall washe
+,,,15209,led recessed can directiona
+,,,15213,led pendant mounted fixture
+,,,15217,led wall mounted fixture
+,,,15221,led rec can hi-intensity sp
+,,,15224,motion sensor
+,,,15227,led wall sconces
+,,,15232,led exit fixture
+,,,15241,led emergency fixture
+,,,15252,led chandelier fixture
+,,,15262,led decorative fixture
+,,,15273,led decorative pendant fixt
+,,,15284,led reflector flood fixture
+,,,15290,lighting track
+,,,15297,led track fixtures
+,,,15306,led wall pack fixture
+,,,15316,ball aligner
+,,,15321,led low bay 250w fixture
+,,,15327,led low bay 400w fixture
+,,,15332,led high bay 250w fixture
+,,,15337,led high bay 400w fixture
+,,,15342,led high bay 1000w fixture
+,,,15345,led light
+,,,15349,vapor tight led fixturs
+,,,15350,vt led fixtures
+,,,15351,led vapor tight fixture
+,,,15368,led vaportite linear fixtur
+,,,15379,exp proof class I led fixtu
+,,,15380,led exp proof cl 1 fixture
+,,,15396,led exp proof wall mtd fixt
+,,,15401,led exp proof ceil mtd fixt
+,,,15406,led exp proof reflector fix
+,,,15412,led linear exp proof class
+,,,15426,led exp proof surf exit cla
+,,,15429,led tank light fixture
+,,,15432,led outdoor reflector fixtu
+,,,15437,led flood light fixture
+,,,15442,stadium fixture - led
+,,,15443,led stadium light fixture
+,,,15448,led uplight light fixture
+,,,15452,landscape lighting dc & ac
+,,,15458,led spike mounted light
+,,,15461,pool fixtures
+,,,15462,light dry niche
+,,,15468,light wet niche
+,,,15475,led recessed fountain fixtu
+,,,15480,led step fixture
+,,,15483,led dock fixture
+,,,15488,site lighting
+,,,15489,bollard lighting
+,,,15493,walkway lighting
+,,,15498,light pole lights
+,,,15501,lowering mechanism
+,,,15507,steel pole assemblies
+,,,15518,alum pole assemblies
+,,,15530,photo cell
+,,,15536,time clock
+,,,15543,commercial ivory occupancy
+,,,15548,commercial white occupancy
+,,,15553,ceiling occupancy sensors
+,,,15557,residential dim occupancy s
+,,,15561,residential white occupancy
+,,,15565,switch standard
+,,,15584,switch standard masonry
+,,,15603,switch commercial
+,,,15604,switch 15a com
+,,,15623,switch 20a com
+,,,15645,switch commercial masonry
+,,,15646,switch 15a com masonry
+,,,15665,switch 20a com masonry
+,,,15685,switch 15 amp spec
+,,,15710,switch 20 amp spec
+,,,15733,switch 15 amp spec masonry
+,,,15758,switch 20 amp spec masonry
+,,,15782,telephone
+,,,15794,switch wiremold
+,,,15818,switch surface
+,,,15819,switch std surface
+,,,15829,switch com surface
+,,,15830,switch 15a com surface
+,,,15840,switch 20a com surface
+,,,15850,switch spec surf
+,,,15851,switch 15 amp spec surf
+,,,15861,comb sw/recpt surf
+,,,15864,comb sw/recpt
+,,,15867,motor switch
+,,,15868,mtr sw
+,,,15877,momentary cont sw
+,,,15878,mom cont sw
+,,,15882,dimmer
+,,,15883,dimmer eaton al Series
+,,,15889,dimmer eaton aspire series
+,,,15902,dimmer eaton commercial
+,,,15907,wp switch
+,,,15913,expl switch
+,,,15922,15a tamper-resistant recept
+,,,15930,20a tamper-resistant recept
+,,,15936,15a afci tamper-resistant r
+,,,15940,20a afci tamper-resistant r
+,,,15944,afci & gfci 15a recept
+,,,15948,afci & gfci 20a recept
+,,,15952,15a tamper recept & usb cha
+,,,15956,20a tamper recept & usb cha
+,,,15960,recp standard
+,,,15961,receptacles
+,,,15976,recp standard masonry
+,,,15977,receptacles masonry
+,,,15988,receptacle usb
+,,,15991,recpt single
+,,,16006,recpt 15a spec
+,,,16024,15a hospital grade tamper r
+,,,16029,15a hosp recept & usb charg
+,,,16049,20a hospital grade recpt
+,,,16054,20a hosp recept & usb charg
+,,,16059,recp decora commercial tamp
+,,,16065,4 port 0.4a usb charger
+,,,16069,recpt clock
+,,,16072,recpt 15a spec masonry
+,,,16088,15a hosp grade tamp recpt m
+,,,16092,15a hosp recept & usb charg
+,,,16097,recpt 20a spec masonry
+,,,16110,20a hospital grade recpt ma
+,,,16115,20a hosp recept & usb charg
+,,,16120,recp decora com tamper maso
+,,,16126,4 port 0.4a usb charger mas
+,,,16130,recpt clock masonry
+,,,16133,recpt sgl
+,,,16148,recpt spec
+,,,16149,recpt 15a ss
+,,,16161,recpt 20a ss
+,,,16170,clock outlet
+,,,16175,sgl recp surface
+,,,16191,15a recpt surface
+,,,16205,20a recpt surface
+,,,16217,clock outlet
+,,,16221,recp wiremold
+,,,16237,recpt duplex
+,,,16259,clock outlet
+,,,16263,recpt cell
+,,,16264,rcpt cell-tap sgl
+,,,16280,duplex recpt
+,,,16301,recp floor box
+,,,16302,rcpt flr box sgl
+,,,16318,duplex recpt flr box
+,,,16339,panel mounted recpt
+,,,16340,panel recpt
+,,,16344,industrial receptacle
+,,,16345,ind recpt
+,,,16373,straight blade power recept
+,,,16374,125V str blade power recept
+,,,16380,250V str blade power recept
+,,,16386,277V str blade power recept
+,,,16391,125/250V 3p3w str blade pow
+,,,16398,125/250V 3p4w str blade pow
+,,,16404,250V 3p4w str blade power r
+,,,16410,120/208V 4p4w str blade pow
+,,,16416,twist-lock receptacles
+,,,16417,receptacle 15a single twist
+,,,16420,receptacle 20a single twist
+,,,16436,receptacle 30a single twist
+,,,16453,exp device
+,,,16454,explosion proof receptacle
+,,,16455,expl sgl recpt
+,,,16468,explosion proof industrial
+,,,16483,outlet box 4/S
+,,,16511,j box controls door
+,,,16523,box 4 11/16 square
+,,,16545,box 3 gang
+,,,16565,box 4 gang
+,,,16585,box 5 gang
+,,,16605,box 6 gang
+,,,16625,box masonary
+,,,16626,tile boxes
+,,,16642,boxes ceiling outlet
+,,,16649,boxes ceiling
+,,,16673,box ceiling
+,,,16674,light box surface
+,,,16699,handy box
+,,,16704,box bx/mc
+,,,16715,box bell
+,,,16728,box al round
+,,,16729,wp alum box
+,,,16741,fs boxes
+,,,16753,fd boxes
+,,,16768,grounding
+,,,16769,ga grnd rod w/clamp
+,,,16778,cu grnd rod w/clamp
+,,,16788,guy kit
+,,,16795,generator
+,,,16811,motor mounting
+,,,16826,mtr mtg plate
+,,,16835,telephone emt stub-ups
+,,,16840,telephone pvc stub-ups
+,,,16845,tele-power pole
+,,,16849,computer outlets
+,,,16858,voice/data cabinets
+,,,16863,computer emt stub-ups
+,,,16868,computer pvc stub-ups
+,,,16874,heaters
+,,,16883,thermostat
+,,,16888,unit heater
+,,,16901,bath heater
+,,,16907,wall htr
+,,,16918,rad ht panel
+,,,16923,sill heater
+,,,16931,toe space heater
+,,,16938,duct heater
+,,,16960,duct thermostat
+,,,16963,humidistat
+,,,16968,electronic air filter
+,,,16969,elec air filter
+,,,16975,sequence controller
+,,,16979,temp controller
+,,,16980,chromalox 3800 control
+,,,16989,heat mat
+,,,16997,heat trace
+,,,17005,honeywell temp control
+,,,17006,thermostat
+,,,17007,t-stat
+,,,17008,low volt thermostat
+,,,17013,economy thermostat
+,,,17016,chrono thermostat
+,,,17019,line volt stat
+,,,17029,thermostat guard
+,,,17033,heating relay
+,,,17039,vav (variable air volume) s
+,,,17040,vav single duct systems
+,,,17046,vav hot  water systems
+,,,17051,vav electric heat systems
+,,,17060,1ph 250v rooftop heat pump
+,,,17071,3ph 250v rooftop heat pump
+,,,17082,1ph 250v rooftop heat pump
+,,,17093,3ph 250v rooftop heat pump
+,,,17104,1ph 600v rooftop heat pump
+,,,17115,3ph 600v rooftop heat pump
+,,,17126,1ph 600v rooftop heat pump
+,,,17137,3ph 600v rooftop heat pump
+,,,17148,lv transformer
+,,,17154,fans
+,,,17155,broan fans
+,,,17177,ventilator
+,,,17190,timer switch
+,,,17194,roof flashing
+,,,17202,excavation
+,,,17215,trench & backfill
+,,,17239,shoring
+,,,17247,sand bedding
+,,,17256,concrete bedding
+,,,17257,concr bedding
+,,,17266,jacking
+,,,17283,sonotube base $120.00/yd
+,,,17291,housekeeping pad
+,,,17297,ductbank
+,,,17318,reinforced ductbank
+,,,17339,form ductbank
+,,,17349,ideal undetectable warning
+,,,17357,ideal detectable warning ta
+,,,17362,house wiring
+,,,17363,residential
+,,,17364,house recept
+,,,17376,house switch
+,,,17394,combo house switches
+,,,17403,led residential light fixtu
+,,,17431,led bath fixture
+,,,17441,house eq connect
+,,,17449,bath wall heater w/fan 1kw
+,,,17452,house w/nm-b
+,,,17453,house wiring w/nm-b
+,,,17454,residential w/nm-b
+,,,17455,house recept w/nm-b
+,,,17462,tamper house recept w/nm-b
+,,,17468,afci tamper house recept w/
+,,,17474,15a tamper recept & usb w/n
+,,,17480,20a tamper recept & usb w/n
+,,,17486,30a/50a house recept w/nm-b
+,,,17492,wp gfi house recept w/nm-b
+,,,17498,gfi house recept w/nm-b
+,,,17504,house switch w/nm-b
+,,,17536,led Residential Fixtures w/
+,,,17559,house eq connect w/nm-b
+,,,17582,ti work per sq. foot
+,,,17593,t-bill list
+,,,17603,Begin Constants
+,,,17604,emt d/s const
+,,,17605,emt d/s strap const
+,,,17619,n14 emt d/s strap const
+,,,17628,n12 emt d/s strap const
+,,,17637,n10 emt d/s strap const
+,,,17646,n8 emt d/s strap const
+,,,17653,n6 emt d/s strap const
+,,,17659,n4 emt d/s strap const
+,,,17664,n14 3/4 emt d/s strap cons
+,,,17673,n12 3/4 emt d/s strap cons
+,,,17683,n14 hr emt d/s strap const
+,,,17692,n12 hr emt d/s strap const
+,,,17701,n10 hr emt d/s strap const
+,,,17710,n8 hr emt d/s strap const
+,,,17717,n6 hr emt d/s strap const
+,,,17723,n4 hr emt d/s strap const
+,,,17728,n14 3/4 hr emt d/s strap c
+,,,17737,n12 3/4 hr emt d/s strap c
+,,,17746,d/s emt feeder w/wire const
+,,,17747,n3 emt d/s strap const
+,,,17753,n2 emt d/s strap const
+,,,17759,n1 emt d/s strap const
+,,,17765,n1/0 emt d/s strap const
+,,,17771,n2/0 emt d/s strap const
+,,,17777,n3/0 emt d/s strap const
+,,,17783,n4/0 emt d/s strap const
+,,,17789,n250 emt d/s strap const
+,,,17795,n300 emt d/s strap const
+,,,17801,n350 emt d/s strap const
+,,,17807,n400 emt d/s strap const
+,,,17813,n500 emt d/s strap const
+,,,17819,n600 emt d/s strap const
+,,,17825,n750 emt d/s strap const
+,,,17833,emt d/s strap concrete cons
+,,,17845,n14 emt d/s strap concrete
+,,,17854,n12 emt d/s strap concrete
+,,,17863,n10 emt d/s strap concrete
+,,,17872,n8 emt d/s strap concrete c
+,,,17879,n6 emt d/s strap concrete c
+,,,17885,n4 emt d/s strap concrete c
+,,,17890,n14 3/4emt d/s strap concr
+,,,17899,n12 3/4emt d/s strap concr
+,,,17909,n14 hr emt d/s strap concre
+,,,17918,n12 hr emt d/s strap concre
+,,,17927,n10 hr emt d/s strap concre
+,,,17936,n8 hr emt d/s strap concret
+,,,17943,n6 hr emt d/s strap concret
+,,,17949,n4 hr emt d/s strap concret
+,,,17954,n14 3/4 hr emt d/s strap c
+,,,17963,n12 3/4 hr emt d/s strap c
+,,,17973,d/s feeder w/wire const
+,,,17974,n3 emt d/s strap concrete c
+,,,17980,n2 emt d/s strap concrete c
+,,,17986,n1 emt d/s strap concrete c
+,,,17992,n1/0 emt d/s strap concrete
+,,,17998,n2/0 emt d/s strap concrete
+,,,18004,n3/0 emt d/s strap concrete
+,,,18010,n4/0 emt d/s strap concrete
+,,,18016,n250 emt d/s strap concrete
+,,,18022,n300 emt d/s strap concrete
+,,,18028,n350 emt d/s strap concrete
+,,,18034,n400 emt d/s strap concrete
+,,,18040,n500 emt d/s strap concrete
+,,,18046,n600 emt d/s strap concrete
+,,,18052,n750 emt d/s strap concrete
+,,,18061,emt d/s rack const
+,,,18073,n14 emt d/s racks const
+,,,18082,n12 emt d/s racks const
+,,,18091,n10 emt d/s racks const
+,,,18100,n8 emt d/s rack const
+,,,18107,n6 emt d/s rack const
+,,,18113,n4 emt d/s racks const
+,,,18118,n14 3/4 emt d/s racks cons
+,,,18127,n12 3/4 emt d/s racks cons
+,,,18137,n14 hr emt d/s racks const
+,,,18146,n12 hr emt d/s racks const
+,,,18155,n10 hr emt d/s racks const
+,,,18164,n8 hr emt d/s racks const
+,,,18171,n6 hr emt d/s racks const
+,,,18177,n4 hr emt d/s racks const
+,,,18182,n14 3/4 hr emt d/s racks c
+,,,18191,n12 3/4 hr emt d/s racks c
+,,,18201,d/s feeder rack w/wire cons
+,,,18202,n3 emt d/s rack const
+,,,18208,n2 emt d/s rack const
+,,,18214,n1 emt d/s rack const
+,,,18220,n1/0 emt d/s rack const
+,,,18226,n2/0 emt d/s rack const
+,,,18232,n3/0 emt d/s rack const
+,,,18238,n4/0 emt d/s rack const
+,,,18244,n250 emt d/s rack const
+,,,18250,n300 emt d/s rack const
+,,,18256,n350 emt d/s rack const
+,,,18262,n400 emt d/s rack const
+,,,18268,n500 emt d/s rack const
+,,,18274,n600 emt d/s rack const
+,,,18280,n750 emt d/s rack const
+,,,18289,emt d/s beam clamp const
+,,,18301,n14 emt d/s beam clamp cons
+,,,18310,n12 emt d/s beam clamp cons
+,,,18319,n10 emt d/s beam clamp cons
+,,,18328,n8 emt d/s beam clamp const
+,,,18335,n6 emt d/s beam clamp const
+,,,18341,n4 emt d/s beam clamp const
+,,,18346,n14 3/4 emt d/s beam clamp
+,,,18355,n12 3/4 emt d/s beam clamp
+,,,18365,n14 hr emt d/s beam clamp c
+,,,18374,n12 hr emt d/s beam clamp c
+,,,18383,n10 hr emt d/s beam clamp c
+,,,18392,n8 hr emt d/s beam clamp co
+,,,18399,n6 hr emt d/s beam clamp co
+,,,18405,n4 hr emt d/s beam clamp co
+,,,18410,n14 3/4 hr emt d/s beam cl
+,,,18419,n12 3/4 hr emt d/s beam cl
+,,,18429,d/s emt feeder bc w/wire co
+,,,18430,n3 emt d/s beam clamp const
+,,,18436,n2 emt d/s beam clamp const
+,,,18442,n1 emt d/s beam clamp const
+,,,18448,n1/0 emt d/s beam clamp con
+,,,18454,n2/0 emt d/s beam clamp con
+,,,18460,n3/0 emt d/s beam clamp con
+,,,18466,n4/0 emt d/s beam clamp con
+,,,18472,n250 emt d/s beam clamp con
+,,,18478,n300 emt d/s beam clamp con
+,,,18484,n350 emt d/s beam clamp con
+,,,18490,n400 emt d/s beam clamp con
+,,,18496,n500 emt d/s beam clamp con
+,,,18502,n600 emt d/s beam clamp con
+,,,18508,n750 emt d/s beam clamp con
+,,,18516,emt d/c  const
+,,,18517,emt d/c strap const
+,,,18530,n14 emt d/c strap const
+,,,18539,n12 emt d/c strap const
+,,,18548,n10 emt d/c strap const
+,,,18557,n8 emt d/c strap const
+,,,18564,n6 emt d/c strap const
+,,,18570,n4 emt d/c strap const
+,,,18575,n14 3/4 emt d/c strap cons
+,,,18584,n12 3/4 emt d/c strap cons
+,,,18593,n14 hr emt d/c strap const
+,,,18602,n12 hr emt d/c strap const
+,,,18611,n10 hr emt d/c strap const
+,,,18620,n8 hr emt d/c strap const
+,,,18627,n6 hr emt d/c strap const
+,,,18633,n4 hr emt d/c strap const
+,,,18638,n14 3/4 hr emt d/c strap c
+,,,18647,n12 3/4 hr emt d/c strap c
+,,,18656,d/c feeder w/wire const
+,,,18657,n3 emt d/c strap const
+,,,18663,n2 emt d/c strap const
+,,,18669,n1 emt d/c strap const
+,,,18675,n1/0 emt d/c strap const
+,,,18681,n2/0 emt d/c strap const
+,,,18687,n3/0 emt d/c strap const
+,,,18693,n4/0 emt d/c strap const
+,,,18699,n250 emt d/c strap const
+,,,18705,n300 emt d/c strap const
+,,,18711,n350 emt d/c strap const
+,,,18717,n400 emt d/c strap const
+,,,18723,n500 emt d/c strap const
+,,,18729,n600 emt d/c strap const
+,,,18735,n750 emt d/c strap const
+,,,18743,emt d/c strap concrete cons
+,,,18756,n14 emt d/c strap concrete
+,,,18765,n12 emt d/c strap concrete
+,,,18774,n10 emt d/c strap concrete
+,,,18783,n8 emt d/c strap concrete c
+,,,18790,n6 emt d/c strap concrete c
+,,,18796,n4 emt d/c strap concrete c
+,,,18801,n14 3/4emt d/c strap concr
+,,,18810,n12 3/4emt d/c strap concr
+,,,18820,n14 hr emt d/c strap concre
+,,,18829,n12 hr emt d/c strap concre
+,,,18838,n10 hr emt d/c strap concre
+,,,18847,n8 hr emt d/c strap concret
+,,,18854,n6 hr emt d/c strap concret
+,,,18860,n4 hr emt d/c strap concret
+,,,18865,n14 3/4 hr emt d/c strap c
+,,,18874,n12 3/4 hr emt d/c strap c
+,,,18884,d/c feeder w/wire const
+,,,18885,n3 emt d/c strap concrete c
+,,,18891,n2 emt d/c strap concrete c
+,,,18897,n1 emt d/c strap concrete c
+,,,18903,n1/0 emt d/c strap concrete
+,,,18909,n2/0 emt d/c strap concrete
+,,,18915,n3/0 emt d/c strap concrete
+,,,18921,n4/0 emt d/c strap concrete
+,,,18927,n250 emt d/c strap concrete
+,,,18933,n300 emt d/c strap concrete
+,,,18939,n350 emt d/c strap concrete
+,,,18945,n400 emt d/c strap concrete
+,,,18951,n500 emt d/c strap concrete
+,,,18957,n600 emt d/c strap concrete
+,,,18963,n750 emt d/c strap concrete
+,,,18971,emt d/c rack const
+,,,18985,n14 emt d/c racks const
+,,,18994,n12 emt d/c racks const
+,,,19003,n10 emt d/c racks const
+,,,19012,n8 emt d/c racks const
+,,,19019,n6 emt d/c racks const
+,,,19025,n4 emt d/c racks const
+,,,19030,n14 3/4 emt d/c racks cons
+,,,19039,n12 3/4 emt d/c racks cons
+,,,19049,n14 hr emt d/c racks const
+,,,19058,n12 hr emt d/c racks const
+,,,19067,n10 hr emt d/c racks const
+,,,19076,n8 hr emt d/c racks const
+,,,19083,n6 hr emt d/c racks const
+,,,19089,n4 hr emt d/c racks const
+,,,19094,n14 3/4 hr emt d/c racks c
+,,,19103,n12 3/4 hr emt d/c racks c
+,,,19113,d/c feeder rack w/wire cons
+,,,19114,n3 emt d/c rack const
+,,,19120,n2 emt d/c rack const
+,,,19126,n1 emt d/c rack const
+,,,19132,n1/0 emt d/c rack const
+,,,19138,n2/0 emt d/c rack const
+,,,19144,n3/0 emt d/c rack const
+,,,19150,n4/0 emt d/c rack const
+,,,19156,n250 emt d/c rack const
+,,,19162,n300 emt d/c rack const
+,,,19168,n350 emt d/c rack const
+,,,19174,n400 emt d/c rack const
+,,,19180,n500 emt d/c rack const
+,,,19186,n600 emt d/c rack const
+,,,19192,n750 emt d/c rack const
+,,,19199,emt d/c beam clamp const
+,,,19212,n14 emt d/c beam clamp cons
+,,,19221,n12 emt d/c beam clamp cons
+,,,19230,n10 emt d/c beam clamp cons
+,,,19239,n8 emt d/c beam clamp const
+,,,19246,n6 emt d/c beam clamp const
+,,,19252,n4 emt d/c beam clamp const
+,,,19257,n14 3/4 emt d/c beam clamp
+,,,19266,n12 3/4 emt d/c beam clamp
+,,,19276,n14 hr emt d/c beam clamp c
+,,,19285,n12 hr emt d/c beam clamp c
+,,,19294,n10 hr emt d/c beam clamp c
+,,,19303,n8 hr emt d/c beam clamp co
+,,,19310,n6 hr emt d/c beam clamp co
+,,,19316,n4 hr emt d/c beam clamp co
+,,,19321,n14 3/4 hr emt d/c beam cl
+,,,19330,n12 3/4 hr emt d/c beam cl
+,,,19340,d/c emt feeder bc w/wire co
+,,,19341,n3 emt d/c beam clamp const
+,,,19347,n2 emt d/c beam clamp const
+,,,19353,n1 emt d/c beam clamp const
+,,,19359,n1/0 emt d/c beam clamp con
+,,,19365,n2/0 emt d/c beam clamp con
+,,,19371,n3/0 emt d/c beam clamp con
+,,,19377,n4/0 emt d/c beam clamp con
+,,,19383,n250 emt d/c beam clamp con
+,,,19389,n300 emt d/c beam clamp con
+,,,19395,n350 emt d/c beam clamp con
+,,,19401,n400 emt d/c beam clamp con
+,,,19407,n500 emt d/c beam clamp con
+,,,19413,n600 emt d/c beam clamp con
+,,,19419,n750 emt d/c beam clamp con
+,,,19429,emt s/s const
+,,,19430,emt s/s strap const
+,,,19444,n14 emt s/s strap const
+,,,19453,n12 emt s/s strap const
+,,,19462,n10 emt s/s strap const
+,,,19471,n8 emt s/s strap const
+,,,19478,n6 emt s/s strap const
+,,,19484,n4 emt s/s strap const
+,,,19489,n14 3/4 emt s/s strap cons
+,,,19498,n12 3/4 emt s/s strap cons
+,,,19508,n14 hr emt s/s strap const
+,,,19517,n12 hr emt s/s strap const
+,,,19526,n10 hr emt s/s strap const
+,,,19535,n8 hr emt s/s strap const
+,,,19542,n6 hr emt s/s strap const
+,,,19548,n4 hr emt s/s strap const
+,,,19553,n14 3/4 hr emt s/s strap c
+,,,19562,n12 3/4 hr emt s/s strap c
+,,,19572,s/s feeder w/wire const
+,,,19573,n3 emt s/s strap const
+,,,19579,n2 emt s/s strap const
+,,,19585,n1 emt s/s strap const
+,,,19591,n1/0 emt s/s strap const
+,,,19597,n2/0 emt s/s strap const
+,,,19603,n3/0 emt s/s strap const
+,,,19609,n4/0 emt s/s strap const
+,,,19615,n250 emt s/s strap const
+,,,19621,n300 emt s/s strap const
+,,,19627,n350 emt s/s strap const
+,,,19633,n400 emt s/s strap const
+,,,19639,n500 emt s/s strap const
+,,,19645,n600 emt s/s strap const
+,,,19651,n750 emt s/s strap const
+,,,19658,emt s/s strap concrete cons
+,,,19671,n14 emt s/s strap concrete
+,,,19680,n12 emt s/s strap concrete
+,,,19689,n10 emt s/s strap concrete
+,,,19698,n8 emt s/s strap concrete c
+,,,19705,n6 emt s/s strap concrete c
+,,,19711,n4 emt s/s strap concrete c
+,,,19716,n14 3/4emt s/s strap concr
+,,,19725,n12 3/4emt s/s strap concr
+,,,19735,n14 hr emt s/s strap concre
+,,,19744,n12 hr emt s/s strap concre
+,,,19753,n10 hr emt s/s strap concre
+,,,19762,n8 hr emt s/s strap concret
+,,,19769,n6 hr emt s/s strap concret
+,,,19775,n4 hr emt s/s strap concret
+,,,19780,n14 3/4 hr emt s/s strap c
+,,,19789,n12 3/4 hr emt s/s strap c
+,,,19799,s/s feeder w/wire const
+,,,19800,n3 emt s/s strap concrete c
+,,,19806,n2 emt s/s strap concrete c
+,,,19812,n1 emt s/s strap concrete c
+,,,19818,n1/0 emt s/s strap concrete
+,,,19824,n2/0 emt s/s strap concrete
+,,,19830,n3/0 emt s/s strap concrete
+,,,19836,n4/0 emt s/s strap concrete
+,,,19842,n250 emt s/s strap concrete
+,,,19848,n300 emt s/s strap concrete
+,,,19854,n350 emt s/s strap concrete
+,,,19860,n400 emt s/s strap concrete
+,,,19866,n500 emt s/s strap concrete
+,,,19872,n600 emt s/s strap concrete
+,,,19878,n750 emt s/s strap concrete
+,,,19887,emt s/s rack const
+,,,19900,n14 emt s/s racks const
+,,,19909,n12 emt s/s racks const
+,,,19918,n10 emt s/s racks const
+,,,19927,n8 emt s/s racks const
+,,,19934,n6 emt s/s racks const
+,,,19940,n4 emt s/s racks const
+,,,19945,n14 3/4 emt s/s racks cons
+,,,19954,n12 3/4 emt s/s racks cons
+,,,19964,n14 hr emt s/s racks const
+,,,19973,n12 hr emt s/s racks const
+,,,19982,n10 hr emt s/s racks const
+,,,19991,n8 hr emt s/s racks const
+,,,19998,n6 hr emt s/s racks const
+,,,20004,n4 hr emt s/s racks const
+,,,20009,n14 3/4 hr emt s/s racks c
+,,,20018,n12 3/4 hr emt s/s racks c
+,,,20028,s/s emt feeder rack w/wire
+,,,20029,n3 emt s/s rack const
+,,,20035,n2 emt s/s rack const
+,,,20041,n1 emt s/s rack const
+,,,20047,n1/0 emt s/s rack const
+,,,20053,n2/0 emt s/s rack const
+,,,20059,n3/0 emt s/s rack const
+,,,20065,n4/0 emt s/s rack const
+,,,20071,n250 emt s/s rack const
+,,,20077,n300 emt s/s rack const
+,,,20083,n350 emt s/s rack const
+,,,20089,n400 emt s/s rack const
+,,,20095,n500 emt s/s rack const
+,,,20101,n600 emt s/s rack const
+,,,20107,n750 emt s/s rack const
+,,,20115,emt s/s beam clamp const
+,,,20128,n14 emt s/s beam clamp cons
+,,,20137,n12 emt s/s beam clamp cons
+,,,20146,n10 emt s/s beam clamp cons
+,,,20155,n8 emt s/s beam clamp const
+,,,20162,n6 emt s/s beam clamp const
+,,,20168,n4 emt s/s beam clamp const
+,,,20173,n14 3/4 emt s/s beam clamp
+,,,20182,n12 3/4 emt s/s beam clamp
+,,,20192,n14 hr emt s/s beam clamp c
+,,,20201,n12 hr emt s/s beam clamp c
+,,,20210,n10 hr emt s/s beam clamp c
+,,,20219,n8 hr emt s/s beam clamp co
+,,,20226,n6 hr emt s/s beam clamp co
+,,,20232,n4 hr emt s/s beam clamp co
+,,,20237,n14 3/4 hr emt s/s beam cl
+,,,20246,n12 3/4 hr emt s/s beam cl
+,,,20257,s/s emt feeder bc w/wire co
+,,,20258,n3 emt s/s beam clamp const
+,,,20264,n2 emt s/s beam clamp const
+,,,20270,n1 emt s/s beam clamp const
+,,,20276,n1/0 emt s/s beam clamp con
+,,,20282,n2/0 emt s/s beam clamp con
+,,,20288,n3/0 emt s/s beam clamp con
+,,,20294,n4/0 emt s/s beam clamp con
+,,,20300,n250 emt s/s beam clamp con
+,,,20306,n300 emt s/s beam clamp con
+,,,20312,n350 emt s/s beam clamp con
+,,,20318,n400 emt s/s beam clamp con
+,,,20324,n500 emt s/s beam clamp con
+,,,20330,n600 emt s/s beam clamp con
+,,,20336,n750 emt s/s beam clamp con
+,,,20346,emt s/c const
+,,,20347,emt s/c strap const
+,,,20361,n14 emt s/c strap const
+,,,20370,n12 emt s/c strap const
+,,,20379,n10 emt s/c strap const
+,,,20388,n8 emt s/c strap const
+,,,20395,n6 emt s/c strap const
+,,,20401,n4 emt s/c strap const
+,,,20406,n14 3/4 emt s/c strap cons
+,,,20415,n12 3/4 emt s/c strap cons
+,,,20425,n14 hr emt s/c strap const
+,,,20434,n12 hr emt s/c strap const
+,,,20443,n10 hr emt s/c strap const
+,,,20452,n8 hr emt s/c strap const
+,,,20459,n6 hr emt s/c strap const
+,,,20465,n4 hr emt s/c strap const
+,,,20470,n14 3/4 hr emt s/c strap c
+,,,20479,n12 3/4 hr emt s/c strap c
+,,,20489,s/c feeder w/wire const
+,,,20490,n3 emt s/c strap const
+,,,20496,n2 emt s/c strap const
+,,,20502,n1 emt s/c strap const
+,,,20508,n1/0 emt s/c strap const
+,,,20514,n2/0 emt s/c strap const
+,,,20520,n3/0 emt s/c strap const
+,,,20526,n4/0 emt s/c strap const
+,,,20532,n250 emt s/c strap const
+,,,20538,n300 emt s/c strap const
+,,,20544,n350 emt s/c strap const
+,,,20550,n400 emt s/c strap const
+,,,20556,n500 emt s/c strap const
+,,,20562,n600 emt s/c strap const
+,,,20568,n750 emt s/c strap const
+,,,20575,emt s/c strap concrete cons
+,,,20588,n14 emt s/c strap concrete
+,,,20597,n12 emt s/c strap concrete
+,,,20606,n10 emt s/c strap concrete
+,,,20615,n8 emt s/c strap concrete c
+,,,20622,n6 emt s/c strap concrete c
+,,,20628,n4 emt s/c strap concrete c
+,,,20633,n14 3/4emt s/c strap concr
+,,,20642,n12 3/4emt s/c strap concr
+,,,20652,n14 hr emt s/c strap concre
+,,,20661,n12 hr emt s/c strap concre
+,,,20670,n10 hr emt s/c strap concre
+,,,20679,n8 hr emt s/c strap concret
+,,,20686,n6 hr emt s/c strap concret
+,,,20692,n4 hr hr emt s/c strap conc
+,,,20697,n14 3/4 hr emt s/c strap c
+,,,20706,n12 3/4 hr emt s/c strap c
+,,,20716,s/c feeder w/wire const
+,,,20717,n3 emt s/c strap concrete c
+,,,20723,n2 emt s/c strap concrete c
+,,,20729,n1 emt s/c strap concrete c
+,,,20735,n1/0 emt s/c strap concrete
+,,,20741,n2/0 emt s/c strap concrete
+,,,20747,n3/0 emt s/c strap concrete
+,,,20753,n4/0 emt s/c strap concrete
+,,,20759,n250 emt s/c strap concrete
+,,,20765,n300 emt s/c strap concrete
+,,,20771,n350 emt s/c strap concrete
+,,,20777,n400 emt s/c strap concrete
+,,,20783,n500 emt s/c strap concrete
+,,,20789,n600 emt s/c strap concrete
+,,,20795,n750 emt s/c strap concrete
+,,,20803,emt s/c rack const
+,,,20816,n14 emt s/c racks const
+,,,20825,n12 emt s/c racks const
+,,,20834,n10 emt s/c racks const
+,,,20843,n8 emt s/c racks const
+,,,20850,n6 emt s/c racks const
+,,,20856,n4 emt s/c racks const
+,,,20861,n14 3/4 emt s/c racks cons
+,,,20870,n12 3/4 emt s/c racks cons
+,,,20880,n14 hr emt s/c racks const
+,,,20889,n12 hr emt s/c racks const
+,,,20898,n10 hr emt s/c racks const
+,,,20907,n8 hr emt s/c racks const
+,,,20914,n6 hr emt s/c racks const
+,,,20920,n4 hr emt s/c racks const
+,,,20925,n14 3/4 hr emt s/c racks c
+,,,20934,n12 3/4 hr emt s/c racks c
+,,,20944,s/c emt feeder rack w/wire
+,,,20945,n3 emt s/c rack const
+,,,20951,n2 emt s/c rack const
+,,,20957,n1 emt s/c rack const
+,,,20963,n1/0 emt s/c rack const
+,,,20969,n2/0 emt s/c rack const
+,,,20975,n3/0 emt s/c rack const
+,,,20981,n4/0 emt s/c rack const
+,,,20987,n250 emt s/c rack const
+,,,20993,n300 emt s/c rack const
+,,,20999,n350 emt s/c rack const
+,,,21005,n400 emt s/c rack const
+,,,21011,n500 emt s/c rack const
+,,,21017,n600 emt s/c rack const
+,,,21023,n750 emt s/c rack const
+,,,21031,emt s/c beam clamp const
+,,,21044,n14 emt s/c beam clamp cons
+,,,21053,n12 emt s/c beam clamp cons
+,,,21062,n10 emt s/c beam clamp cons
+,,,21071,n8 emt s/c beam clamp const
+,,,21078,n6 emt s/c beam clamp const
+,,,21084,n4 emt s/c beam clamp const
+,,,21089,n14 3/4 emt s/c beam clamp
+,,,21098,n12 3/4 emt s/c beam clamp
+,,,21108,n14 hr emt s/c beam clamp c
+,,,21117,n12 hr emt s/c beam clamp c
+,,,21126,n10 hr emt s/c beam clamp c
+,,,21135,n8 hr emt s/c beam clamp co
+,,,21142,n6 hr emt s/c beam clamp co
+,,,21148,n4 hr emt s/c beam clamp co
+,,,21153,n14 3/4 hr emt s/c beam cl
+,,,21162,n12 3/4 hr emt s/c beam cl
+,,,21172,s/c emt feeder bc w/wire co
+,,,21173,n3 emt s/c beam clamp const
+,,,21179,n2 emt s/c beam clamp const
+,,,21185,n1 emt s/c beam clamp const
+,,,21191,n1/0 emt s/c beam clamp con
+,,,21197,n2/0 emt s/c  beam clamp co
+,,,21203,n3/0 emt s/c beam clamp con
+,,,21209,n4/0 emt s/c beam clamp con
+,,,21215,n250 emt s/c beam clamp con
+,,,21221,n300 emt s/c beam clamp con
+,,,21227,n350 emt s/c beam clamp con
+,,,21233,n400 emt s/c beam clamp con
+,,,21239,n500 emt s/c beam clamp con
+,,,21245,n600 emt s/c beam clamp con
+,,,21251,n750 emt s/c beam clamp con
+,,,21261,branch pvc 40 const
+,,,21262,1/2 pvc 40 const
+,,,21263,branch 1/2 pvc 40 const
+,,,21279,3/4 pvc 40 const
+,,,21280,branch 3/4 pvc 40 const
+,,,21296,1 pvc 40 const
+,,,21297,branch 1 pvc 40 const
+,,,21315,feeder pvc 40 const
+,,,21316,1 1/4 pvc 40 const
+,,,21317,feeder 1 1/4 pvc 40 const
+,,,21338,1 1/2 pvc 40 const
+,,,21339,feeder 1 1/2 pvc 40 const
+,,,21360,2 pvc 40 const
+,,,21361,feeder 2 pvc 40 const
+,,,21382,2 1/2 pvc 40 const
+,,,21383,feeder 2 1/2 pvc 40 const
+,,,21404,3 pvc 40 const
+,,,21405,feeder 3 pvc 40 const
+,,,21426,3 1/2 pvc 40 const
+,,,21427,feeder 3 1/2 pvc 40 const
+,,,21448,4 pvc 40 const
+,,,21449,feeder 4 pvc 40 const
+,,,21470,5 pvc 40 const
+,,,21471,feeder 5 pvc 40 const
+,,,21491,6 pvc 40 const
+,,,21492,feeder 6 pvc 40 const
+,,,21508,n14 pvc-40 strap const
+,,,21517,n12 pvc-40 strap const
+,,,21526,n10 pvc-40 strap const
+,,,21535,n8 pvc-40 strap const
+,,,21542,n6 pvc-40 strap const
+,,,21548,n4 pvc-40 strap const
+,,,21553,n14 3/4 pvc-40 strap const
+,,,21562,n12 3/4 pvc-40 strap const
+,,,21572,n14 hr pvc-40 strap const
+,,,21581,n12 hr pvc-40 strap const
+,,,21590,n10 hr pvc-40 strap const
+,,,21599,n8 hr pvc-40 strap const
+,,,21606,n6 hr pvc-40 strap const
+,,,21612,n4 hr pvc-40 strap const
+,,,21617,n14 3/4 hr pvc-40 strap co
+,,,21626,n12 3/4 hr pvc-40 strap co
+,,,21636,pvc feeder strap const
+,,,21637,n3 pvc strap const
+,,,21643,n2 pvc strap const
+,,,21649,n1 pvc strap const
+,,,21655,n1/0 pvc strap const
+,,,21661,n2/0 pvc strap const
+,,,21667,n3/0 pvc strap const
+,,,21673,n4/0 pvc strap const
+,,,21679,n250 pvc strap const
+,,,21685,n300 pvc strap const
+,,,21691,n350 pvc strap const
+,,,21697,n400 pvc strap const
+,,,21703,n500 pvc  strap const
+,,,21709,n600 pvc  strap const
+,,,21715,n750 pvc  strap const
+,,,21725,n14 pvc-40 strap concrete c
+,,,21734,n12 pvc-40 strap concrete c
+,,,21743,n10 pvc-40 strap  concrete
+,,,21752,n8 pvc-40 strap concrete co
+,,,21759,n6 pvc-40 strap concrete co
+,,,21765,n4 pvc-40 strap concrete co
+,,,21770,n14 3/4 pvc-40 strap concr
+,,,21779,n12 3/4 pvc-40 strap concr
+,,,21789,n14 hr pvc-40 strap conc co
+,,,21798,n12 hr pvc-40 strap conc co
+,,,21807,n10 hr pvc-40 strap conc co
+,,,21816,n8 hr pvc-40 strap conc con
+,,,21823,n6 hr pvc-40 strap concrete
+,,,21829,n4 hr pvc-40 strap conc con
+,,,21834,n14 3/4 hr pvc-40 strap co
+,,,21843,n12 3/4 hr pvc-40 strap co
+,,,21852,pvc feeder strap conc const
+,,,21853,n3 pvc strap conc const
+,,,21859,n2 pvc strap conc const
+,,,21865,n1 pvc strap conc const
+,,,21871,n1/0 pvc strap conc const
+,,,21877,n2/0 pvc strap conc const
+,,,21883,n3/0 pvc strap conc const
+,,,21889,n4/0 pvc strap conc const
+,,,21895,n250 pvc strap conc const
+,,,21901,n300 pvc strap conc const
+,,,21907,n350 pvc strap conc const
+,,,21913,n400 pvc strap conc const
+,,,21919,n500 pvc  strap conc const
+,,,21925,n600 pvc strap conc const
+,,,21931,n750 pvc  strap conc const
+,,,21942,pvc-40 branch underground c
+,,,21943,n14 pvc-40 underground cons
+,,,21952,n12 pvc-40 underground cons
+,,,21961,n10 pvc-40 underground cons
+,,,21970,n8 pvc-40 underground const
+,,,21977,n6 pvc-40 underground const
+,,,21983,n4 pvc-40 underground const
+,,,21988,n14 3/4 pvc-40 underground
+,,,21997,n12 3/4 pvc-40 underground
+,,,22008,pvc-40 branch hr undergroun
+,,,22009,n14 pvc-40 hr underground c
+,,,22018,n12 pvc-40 hr underground c
+,,,22027,n10 pvc-40 hr underground c
+,,,22036,n8 pvc-40 hr underground co
+,,,22043,n6 pvc-40 hr underground co
+,,,22049,n4 pvc-40 hr underground co
+,,,22054,n14 3/4 pvc-40 hr undergro
+,,,22063,n12 3/4 pvc-40 hr undergro
+,,,22074,pvc feeder underground cons
+,,,22075,n3 pvc underground const
+,,,22081,n2 pvc underground const
+,,,22087,n1 pvc undergroud const
+,,,22093,n1/0 pvc underground const
+,,,22099,n2/0 pvc underground const
+,,,22105,n3/0 pvc underground const
+,,,22111,n4/0 pvc underground const
+,,,22117,n250 pvc underground const
+,,,22123,n300 pvc underground const
+,,,22129,n350 pvc underground const
+,,,22135,n400 pvc underground const
+,,,22141,n500 pvc underground const
+,,,22147,n600 pvc  underground const
+,,,22153,n750 pvc  underground const
+,,,22164,pvc 40 hr branch beam clamp
+,,,22165,n14 pvc-40 beam clamp const
+,,,22174,n12 pvc-40 beam clamp const
+,,,22183,n10 pvc-40 beam clamp const
+,,,22192,n8 pvc-40 beam clamp const
+,,,22199,n6 pvc-40 beam clamp const
+,,,22205,n4 pvc-40 beam clamp const
+,,,22210,n14 3/4 pvc-40 beam clamp
+,,,22219,n12 3/4 pvc-40 beam clamp
+,,,22230,pvc 40 branch hr beam clamp
+,,,22231,n14 pvc-40 hr beam clamp co
+,,,22240,n12 pvc-40 hr beam clamp co
+,,,22249,n10 pvc-40 hr beam clamp co
+,,,22258,n8 pvc-40 hr beam clamp con
+,,,22265,n6 pvc-40 hr beam clamp con
+,,,22271,n4 pvc-40 hr beam clamp con
+,,,22276,n14 3/4 hr beam clamp cons
+,,,22285,n12 3/4 hr beam clamp cons
+,,,22295,pvc 40 feeder beam clamp co
+,,,22296,n3 pvc beam clamp const
+,,,22302,n2 pvc beam clamp const
+,,,22308,n1 pvc beam clamp const
+,,,22314,n1/0 pvc beam clamp const
+,,,22320,n2/0 pvc beam clamp const
+,,,22326,n3/0 pvc beam clamp const
+,,,22332,n4/0 pvc beam clamp const
+,,,22338,n250 pvc beam clamp const
+,,,22344,n300 pvc beam clamp const
+,,,22350,n350 pvc beam clamp const
+,,,22356,n400 pvc beam clamp const
+,,,22362,n500 pvc  beam clamp const
+,,,22368,n600 pvc  beam clamp const
+,,,22374,n750 pvc  beam clamp const
+,,,22386,imc branch const
+,,,22387,imc 1/2 branch const
+,,,22408,imc 3/4 branch const
+,,,22429,imc 1 branch const
+,,,22453,imc feeder const
+,,,22454,imc 1 1/4 feeder const
+,,,22483,imc 1 1/2 feeder const
+,,,22512,imc 2 feeder const
+,,,22541,imc 2 1/2 feeder const
+,,,22569,imc 3 feeder const
+,,,22597,imc 3 1/2 feeder const
+,,,22625,imc 4 feeder const
+,,,22656,imc branch concrete w/wire
+,,,22657,n14 imc strap concrete cons
+,,,22666,n12 imc strap concrete cons
+,,,22675,n10 imc strap concrete cons
+,,,22684,n8 imc strap concrete const
+,,,22691,n6 imc strap concrete const
+,,,22697,n4 imc strap concrete const
+,,,22702,n14 3/4 imc strap concrete
+,,,22711,n12 3/4 imc strap concrete
+,,,22722,imc hr branch conc w/wire c
+,,,22723,n14 imc hr strap concrete c
+,,,22732,n12 imc hr strap concrete c
+,,,22741,n10 imc hr strap concrete c
+,,,22750,n8 imc hr strap concrete co
+,,,22757,n6 imc hr strap concrete co
+,,,22763,n4 imc hr strap concrete co
+,,,22768,n14 3/4 imc hr strap concr
+,,,22777,n12 3/4 imc hr strap concr
+,,,22787,imc feeder concrete w/wire
+,,,22788,n3 imc strap conc const
+,,,22794,n2 imc strap conc  const
+,,,22800,n1 imc strap conc const
+,,,22806,n1/0 imc strap conc const
+,,,22812,n2/0 imc strap conc const
+,,,22818,n3/0 imc strap conc const
+,,,22824,n4/0 imc strap conc const
+,,,22830,n250 imc strap conc const
+,,,22836,n300 imc strap conc const
+,,,22842,n350 imc strap conc const
+,,,22848,n400 imc strap conc const
+,,,22854,n500 imc strap conc const
+,,,22860,n600 imc strap conc const
+,,,22866,n750 imc  strap conc const
+,,,22876,imc branch rack w/wire cons
+,,,22877,n14 imc racks const
+,,,22886,n12 imc racks const
+,,,22895,n10 imc racks const
+,,,22904,n8 imc racks const
+,,,22911,n6 imc racks const
+,,,22917,n4 imc racks const
+,,,22922,n14 3/4 imc racks const
+,,,22931,n12 3/4 imc racks const
+,,,22942,imc hr branch rack w/wire c
+,,,22943,n14 imc hr racks const
+,,,22952,n12 imc hr racks const
+,,,22961,n10 imc hr racks constracks
+,,,22970,n8 imc hr racks constracks
+,,,22977,n6 imc hr racks constracks
+,,,22983,n4 imc hr racks const
+,,,22988,n14 3/4 imc hr racks const
+,,,22997,n12 3/4 imc hr racks const
+,,,23007,imc feeder rack w/wire cons
+,,,23008,n3 imc rack const
+,,,23014,n2 imc rack const
+,,,23020,n1 imc rack const
+,,,23026,n1/0 imc rack const
+,,,23032,n2/0 imc rack const
+,,,23038,n3/0 imc rack const
+,,,23044,n4/0 imc rack const
+,,,23050,n250 imc rack const
+,,,23056,n300 imc rack const
+,,,23062,n350 imc rack const
+,,,23068,n400 imc rack const
+,,,23074,n500 imc  rack const
+,,,23080,n600 imc rack const
+,,,23086,n750 imc  rack const
+,,,23096,imc branch underground w/wi
+,,,23097,n14 imc underground const
+,,,23106,n12 imc underground const
+,,,23115,n10 imc underground const
+,,,23124,n8 imc underground const
+,,,23131,n6 imc underground const
+,,,23137,n4 imc underground const
+,,,23142,n14 3/4 imc underground co
+,,,23151,n12 3/4 imc underground co
+,,,23162,imc branch hr ug w/wire con
+,,,23163,n14 imc hr underground cons
+,,,23172,n12 imc hr underground cons
+,,,23181,n10 imc hr underground cons
+,,,23190,n8 imc hr underground const
+,,,23197,n6 imc hr underground const
+,,,23203,n4 imc hr underground const
+,,,23208,n14 3/4 imc hr underground
+,,,23217,n12 3/4 imc hr underground
+,,,23227,imc feeder underground w/wi
+,,,23228,n3 imc underground const
+,,,23234,n2 imc underground const
+,,,23240,n1 imc underground const
+,,,23246,n1/0 imc underground const
+,,,23252,n2/0 imc underground const
+,,,23258,n3/0 imc underground const
+,,,23264,n4/0 imc underground const
+,,,23270,n250 imc underground const
+,,,23276,n300 imc underground const
+,,,23282,n350 imc underground const
+,,,23288,n400 imc underground const
+,,,23294,n500 imc  underground const
+,,,23300,n600 imc underground const
+,,,23306,n750 imc  underground const
+,,,23316,imc branch bc w/wire const
+,,,23317,n14 imc beam clamp const
+,,,23326,n12 imc beam clamp const
+,,,23335,n10 imc beam clamp const
+,,,23344,n8 imc beam clamp const
+,,,23351,n6 imc beam clamp const
+,,,23357,n4 imc beam clamp const
+,,,23362,n14 3/4 imc beam clamp con
+,,,23371,n12 3/4 imc beam clamp con
+,,,23382,imc hr branch bc w/wire con
+,,,23383,n14 imc hr beam clamp const
+,,,23392,n12 imc hr beam clamp const
+,,,23401,n10 imc hr beam clamp const
+,,,23410,n8 imc hr beam clamp const
+,,,23417,n6 imc hr beam clamp const
+,,,23423,n4 imc hr beam clamp const
+,,,23428,n14 3/4 imc hr beam clamp
+,,,23437,n12 3/4 imc hr beam clamp
+,,,23446,imc feeder beam clamp w/wir
+,,,23447,n3 imc beam clamp const
+,,,23453,n2 imc beam clamp const
+,,,23459,n1 iimc beam clamp const
+,,,23465,n1/0 imc beam clamp const
+,,,23471,n2/0 imc beam clamp const
+,,,23477,n3/0 imc beam clamp const
+,,,23483,n4/0 imc beam clamp const
+,,,23489,n250 imc beam clamp const
+,,,23495,n300 imc beam clamp const
+,,,23501,n350 imc beam clamp const
+,,,23507,n400 imc beam clamp const
+,,,23513,n500 imc  beam clamp const
+,,,23519,n600 imc beam clamp const
+,,,23525,n750 imc  beam clamp const
+,,,23534,grc branch const
+,,,23535,grc 1/2 const
+,,,23557,grc 3/4 const
+,,,23579,grc 1 const
+,,,23602,grc feeder const
+,,,23603,grc 1 1/4 const
+,,,23638,grc 1 1/2 const
+,,,23673,grc 2 const
+,,,23708,grc 2 1/2 const
+,,,23742,grc 3 const
+,,,23776,grc 3 1/2 const
+,,,23811,grc 4 const
+,,,23845,grc 5 const
+,,,23873,grc 6 const
+,,,23896,branch grc strap const
+,,,23897,n14 grc strap const
+,,,23906,n12 grc strap const
+,,,23915,n10 grc strap const
+,,,23924,n8 grc strap const
+,,,23931,n6 grc strap const
+,,,23937,n4 grc strap const
+,,,23942,n14 3/4 grc strap const
+,,,23951,n12 3/4 grc strap const
+,,,23962,branch grc hr strap const
+,,,23963,n14 grc hr strap const
+,,,23972,n12 grc hr strap const
+,,,23981,n10 grc hr strap const
+,,,23990,n8 grc hr strap const
+,,,23997,n6 grc hr strap const
+,,,24003,n4 grc hr strap const
+,,,24008,n14 3/4 grc hr strap const
+,,,24017,n12 3/4 grc hr strap const
+,,,24029,feeder grc strap const
+,,,24030,n3 grc strap const
+,,,24036,n2 grc strap const
+,,,24042,n1 grc strap const
+,,,24048,n1/0 grc strap const
+,,,24054,n2/0 grc strap const
+,,,24060,n3/0 grc strap const
+,,,24066,n4/0 grc strap const
+,,,24072,n250 grc strap const
+,,,24078,n300 grc  strap const
+,,,24084,n350 grc strap const
+,,,24090,n400 grc strap  const
+,,,24096,n500 grc  strap const
+,,,24102,n600 grc  strap const
+,,,24108,n750 grc  strap const
+,,,24118,branch grc strap concrete c
+,,,24119,n14 grc strap concrete cons
+,,,24128,n12 grc strap concrete cons
+,,,24137,n10 grc strap concrete cons
+,,,24146,n8 grc strap concrete const
+,,,24153,n6 grc strap concrete const
+,,,24159,n4 grc strap concrete const
+,,,24164,n14 3/4 grc strap concrete
+,,,24173,n12 3/4 grc strap concrete
+,,,24184,branch grc hr strap concret
+,,,24185,n14 grc hr strap concrete c
+,,,24194,n12 grc hr strap concrete c
+,,,24203,n10 grc hr strap concrete c
+,,,24212,n8 grc hr strap concrete co
+,,,24219,n6 grc hr strap concrete co
+,,,24225,n4 grc hr strap concrete co
+,,,24230,n14 3/4 grc hr strap concr
+,,,24239,n12 3/4 grc hr strap concr
+,,,24249,grc feeder strap concrete c
+,,,24250,n3 grc strap concrete const
+,,,24256,n2 grc strap conc const
+,,,24262,n1 grc strap conc const
+,,,24268,n1/0 grc strap conc const
+,,,24274,n2/0 grc strap conc const
+,,,24280,n3/0 grc strap conc const
+,,,24286,n4/0 grc strap conc const
+,,,24292,n250 grc strap conc const
+,,,24298,n300 grc strap conc const
+,,,24304,n350 grc strap conc const
+,,,24310,n400 grc strap conc const
+,,,24316,n500 grc  strap conc const
+,,,24322,n600 grc  strap conc const
+,,,24328,n750 grc  strap conc const
+,,,24337,grc branch rack w/wire cons
+,,,24338,n14 grc rack const
+,,,24347,n12 grc rack const
+,,,24356,n10 grc rack const
+,,,24365,n8 grc rack const
+,,,24372,n6 grc rack const
+,,,24378,n4 grc rack const
+,,,24383,n14 3/4 grc rack const
+,,,24392,n12 3/4 grc rack const
+,,,24403,grc branch hr rack w/wire c
+,,,24404,n14 grc hr rack const
+,,,24413,n12 grc hr rack const
+,,,24422,n10 grc hr rack const
+,,,24431,n8 grc hr rack const
+,,,24438,n6 grc hr rack const
+,,,24444,n4 grc hr rack const
+,,,24449,n14 3/4 grc hr rack const
+,,,24458,n12 3/4 grc hr rack const
+,,,24468,grc feeder rack w/wire cons
+,,,24469,n3 grc rack const
+,,,24475,n2 grc rack const
+,,,24481,n1 grc rack const
+,,,24487,n1/0 grc rack const
+,,,24493,n2/0 grc rack const
+,,,24499,n3/0 grc rack const
+,,,24505,n4/0 grc rack const
+,,,24511,n250 grc rack const
+,,,24517,n300 grc rack const
+,,,24523,n350 grc rack const
+,,,24529,n400 grc rack const
+,,,24535,n500 grc  rack const
+,,,24541,n600 grc rack const
+,,,24547,n750 grc  rack const
+,,,24557,grc branch underground cons
+,,,24558,n14 grc underground const
+,,,24567,n12 grc underground const
+,,,24576,n10 grc  underground const
+,,,24585,n8 grc  underground const
+,,,24592,n6 grc  underground const
+,,,24598,n4 grc  underground const
+,,,24603,n14 3/4 grc underground co
+,,,24612,n12 3/4 grc underground co
+,,,24623,grc branch hr underground c
+,,,24624,n14 grc hr underground cons
+,,,24633,n12 grc hr underground cons
+,,,24642,n10 grc  hr underground con
+,,,24651,n8 grc  hr underground cons
+,,,24658,n6 grc  hr underground cons
+,,,24664,n4 grc  hr underground cons
+,,,24669,n14 3/4 grc hr underground
+,,,24678,n12 3/4 grc hr underground
+,,,24688,grc feeder underground cons
+,,,24689,n3 grc underground const
+,,,24695,n2 grc underground const
+,,,24701,n1 grc underground const
+,,,24707,n1/0 grc underground const
+,,,24713,n2/0 grc underground const
+,,,24719,n3/0 grc underground const
+,,,24725,n4/0 grc underground const
+,,,24731,n250 grc underground const
+,,,24737,n300 grc underground const
+,,,24743,n350 grc underground const
+,,,24749,n400 grc underground const
+,,,24755,n500 grc  underground const
+,,,24761,n600 grc underground const
+,,,24767,n750 grc  underground const
+,,,24777,grc branch beam clamp w/wir
+,,,24778,n14 grc beam clamp const
+,,,24787,n12 grc beam clamp const
+,,,24796,n10 grc beam clamp const
+,,,24805,n8 grc beam clamp const
+,,,24812,n6 grc beam clamp const
+,,,24818,n4 grc beam clamp const
+,,,24823,n14 3/4 grc beam clamp con
+,,,24832,n12 3/4 grc beam clamp con
+,,,24843,grc branch hr bc w/wire con
+,,,24844,n14 grc hr beam clamp const
+,,,24853,n12 grc hr beam clamp const
+,,,24862,n10 grc hr beam clamp const
+,,,24871,n8 grc hr beam clamp const
+,,,24878,n6 grc hr beam clamp const
+,,,24884,n4 grc hr beam clamp const
+,,,24889,n14 3/4 grc hr beam clamp
+,,,24898,n12 3/4 grc hr beam clamp
+,,,24909,grc feeder beam clamp w/wir
+,,,24910,n3 grc beam clamp const
+,,,24916,n2 grc beam clamp const
+,,,24922,n1 grc beam clamp const
+,,,24928,n1/0 grc beam clamp const
+,,,24934,n2/0 grc beam clamp const
+,,,24940,n3/0 grc beam clamp const
+,,,24946,n4/0 grc beam clamp const
+,,,24952,n250 grc beam clamp const
+,,,24958,n300 grc beam clamp const
+,,,24964,n350 grc beam clamp const
+,,,24970,n400 grc beam clamp const
+,,,24976,n500 grc  beam clamp const
+,,,24982,n600 grc beam clamp const
+,,,24988,n750 grc  beam clamp const
+,,,24996,branch aluminum const
+,,,24997,branch 1/2 al const
+,,,25017,branch 3/4 al const
+,,,25037,branch 1 al const
+,,,25058,al feeder const
+,,,25059,1 1/4 al feeder const
+,,,25088,1 1/2 al feeder const
+,,,25117,2 al  feeder const
+,,,25146,2 1/2 al  feeder const
+,,,25174,3 al feeder const
+,,,25202,3 1/2 al feeder const
+,,,25229,4 al  feeder const
+,,,25260,n14 al  no strap const
+,,,25269,n12 al no strap const
+,,,25278,n10 al d/c no strap const
+,,,25287,n8 al no strap const
+,,,25294,n6 alum no strap const
+,,,25301,n4 al no strap const
+,,,25308,n2 al no strap const
+,,,25316,n14 al strap const
+,,,25325,n12 al strap const
+,,,25334,n10 al d/c strap const
+,,,25343,n8 al strap const
+,,,25350,n6 al strap const
+,,,25356,n4 al strap const
+,,,25361,n14 3/4 al strap const
+,,,25370,n12 3/4 al strap const
+,,,25380,n14 al hr strap const
+,,,25389,n12 al hr strap const
+,,,25398,n10 al hr strap const
+,,,25407,n8 al hr strap const
+,,,25414,n6 al hr strap const
+,,,25420,n4 al hr strap const
+,,,25425,n14 3/4 al hr strap const
+,,,25434,n12 3/4 al hr strap const
+,,,25444,alum feeder strap w/wire co
+,,,25445,n3 al strap const
+,,,25451,n2 al strap const
+,,,25457,n1 al strap const
+,,,25463,n1/0 al strap const
+,,,25469,n2/0 al strap const
+,,,25475,n3/0  al strap const
+,,,25481,n4/0 al strap const
+,,,25487,n250 al strap const
+,,,25493,n300 al strap const
+,,,25499,n350 al  strap const
+,,,25505,n400 al strap const
+,,,25511,n500 al strap const
+,,,25517,n600 al strap const
+,,,25523,n750 al strap const
+,,,25531,n14 aluminum branch concret
+,,,25532,n14 al concrete w/wire cons
+,,,25541,n12 al concrete w/wire cons
+,,,25550,n10 al concrete w/wire cons
+,,,25559,n8 al concrete w/wire const
+,,,25566,n6 al concrete w/wire const
+,,,25572,n4 al concrete w/wire const
+,,,25577,n14 3/4 al concrete w/wire
+,,,25586,n12 3/4 al concrete w/wire
+,,,25596,n14 aluminum branch concret
+,,,25597,n14  al hr concrete w/wire
+,,,25606,n12 al hr concrete w/wire c
+,,,25615,n10 al hr concrete w/wire c
+,,,25624,n8 al hr concrete w/wire co
+,,,25631,n6 al hr concrete w/wire co
+,,,25637,n4 al hr concrete w/wire co
+,,,25642,n14 3/4 al hr concrete w/w
+,,,25651,n12 3/4 al hr concrete w/w
+,,,25662,al feeder concrete w/wire c
+,,,25663,n3 al strap concrete const
+,,,25669,n2 al strap concrete const
+,,,25675,n1 al strap concrete const
+,,,25681,n1/0 al strap concrete cons
+,,,25687,n2/0 al strap concrete cons
+,,,25693,n3/0 al strap concrete cons
+,,,25699,n4/0 al strap concrete cons
+,,,25705,n250 al strap concrete cons
+,,,25711,n300 al strap concrete cons
+,,,25717,n350 al strap concrete cons
+,,,25723,n400 al strap concrete cons
+,,,25729,n500 al strap concrete cons
+,,,25735,n600 al strap concrete cons
+,,,25741,n750 al  strap concrete con
+,,,25748,n14 al rack const
+,,,25757,n12 al rack const
+,,,25766,n10 al  rack const
+,,,25775,n8 al rack const
+,,,25782,n6 al rack const
+,,,25788,n4 al rack const
+,,,25793,n14 3/4 al rack const
+,,,25802,n12 3/4 al rack const
+,,,25812,n14 al hr rack const
+,,,25821,n12 al hr rack const
+,,,25830,n10 al  hr rack const
+,,,25839,n8 al hr rack const
+,,,25846,n6 al hr rack const
+,,,25852,n4 al hr rack const
+,,,25857,n14 3/4 al hr rack const
+,,,25866,n12 3/4 al hr rack const
+,,,25876,al feeder rack w/wire const
+,,,25877,n3 al rack const
+,,,25883,n2 al rack const
+,,,25889,n1 al rack const
+,,,25895,n1/0 al rack const
+,,,25901,n2/0 al rack const
+,,,25907,n3/0 al rack const
+,,,25913,n4/0 al rack const
+,,,25919,n250 al rack const
+,,,25925,n300 al rack const
+,,,25931,n350 al rack const
+,,,25937,n400 al rack const
+,,,25943,n500 al rack const
+,,,25949,n600 al rack const
+,,,25955,n750 al  rack const
+,,,25962,al feeder bc w/wire const
+,,,25963,n3 al beam clamp const
+,,,25969,n2 al beam clamp const
+,,,25975,n1 al beam clamp const
+,,,25981,n1/0 al beam clamp const
+,,,25987,n2/0 al beam clamp const
+,,,25993,n3/0 al beam clamp const
+,,,25999,n4/0 al beam clamp const
+,,,26005,n250 al beam clamp const
+,,,26011,n300 al beam clamp const
+,,,26017,n350 al beam clamp const
+,,,26023,n400 al beam clamp const
+,,,26029,n500 al beam clamp const
+,,,26035,n600 al beam clamp const
+,,,26041,n750 al  beam clamp const
+,,,26051,grc/pvc branch const
+Branch with Constants,GRC/PVC,GRC/PVC Strap Concrete,26052,branch 1/2 grc/pvc const
+,,,26072,branch 3/4 grc/pvc const
+,,,26093,branch 1 grc/pvc const
+,,,26114,grc/pvc feeder const
+,,,26115,feeder 1 1/4 grc/pvc const
+,,,26137,feeder 1 1/2 grc/pvc const
+,,,26159,feeder 2 grc/pvc const
+,,,26180,feeder 2 1/2 grc/pvc const
+,,,26201,feeder 3 grc/pvc const
+,,,26222,feeder 3 1/2 grc/pvc const
+,,,26242,feeder 4 grc/pvc const
+,,,26263,grc/pvc branch no strap con
+,,,26264,n14 grc/pvc no strap const
+,,,26273,n12 grc/pvc no strap const
+,,,26282,n10 grc/pvc no strap const
+,,,26291,n8 grc/pvc no strap const
+,,,26298,n6 grc/pvc no strap const
+,,,26304,n4 grc/pvc no strap const
+,,,26309,n14 3/4 grc/pvc no strap c
+,,,26318,n12 3/4 grc/pvc no strap c
+,,,26328,grc/pvc branch hr no strap
+,,,26329,n14 grc/pvc hr no strap con
+,,,26338,n12 grc/pvc hr no strap con
+,,,26347,n10 grc/pvc hr no strap con
+,,,26356,n8 grc/pvc hr no strap cons
+,,,26363,n6 grc/pvc hr no strap cons
+,,,26369,n4 grc/pvc hr no strap cons
+,,,26374,n14 3/4 grc/pvc hr no stra
+,,,26383,n12 3/4 grc/pvc hr no stra
+,,,26393,grc/pvc feeder no strap con
+,,,26394,n3 grc/pvc no strap const
+,,,26400,n2 grc/pvc  no strap const
+,,,26406,n1 grc/pvc  no strap const
+,,,26412,n1/0 grc/pvc  no strap cons
+,,,26418,n2/0 grc/pvc  no strap cons
+,,,26424,n3/0 grc/pvc  no strap cons
+,,,26430,n4/0 grc/pvc  no strap cons
+,,,26436,n250 grc/pvc  no strap cons
+,,,26442,n300 grc/pvc  no strap cons
+,,,26448,n350 grc/pvc  no strap cons
+,,,26454,n400 grc/pvc  no strap cons
+,,,26460,n500 grc/pvc  no strap cons
+,,,26466,n600 grc/pvc  no strap cons
+,,,26472,n750 grc/pvc  no strap cons
+,,,26479,grc/pvc branch strap const
+,,,26480,n14 grc/pvc strap const
+,,,26489,n12 grc/pvc strap const
+,,,26498,n10 grc/pvc strap const
+,,,26507,n8 grc/pvc strap const
+,,,26514,n6 grc/pvc strap const
+,,,26520,n4 grc/pvc strap const
+,,,26525,n14 3/4 grc/pvc strap cons
+,,,26534,n12 3/4 grc/pvc strap cons
+,,,26544,grc/pvc branch hr strap con
+,,,26545,n14 grc/pvc hr strap const
+,,,26554,n12 grc/pvc hr strap const
+,,,26563,n10 grc/pvc hr strap const
+,,,26572,n8 grc/pvc hr strap const
+,,,26579,n6 grc/pvc hr strap const
+,,,26585,n4 grc/pvc hr strap const
+,,,26590,n14 3/4 grc/pvc hr strap c
+,,,26599,n12 3/4 grc/pvc hr strap c
+,,,26609,grc/pvc feeder strap const
+,,,26610,n3 grc/pvc strap const
+,,,26616,n2 grc/pvc strap const
+,,,26622,n1 grc/pvc strap const
+,,,26628,n1/0 grc/pvc strap const
+,,,26634,n2/0 grc/pvc strap const
+,,,26640,n3/0 grc/pvc strap const
+,,,26646,n4/0 grc/pvc strap const
+,,,26652,n250 grc/pvc strap const
+,,,26658,n300 grc/pvc strap const
+,,,26664,n350 grc/pvc strap const
+,,,26670,n400 grc/pvc strap const
+,,,26676,n500 grc/pvc strap const
+,,,26682,n600 grc/pvc strap const
+,,,26688,n750 grc/pvc strap const
+,,,26697,grc/pvc branch conc w/wire
+Branch with Constants,GRC/PVC,GRC/PVC Strap Concrete,26698,n14 grc/pvc strap concrete
+Branch with Constants,GRC/PVC,GRC/PVC Strap Concrete,26707,n12 grc/pvc strap concrete
+,,,26716,n10 grc/pvc strap concrete
+,,,26725,n8 grc/pvc strap concrete c
+,,,26732,n6 grc/pvc strap concrete c
+,,,26738,n4 grc/pvc strap concrete c
+,,,26743,n14 3/4grc/pvc strap concr
+,,,26752,n12 3/4grc/pvc strap concr
+,,,26762,grc/pvc branch hr conc w/wi
+,,,26763,n14 grc/pvc hr strap concre
+,,,26772,n12 grc/pvc hr strap concre
+,,,26781,n10 grc/pvc hr strap concre
+,,,26790,n8 grc/pvc hr strap concret
+,,,26797,n6 grc/pvc hr strap concret
+,,,26803,n4 grc/pvc hr strap concret
+,,,26808,n14 3/4grc/pvc hr strap co
+,,,26817,n12 3/4grc/pvc hr strap co
+,,,26827,grc/pvc feeder strap conc c
+,,,26828,n3 grc/pvc strap concr  con
+,,,26834,n2 grc/pvc strap concr cons
+,,,26840,n1 grc/pvc strap conc const
+,,,26846,n1/0 grc/pvc strap conc con
+,,,26852,n2/0 grc/pvc strap conc con
+,,,26858,n3/0 grc/pvc strap conc con
+,,,26864,n4/0 grc/pvc strap conc con
+,,,26870,n250 grc/pvc strap conc con
+,,,26876,n300 grc/pvc strap conc con
+,,,26882,n350 grc/pvc strap conc con
+,,,26888,n400 grc/pvc strap conc con
+,,,26894,n500 grc/pvc strap conc con
+,,,26900,n600 grc/pvc strap conc con
+,,,26906,n750 grc/pvc strap conc con
+,,,26913,n14 grc/pvc rack const
+,,,26922,n12 grc/pvc rack const
+,,,26931,n10 grc/pvc rack const
+,,,26940,n8 grc/pvc rack const
+,,,26947,n6 grc/pvc rack const
+,,,26953,n4 grc/pvc rack const
+,,,26958,n14 3/4 grc/pvc rack const
+,,,26967,n12 3/4 grc/pvc rack const
+,,,26977,n14 grc/pvc hr rack const
+,,,26986,n12 grc/pvc hr rack const
+,,,26995,n10 grc/pvc hr rack const
+,,,27004,n8 grc/pvc hr rack const
+,,,27011,n6 grc/pvc hr rack const
+,,,27017,n4 grc/pvc hr rack const
+,,,27022,n14 3/4 grc/pvc hr rack co
+,,,27031,n12 3/4 grc/pvc hr rack co
+,,,27041,grc/pvc feeder rack const
+,,,27042,n3 grc/pvc rack const
+,,,27048,n2 grc/pvc rack const
+,,,27054,n1 grc/pvc rack const
+,,,27060,n1/0 grc/pvc rack const
+,,,27066,n2/0 grc/pvc rack const
+,,,27072,n3/0 grc/pvc rack const
+,,,27078,n4/0 grc/pvc rack const
+,,,27084,n250 grc/pvc rack const
+,,,27090,n300 grc/pvc rack const
+,,,27096,n350 grc/pvc rack const
+,,,27102,n400 grc/pvc rack const
+,,,27108,n500 grc/pvc rack const
+,,,27114,n600 grc/pvc rack const
+,,,27120,n750 grc/pvc rack const
+,,,27127,grc/pvc feeder ug w/wire co
+,,,27128,n3 grc/pvc underground cons
+,,,27134,n2 grc/pvc underground cons
+,,,27140,n1 grc/pvc underground cons
+,,,27146,n1/0 grc/pvc underground co
+,,,27152,n2/0 grc/pvc underground co
+,,,27158,n3/0 grc/pvc underground co
+,,,27164,n4/0 grc/pvc underground co
+,,,27170,n250 grc/pvc underground co
+,,,27176,n300 grc/pvc underground co
+,,,27182,n350 grc/pvc underground co
+,,,27188,n400 grc/pvc underground co
+,,,27194,n500 grc/pvc underground co
+,,,27200,n600 grc/pvc underground co
+,,,27206,n750 grc/pvc underground co
+,,,27211,4#600 1-#3/0 4 pvc
+,,,27213,grc/pvc branch 90d bc w/wir
+,,,27214,n14 grc/pvc 90 deg beam cla
+,,,27223,n12 grc/pvc 90 deg beam cla
+,,,27232,n10 grc/pvc 90 deg beam cla
+,,,27241,n8 grc/pvc 90 deg beam clam
+,,,27248,n6 grc/pvc 90 deg beam clam
+,,,27254,n4 grc/pvc 90 deg beam clam
+,,,27259,n14 3/4 grc/pvc 90deg bc c
+,,,27268,n12 3/4 grc/pvc 90deg bc c
+,,,27278,grc/pvc branch hr 90d bc w/
+,,,27279,n14 grc/pvc 90 deg hr bc co
+,,,27288,n12 grc/pvc 90 deg hr bc co
+,,,27297,n10 grc/pvc 90 deg hr bc co
+,,,27306,n8 grc/pvc 90 deg hr bc con
+,,,27313,n6 grc/pvc 90 deg hr bc con
+,,,27319,n4 grc/pvc 90 deg hr bc con
+,,,27324,n14 3/4 grc/pvc 90deg hr b
+,,,27333,n12 3/4 grc/pvc 90deg hr b
+,,,27343,grc/pvc feeder rack const
+,,,27344,n3 grc/pvc 90 deg beam clam
+,,,27350,n2 grc/pvc 90 deg beam clam
+,,,27356,n1 grc/pvc 90 deg beam clam
+,,,27362,n1/0 grc/pvc 90 deg beam cl
+,,,27368,n2/0 grc/pvc 90 deg beam cl
+,,,27374,n3/0 grc/pvc 90 deg beam cl
+,,,27380,n4/0 grc/pvc 90 deg beam cl
+,,,27386,n250 grc/pvc 90 deg beam cl
+,,,27392,n300 grc/pvc 90 deg beam cl
+,,,27398,n350 grc/pvc 90 deg beam cl
+,,,27404,n400 grc/pvc 90 deg beam cl
+,,,27410,n500 grc/pvc 90 deg beam cl
+,,,27416,n600 grc/pvc 90 deg beam cl
+,,,27422,n750 grc/pvc 90 deg beam cl
+,,,27428,end of electrical assemby d
+,,,27431,Automated  Building Systems
+,,,27434,special systems database
+,,,27436,generic fire equip
+,,,27437,generic fa control panel
+,,,27442,generic fa annunciator
+,,,27445,generic fa initiating devic
+,,,27473,generic fa signaling
+,,,27489,generic fa miscellaneous de
+,,,27499,generic fa device/cable
+,,,27504,fire alarm edwards
+,,,27505,fa edwards annumciator
+,,,27515,fa edwards pull station
+,,,27523,fa edwards smoke detector
+,,,27526,"fa edwards horn, speaker, c"
+,,,27532,fa edwards strobe
+,,,27537,fa edwards bell
+,,,27541,fire alarm device/cable edw
+,,,27546,fa plenum shield fplp cable
+,,,27556,fire alarm cable
+,,,27565,residential fa devices
+,,,27566,residential smoke detector
+,,,27567,residential carbon monoxide
+,,,27570,duct smoke chase 0550
+,,,27574,intercom
+,,,27600,video intercom
+,,,27624,clock system
+,,,27640,hospital equipment
+,,,27641,headwall units
+,,,27642,hospital headwalls
+,,,27650,medical service column
+,,,27653,patient console
+,,,27656,neonatal console
+,,,27659,medical clocks
+,,,27660,medical timers
+,,,27661,surgical timers
+,,,27670,medical lights
+,,,27671,light surgical
+,,,27678,or panel
+,,,27683,icu panel
+,,,27688,ground bus modules
+,,,27695,x ray
+,,,27701,nurse call system - head en
+,,,27708,nurse call - field devices
+,,,27724,nurse call code blue system
+,,,27735,sound systems - signal gene
+,,,27742,sound systems - signal proc
+,,,27760,sound generating equipment
+,,,27774,pro-sound theatrical system
+,,,27790,theatrical systems - patch
+,,,27796,theatrical systems - electr
+,,,27809,theatrical systems-consoles
+,,,27827,sound systems - sound maski
+,,,27834,audio visual - source equip
+,,,27838,audio visual - program & sw
+,,,27846,audio visual - playback
+,,,27858,audio visual - remote contr
+,,,27870,audio visual - interface de
+,,,27876,audio visual - teleconferen
+,,,27881,audio visual - patching
+,,,27887,audio visual - roll down sc
+,,,27893,audio visual - miscellaneou
+,,,27899,audio visual - power suppli
+,,,27904,audio visual - speakers
+,,,27910,speaker cables
+,,,27921,tv
+,,,27941,catv
+,,,27952,security systems control pa
+,,,27962,security systems peripheral
+,,,27968,security systems detection
+,,,27982,security systems signaling
+,,,27988,security cables
+,,,28001,access control
+,,,28014,access control field device
+,,,28029,access control - misc items
+,,,28034,surveillance
+,,,28079,parking
+,,,28100,leak detection
+,,,28110,undercarpet wiring
+,,,28111,uc wiring
+,,,28112,uc wire
+,,,28121,begin voice/data database
+,,,28123,generic voice/data assembli
+,,,28124,generic voice/telephone ass
+,,,28125,voice/telephone
+,,,28126,blks 66 w/std off brkt
+,,,28132,blks 66 w/metal housing
+,,,28137,blks 110 w/std off brkt
+,,,28142,cat6 voice outlets
+,,,28143,white ca6 voice outlets25'
+,,,28148,white cat6 voice outlets 50
+,,,28153,white cat6 voice outlets 10
+,,,28158,white cat6 voice outlets 15
+,,,28163,ivory cat6 voice outlets
+,,,28168,grey cat6 voice outlets
+,,,28173,almond cat6 voice outlets
+,,,28178,cat6 plenum voice outlets
+,,,28179,wh cat6 plenum voice outlet
+,,,28184,wh ca 6 plenum voice outlet
+,,,28189,wh cat6 plenum voice outlet
+,,,28194,wh cat6 plenum voice outlet
+,,,28199,iv cat6 plenum voice outlet
+,,,28204,grey cat6 plenum voice outl
+,,,28209,alm cat6 plenum voice outle
+,,,28214,cat6 surface voice outlets
+,,,28215,white cat6 surface voice ou
+,,,28220,ivory cat6 surface voice ou
+,,,28225,grey cat6 surface voice out
+,,,28230,almond cat6 surface voice o
+,,,28235,cat6 surface plenum voice o
+,,,28236,wh cat6 surface plen voice
+,,,28241,iv ca6 surface plen voice o
+,,,28246,grey cat6 surface plen voic
+,,,28251,alm cat6 surface plen voice
+,,,28256,8c  tel outlets 11'
+,,,28257,white 8c tel  outlets 11'
+,,,28262,ivory 8c tel outlets 11'
+,,,28267,grey 8c tel outlets 11'
+,,,28272,black 8c tel outlets 11'
+,,,28277,8c  tel outlets 25'
+,,,28278,white 8c tel  outlets 25'
+,,,28283,ivory 8c tel outlets 25'
+,,,28288,grey 8c tel outlets 25'
+,,,28293,black 8c tel outlets 25'
+,,,28298,8c  plenum tel outlets 11'
+,,,28299,white 8c plenum tel  outlet
+,,,28304,ivory 8c plenum tel outlets
+,,,28309,grey 8c plenum tel outlets
+,,,28314,black 8c plenum tel outlets
+,,,28319,8c  plenum tel outlets 25'
+,,,28320,white 8c plenum tel  outlet
+,,,28325,ivory 8c plenum tel outlets
+,,,28330,grey 8c plenum tel outlets
+,,,28335,black 8c plenum tel outlets
+,,,28340,8c  plenum tel outlets cons
+,,,28341,white 8c plenum tel  outlet
+,,,28346,ivory 8c plenum tel outlets
+,,,28351,grey 8c plenum tel outlets
+,,,28356,black 8c plenum tel outlets
+,,,28361,8c plenum voice cable
+,,,28366,tel boards/cabinets
+,,,28375,data/computer
+,,,28376,computer
+,,,28377,racks & enclosures
+,,,28378,racks
+,,,28379,aluminum racks
+,,,28384,steel racks
+,,,28389,steel rack with patch panel
+,,,28392,cabinets
+,,,28393,nema 1 free standing cabine
+,,,28399,nema 12 free standing cabin
+,,,28410,voice/data outlets
+,,,28411,cat5e outlets
+,,,28412,white cat5e outlets 11'
+,,,28419,white cat5e outlets 50'
+,,,28426,white cat5e outlets 100'
+,,,28433,white cat5e outlets 150'
+,,,28440,ivory cat5e outlets
+,,,28447,grey cat5e outlets
+,,,28454,black cat5e outlets
+,,,28461,cat5e  plenum outlets
+,,,28462,white cat5e plenum 11'
+,,,28469,wh cat5e pln outlets 50'
+,,,28476,white cat5e plenum outlets
+,,,28483,white cat5e plenum outlets
+,,,28490,ivory cat5e  plenum outlets
+,,,28497,grey cat5e  plenum outlets
+,,,28504,black cat5e  plenum outlets
+,,,28511,cat5e surface outlets
+,,,28512,wh cat5e surface outlets
+,,,28519,iv cat5e surface outlets
+,,,28526,gray cat5e surface outlets
+,,,28533,blk cat5e surface outlets
+,,,28540,cat5e plenum surface outlet
+,,,28541,wh cat5e plenum surface out
+,,,28548,iv cat5e plenum surface out
+,,,28555,gray cat5e plen surface out
+,,,28562,blk cat5e plen surface outl
+,,,28569,cat6 surface outlets
+,,,28570,white cat6 surface outlets
+,,,28577,ivory cat6 surface outlets
+,,,28584,gray cat6 surface outlets
+,,,28591,black cat6 surface outlets
+,,,28598,cat6 surface plenum outlets
+,,,28599,white cat6 surface plen out
+,,,28606,ivory cat6 surface plen out
+,,,28613,gray cat6 surface plen outl
+,,,28620,black cat6 surface plen out
+,,,28627,cat6a surface outlets
+,,,28628,white cat6a surface outlets
+,,,28635,ivory cat6a surface outlets
+,,,28642,gray cat6a surface outlets
+,,,28649,black cat6a surface outlets
+,,,28656,cat6a surface plenum outlet
+,,,28657,white cat6a surface plen ou
+,,,28664,ivory cat6a surface plen ou
+,,,28671,gray cat6a surface plen out
+,,,28678,black cat6a surface plen ou
+,,,28685,cat7 surface outlets
+,,,28686,white cat7 surface outlets
+,,,28693,ivory cat7 surface outlets
+,,,28700,gray cat7 surface outlets
+,,,28707,black cat7 surface outlets
+,,,28714,cat7 surface plenum outlets
+,,,28715,white cat7 surface plen out
+,,,28722,ivory cat7 surface plen out
+,,,28729,gray cat7 surface plen outl
+,,,28736,black cat7 surface plen out
+,,,28743,cat6 outlets
+,,,28744,white cat6 outlets 11'
+,,,28751,white cat6 outlets 50'
+,,,28758,white cat6 outlets 100'
+,,,28765,white cat6 outlets 150'
+,,,28772,ivory cat6 outlets
+,,,28779,grey cat6 outlets
+,,,28786,black cat6 outlets
+,,,28793,cat6  plenum outlets
+,,,28794,white cat6 plenum outlets 1
+,,,28801,white cat6 plenum outlets 5
+,,,28808,white cat6 plenum outlets 1
+,,,28815,white cat6 plenum outlets 1
+,,,28822,ivory cat6 plenum outlets
+,,,28829,grey cat6 plenum outlets
+,,,28836,black cat6 plenum outlets
+,,,28843,cat6a  outlets
+,,,28844,white cat6a outlets 11'
+,,,28851,white cat6a outlets 50'
+,,,28858,white cat6a outlets 100'
+,,,28865,white cat6a outlets 150'
+,,,28872,ivory cat6a outlets
+,,,28879,grey cat6a outlets
+,,,28886,black cat6a outlets
+,,,28893,cat6a  plenum outlets
+,,,28894,white cat6a plenum outlets
+,,,28901,white cat6a plenum outlets
+,,,28908,white cat6a plenum outlets
+,,,28915,white cat6a plenum outlets
+,,,28922,ivory cat6a plenum outlets
+,,,28929,grey cat6a plenum outlets
+,,,28936,black cat6a plenum outlets
+,,,28943,cat7 outlets
+,,,28944,white cat7 outlets 11'
+,,,28951,white cat7 outlets 50'
+,,,28958,white cat7 outlets 100'
+,,,28965,white cat7 outlets 150'
+,,,28972,ivory cat7 outlets 11'
+,,,28979,grey cat7 outlets 11'
+,,,28986,black cat7 outlets 11'
+,,,28993,cat7  plenum outlets
+,,,28994,white cat7 plenum outlets 1
+,,,29001,white cat7 plenum outlets 5
+,,,29008,white cat7 plenum outlets 1
+,,,29015,white cat7 plenum outlets 1
+,,,29022,ivory cat7 plenum outlets 1
+,,,29029,grey cat7 plenum outlets 11
+,,,29036,black cat7 plenum outlets 1
+,,,29043,voice/data cat6 cable w/con
+,,,29050,voice/data cat6 pln cbl con
+,,,29057,voice/data cat6a cable w/co
+,,,29064,voice/data cat6a pln cbl co
+,,,29071,voice/data cat7 cable w/con
+,,,29078,voice/data cat7 pln cbl con
+,,,29085,cat5e cable
+,,,29092,cat5e plenum cable
+,,,29099,cat6 cable
+,,,29106,cat6 plenum cable
+,,,29113,cat6a cable
+,,,29120,cat6a plenum cable
+,,,29127,cat7 cable
+,,,29134,cat7 plenum cable
+,,,29141,cat5e cable w/hanger
+,,,29148,cat5e plenum cable w/hanger
+,,,29155,cat6 cable w/hanger
+,,,29162,cat6 plenum cable w/hanger
+,,,29169,cat6a cable w/hanger
+,,,29176,cat6a plenum cable w/hanger
+,,,29183,cat7 cable w/hanger
+,,,29190,cat7 plenum cable w/hanger
+,,,29197,3/4 innerduct fiber w/bc ha
+,,,29198,multi mode dist cable OM3 i
+,,,29209,multi mode dist om3 cable i
+,,,29218,multi mode in dist om4 cabl
+,,,29232,2d4w cable tray fiber w/bc
+,,,29233,multi mode dist cbl OM3 w/2
+,,,29244,multi mode dist om3 cbl w/2
+,,,29253,multi mode dist om4 cbl 2d4
+,,,29267,2d4w cable tray fiber w/hb
+,,,29268,multi mode dist cbl OM3 w/2
+,,,29279,multi mode dist om3 cbl w/2
+,,,29288,multi mode dist om4 cbl 2d4
+,,,29302,voice/data labels
+,,,29308,j-hook pathways
+,,,29335,end abs voice/data  databas
+,,,29337,begin residential abs datab
+,,,29339,rj-11 jacks
+,,,29344,voice/data/video outlets
+,,,29362,voice/data/video cables
+,,,29380,end residential abs databas
+,,,29383,start transmission & distri
+,,,29384,start 12.47/7.2kv rus datab
+,,,29385,12.47/7.2 kv single support
+,,,29415,12.47/7.2 kv double support
+,,,29445,12.47/7.2 kv suspension ang
+,,,29456,12.47/7.2kv deadend angle r
+,,,29460,12.47/7.2kv single deadend
+,,,29474,12.47/7.2kv 1ph tap guide r
+,,,29479,12.47/7.2kv 1 d/e on cr-arm
+,,,29483,12.47/7.2kv 2 dead end rus
+,,,29489,12.47/7.2kv 2 ph pri pole t
+,,,29490,12.47/7.2kv single support
+,,,29527,12.47/7.2kv double support
+,,,29565,12.47/7.2kv suspension angl
+,,,29577,12.47/7.2kv d/e angle guide
+,,,29581,12.47/7.2kv single deadend
+,,,29596,12.47/7.2kv double deadend
+,,,29599,12.47/7.2kv 3 ph pri pole t
+,,,29600,12.47/7.2kv single support
+,,,29645,12.47/7.2kv 3 ph jct guide
+,,,29648,12.47/7.2kv double support
+,,,29693,12.47/7.2kv suspension angl
+,,,29707,12.47/7.2kv d/e angle guide
+,,,29711,12.47/7.2kv single deadends
+,,,29723,12.47/7.2kv 1 ph tap guide
+,,,29726,12.47/7.2kv sngl d/e cr-arm
+,,,29738,12.47/7.2kv 3 ph horz tap g
+,,,29741,12.47/7.2kv dbl d/e cr-arm
+,,,29751,12.47/7.2kv sngl sup nar pr
+,,,29757,12.47/7.2kv sngl sup on cr-
+,,,29771,12.47/7.2kv dbl sup nar pro
+,,,29775,12.47/7.2kv dbl sup on cr-a
+,,,29780,12.47/7.2kv angle gud dbl c
+,,,29784,12.47/7.2kv 3ph tap dbl cir
+,,,29787,12.47/7.2kv dbl d/e dbl cir
+,,,29790,12.47/7.2kv single down guy
+,,,29796,12.47/7.2kv sngl overhead g
+,,,29800,12.47/7.2kv guy strain ins
+,,,29803,12.47/7.2kv mult down guy
+,,,29808,12.47/7.2kv expanding ancho
+,,,29814,12.47/7.2kv screw anchors r
+,,,29820,12.47/7.2kv plate anchors r
+,,,29826,12.47/7.2kv service anchors
+,,,29830,12.47/7.2kv rock anchors ru
+,,,29835,12.47/7.2kv swamp anchors r
+,,,29840,12.47/7.2kv 1 ph transforme
+,,,29849,12.47/7.2kv 2 ph transf ban
+,,,29852,12.47/7.2kv 3 ph transf ban
+,,,29857,12.47/7.2kv grounding units
+,,,29866,12.47/7.2kv secondary units
+,,,29876,12.47/7.2kv service units r
+,,,29890,12.47/7.2kv tying units rus
+,,,29917,12.47/7.2kv neutral units r
+,,,29934,12.47/7.2kv protection unit
+,,,29942,12.47/7.2kv meter units rus
+,,,29949,12.47/7.2kv oil circ reclos
+,,,29961,12.47/7.2kv sectionalizing
+,,,29980,"12.47/7.2kv poles, cr-arm r"
+,,,29984,12.47/7.2kv volt alt equip
+,,,30000,start 24.9/14.4 kv rus data
+,,,30001,single support miscellaneo
+,,,30009,24.9/14.4 kv rus
+,,,30010,single support tangent
+,,,30015,24.9/14.4 kv rus
+,,,30016,single support tangent post
+,,,30021,24.9/14.4 kv rus
+,,,30022,single support
+,,,30026,24.9/14.4 kv rus
+,,,30027,single support post insulat
+,,,30031,24.9/14.4 kv rus
+,,,30032,single support on crossarm
+,,,30036,24.9/14.4 kv rus
+,,,30037,sgl support on crossarm pos
+,,,30041,24.9/14.4 kv rus
+,,,30042,single phase junc guide
+,,,30046,24.9/14.4 kv rus
+,,,30047,double support misc
+,,,30054,24.9/14.4 kv rus
+,,,30055,double support
+,,,30058,24.9/14.4 kv rus
+,,,30059,dbl sup post ins
+,,,30063,24.9/14.4 kv rus
+,,,30064,dbl sup on crsarms
+,,,30069,24.9/14.4 kv rus
+,,,30070,suspension angle
+,,,30076,24.9/14.4 kv rus
+,,,30077,deadend angle 90-150 dg
+,,,30082,24.9/14.4 kv rus
+,,,30083,single deadend
+,,,30090,24.9/14.4 kv rus
+,,,30091,single phase tap guide
+,,,30095,24.9/14.4 kv rus
+,,,30096,single deadend on crsarms
+,,,30101,24.9/14.4 kv rus
+,,,30102,dbl deadend (straight)
+,,,30106,24.9/14.4 kv rus
+,,,30107,dbl deadend (feed thru)
+,,,30111,24.9/14.4 kv rus
+,,,30112,dbl deadend on crsarms
+,,,30116,24.9/14.4 kv rus
+,,,30117,dbl deadend fd-thru crsarms
+,,,30121,24.9/14.4 kv rus
+,,,30122,sgl sup crsarm tang
+,,,30127,24.9/14.4 kv rus
+,,,30128,sgl sup crsarm tang post in
+,,,30133,24.9/14.4 kv rus
+,,,30134,sgl sup on crossarm
+,,,30138,24.9/14.4 kv rus
+,,,30139,sgl sup on crossarm post in
+,,,30142,24.9/14.4 kv rus
+,,,30143,sgl sup neut on crsarm
+,,,30147,24.9/14.4 kv rus
+,,,30148,sgl sup neut on crsarm post
+,,,30152,24.9/14.4 kv rus
+,,,30153,dbl sup neut on crsarm
+,,,30160,24.9/14.4 kv rus
+,,,30161,suspension angle
+,,,30168,24.9/14.4 kv rus
+,,,30169,sgl sup on crsarm tang
+,,,30174,24.9/14.4 kv rus
+,,,30175,sgl sup on crsarm tang lg c
+,,,30180,24.9/14.4 kv rus
+,,,30181,sgl sup on crsarm tang post
+,,,30186,24.9/14.4 kv rus
+,,,30187,sgl sup on crossarm
+,,,30191,24.9/14.4 kv rus
+,,,30192,sgl sup on crossarm lg cond
+,,,30196,24.9/14.4 kv rus
+,,,30197,sgl sup on crossarm post in
+,,,30201,24.9/14.4 kv rus
+,,,30202,sgl sup neut on crossarm
+,,,30206,24.9/14.4 kv rus
+,,,30207,sgl sup neut on crossarm lg
+,,,30211,24.9/14.4 kv rus
+,,,30212,sgl sup neut on crossarm po
+,,,30216,24.9/14.4 kv rus
+,,,30217,three phase junction guide
+,,,30221,24.9/14.4 kv rus
+,,,30222,double support on crossarms
+,,,30226,24.9/14.4 kv rus
+,,,30227,double support on crossarms
+,,,30231,24.9/14.4 kv rus
+,,,30232,dbl support on crossarms po
+,,,30236,24.9/14.4 kv rus
+,,,30237,dbl support neut on crossar
+,,,30241,24.9/14.4 kv rus
+,,,30242,dbl support neut on crsarms
+,,,30246,24.9/14.4 kv rus
+,,,30247,dbl spt neut on crsarms pos
+,,,30251,24.9/14.4 kv rus
+,,,30252,dbl spt on 10ft crossarms
+,,,30256,24.9/14.4 kv rus
+,,,30257,dbl spt on 10ft crossarms l
+,,,30261,24.9/14.4 kv rus
+,,,30262,dbl spt on 10ft crossarms p
+,,,30266,24.9/14.4 kv rus
+,,,30267,suspension angle
+,,,30271,24.9/14.4 kv rus
+,,,30272,suspension angle lg cond
+,,,30276,24.9/14.4 kv rus
+,,,30277,deadend angle (acute)
+,,,30281,24.9/14.4 kv rus
+,,,30282,deadend angle lg conductor
+,,,30286,24.9/14.4 kv rus
+,,,30287,single deadend-vertical
+,,,30291,24.9/14.4 kv rus
+,,,30292,single deadend-vertical lg
+,,,30296,24.9/14.4 kv rus
+,,,30297,single phase tap guide
+,,,30301,24.9/14.4 kv rus
+,,,30302,single deadend on crsarm
+,,,30307,24.9/14.4 kv rus
+,,,30308,single deadend on crsarm as
+,,,30312,24.9/14.4 kv rus
+,,,30313,three ph horiz tap guide
+,,,30317,24.9/14.4 kv rus
+,,,30318,dbl deadend crossarms
+,,,30325,24.9/14.4 kv rus
+,,,30326,sgl support tan crsarms
+,,,30334,24.9/14.4kv rus
+,,,30335,sgl sup on crossarms lg con
+,,,30339,24.9/14.4kv rus
+,,,30340,sgl sup on crossarms lg con
+,,,30344,24.9/14.4kv rus
+,,,30345,sgl sup on crossarms post c
+,,,30349,24.9/14.4kv rus
+,,,30350,dbl support on crossarms
+,,,30354,24.9/14.4 kv rus
+,,,30355,dbl support on crossarms lg
+,,,30359,24.9/14.4kv rus
+,,,30360,dbl support on crossarms po
+,,,30364,24.9/14.4 kv rus
+,,,30365,suspension angle guide
+,,,30369,24.9/14.4  kv rus
+,,,30370,deadend angle guide
+,,,30374,24.9/14.4 kv rus
+,,,30375,three phase tap guide
+,,,30379,24.9/14.4 kv rus
+,,,30380,dbl ddends crsarms (feedthr
+,,,30384,24.9/14.4 kv rus
+,,,30385,single down guy (thru bolt
+,,,30389,24.9/14.4 kv rus
+,,,30390,single down guy (thru bolt
+,,,30395,24.9/14.4 kv rus
+,,,30396,single down guy hd (thru bo
+,,,30400,24.9/14.4 kv rus
+,,,30401,double down guy hd (thru bo
+,,,30405,24.9/14.4 kv rus
+,,,30406,three down guy hd (thru bol
+,,,30410,24.9/14.4 kv rus
+,,,30411,single down guy (wrapped ty
+,,,30415,24.9/14.4 kv rus
+,,,30416,sgl dn guy large cond (pole
+,,,30420,24.9/14.4 kv rus
+,,,30421,four dn guy large cond (pol
+,,,30425,24.9/14.4 kv rus
+,,,30426,guy strain insulator guide
+,,,30430,24.9/14.4 kv rus
+,,,30431,expanding type anchors
+,,,30438,24.9/14.4 kv rus
+,,,30439,screw anchors (power instal
+,,,30446,24.9/14.4 kv rus
+,,,30447,plate type anchors
+,,,30454,24.9/14.4 kv rus
+,,,30455,service anchors
+,,,30460,24.9/14.4 kv rus
+,,,30461,rock anchors
+,,,30467,24.9/14.4 kv rus
+,,,30468,swamp anchors (power instal
+,,,30474,24.9/14.4 kv rus
+,,,30475,"sgl-phase, csp transf (tan"
+,,,30479,24.9/14.4 kv rus
+,,,30480,"sgl-phase, csp transf (dden"
+,,,30484,24.9/14.4 kv rus
+,,,30485,"sgl-phase, conv transf (tan"
+,,,30490,24.9/14.4 kv rus
+,,,30491,"sgl-phase, conv transf (dde"
+,,,30494,24.9/14.4 kv rus
+,,,30495,"sgl-phase, conv transf (tan"
+,,,30499,24.9/14.4 kv rus
+,,,30500,"sgl-phase, conv transf (dde"
+,,,30504,24.9/14.4 kv rus
+,,,30505,2ph trans bl op-y pri op dl
+,,,30509,24.9/14.4 kv rus
+,,,30510,3ph trans bl ug-y pri ct gr
+,,,30514,24.9/14.4 kv rus
+,,,30515,3ph trans bl ug-y pri ct gr
+,,,30519,24.9/14.4 kv rus
+,,,30520,3ph trans bl gr-y pri ct gr
+,,,30524,24.9/14.4 kv rus
+,,,30525,grounding assy ground rod t
+,,,30529,24.9/14.4 kv rus
+,,,30530,grounding assy trench type
+,,,30534,24.9/14.4 kv rus
+,,,30535,gr assy-gr rod tp 4 sect ai
+,,,30539,24.9/14.4 kv rus
+,,,30540,gr assy-pt fm tp 4 sect air
+,,,30544,24.9/14.4 kv rus
+,,,30545,secondary assemblies (small
+,,,30550,24.9/14.4 kv rus
+,,,30551,secondary assemblies (large
+,,,30556,24.9/14.4 kv rus
+,,,30557,secondary assemblies (deade
+,,,30562,24.9/14.4 kv rus
+,,,30563,service assemblies (pole mo
+,,,30570,24.9/14.4 kv rus
+,,,30571,service assemblies
+,,,30577,24.9/14.4 kv rus
+,,,30578,service assemblies (mast ty
+,,,30583,24.9/14.4 kv rus
+,,,30584,tying guide primary angle a
+,,,30588,24.9/14.4 kv rus
+,,,30589,tying guide primary deadend
+,,,30593,24.9/14.4 kv rus
+,,,30594,tying guide neutral angle a
+,,,30598,24.9/14.4 kv rus
+,,,30599,tying guide neutral deadend
+,,,30603,24.9/14.4 kv rus
+,,,30604,tying gd neutral & sec angl
+,,,30608,24.9/14.4 kv rus
+,,,30609,tying gd neutral & sec dden
+,,,30612,24.9/14.4 kv rus
+,,,30613,tying gd neut & sec ddend a
+,,,30617,24.9/14.4 kv rus
+,,,30618,tying guide service assembl
+,,,30622,24.9/14.4 kv rus
+,,,30623,tying guide service assembl
+,,,30629,24.9/14.4 kv rus
+,,,30630,neutral assemblies-tangent
+,,,30635,24.9/14.4 kv rus
+,,,30636,neutral support on crossarm
+,,,30641,24.9/14.4 kv rus
+,,,30642,neutral assemblies-large an
+,,,30648,24.9/14.4 kv rus
+,,,30649,neutral assemblies-single d
+,,,30654,24.9/14.4 kv rus
+,,,30655,neutral assembly-double dea
+,,,30659,24.9/14.4 kv rus
+,,,30660,neutral assembly-dbl ddend
+,,,30664,24.9/14.4 kv rus
+,,,30665,surge arresters-single phas
+,,,30670,24.9/14.4 kv rus
+,,,30671,surge arresters-3-single ph
+,,,30675,24.9/14.4 kv rus
+,,,30676,pole protection assembly-pl
+,,,30680,24.9/14.4 kv rus
+,,,30681,pole protection assem-wrap
+,,,30682,POLE PROT ASSY-WRAP TYPE (R
+,,,30686,120/240 volts
+,,,30687,sec metering sgl ph 120/240
+,,,30691,120/240 volts
+,,,30692,sec metering 3 ph 120/240 v
+,,,30696,240/480 volts
+,,,30697,secd metering 3 ph 240/480
+,,,30701,120/208 volts
+,,,30702,secd metering 3 ph 120/208
+,,,30706,24.9/14.4 kv rus
+,,,30707,primary met 3-ph 4-wire grd
+,,,30711,24.9/14.4 kv rus
+,,,30712,oil circuit recloser
+,,,30716,24.9/14.4 kv rus
+,,,30717,oil circuit recloser w/bypa
+,,,30721,24.9/14.4 kv rus
+,,,30722,(three) oil circuit reclose
+,,,30726,24.9/14.4 kv rus
+,,,30727,(3) oil circuit reclosers w
+,,,30731,24.9/14.4 kv rus
+,,,30732,misc cutouts & disconnect s
+,,,30738,24.9/14.4 kv rus
+,,,30739,cutout-single phase
+,,,30743,24.9/14.4 kv rus
+,,,30744,cutout-(3) single phase
+,,,30748,24.9/14.4 kv rus
+,,,30749,disconnect switches 3 sgl p
+,,,30753,24.9/14.4 kv rus
+,,,30754,group-oper airbreak 3-ph
+,,,30758,24.9/14.4 kv rus
+,,,30759,crossarm braces
+,,,30764,24.9/14.4 kv rus
+,,,30765,"voltage reg, pole mnt 1-sgl"
+,,,30769,24.9/14.4 kv rus
+,,,30770,"voltage reg, pole mnt 3-sgl"
+,,,30774,24.9/14.4 kv rus
+,,,30775,"voltage reg, pole mnt 3-sgl"
+,,,30778,24.9/14.4 kv rus
+,,,30779,three phase capacitor bank
+,,,30783,start rus 34.5-69kv and 115
+,,,30784,single rod log anchor
+,,,30789,double rod log anchor
+,,,30794,steel cross plate
+,,,30801,power screw anchors
+,,,30807,"light duty, one foot bracke"
+,,,30814,"medium duty, 1'-0 bracket"
+,,,30821,medium duty 2'-0 & 3'-6 b
+,,,30830,automatic w/thimble clevis
+,,,30838,automatic w/thimble clevis
+,,,30846,automatic w/thimble clevis
+,,,30851,factory w/thimble clevis 20
+,,,30859,factory w/thimble clevis 35
+,,,30867,factory w/thimble clevis 50
+,,,30872,3 bolt clamp w/guy link-med
+,,,30880,3 bolt clamp w/guy thimble
+,,,30887,"3-bolt clamp w/clevis 20,00"
+,,,30895,"3-bolt clamp w/clevis 35,40"
+,,,30903,"3-bolt clamp w/clevis 50,00"
+,,,30908,wrap
+,,,30915,multi pole & anchor groundi
+,,,30928,pole ground and butt wrap
+,,,30934,light duty guying plate
+,,,30942,light duty wrap
+,,,30950,light duty pole eye plates
+,,,30958,medium duty guying tees
+,,,30964,medium duly pole bands
+,,,30970,medium duty pole eye plates
+,,,30976,heavy duty guying tees
+,,,30981,heavy duty pole bands
+,,,30986,line post
+,,,30994,insulator string w/suspensi
+,,,31000,insulator string w/ cushion
+,,,31008,miscellaneous hardware
+,,,31013,cushioned susp & susp clamp
+,,,31024,oh  ground wire support Ass
+,,,31029,steel tie angle
+,,,31036,"ld angle, guying & deadend"
+,,,31037,light duty - guying plate
+,,,31045,ld angle guying &deadend po
+,,,31046,light duty - wrap
+,,,31053,ld angle guying &deadend po
+,,,31054,light duty - pole eye plate
+,,,31061,md angle guying &deadend po
+,,,31062,medium duty - bands
+,,,31069,md angle guying &deadend po
+,,,31070,medium duty -  pole eye pla
+,,,31077,md angle guying &deadend po
+,,,31078,medium duty - guying tees
+,,,31085,md angle guying &deadend po
+,,,31086,medium duty - tees & guy li
+,,,31093,tangent horizontal line pos
+,,,31099,tangent horizontal line pos
+,,,31105,tangent line post-no ohgw
+,,,31110,tangent line post 46kv-no o
+,,,31115,dbl circuit tang line post-
+,,,31120,dbl circuit tangent line po
+,,,31125,tangent single pole-post su
+,,,31129,tangent pin type insulator-
+,,,31134,tangent pin type insulator-
+,,,31139,tan pin type insul dbl circ
+,,,31144,tan pin type insul dbl circ
+,,,31149,tangent single pole suspens
+,,,31154,small angle horiz line post
+,,,31155,34.5kv
+,,,31159,46kv
+,,,31163,69kv
+,,,31168,small angle horz line post-
+,,,31169,34.5kv
+,,,31172,46kv
+,,,31175,69kv
+,,,31179,small angle horz line post
+,,,31180,34.5kv
+,,,31184,46kv
+,,,31188,69kv
+,,,31192,small angle horz line post-
+,,,31193,34.5kv
+,,,31196,46kv
+,,,31199,69kv
+,,,31203,small angle single pole sus
+,,,31209,115kv tangent horz line pos
+,,,31212,138kv tangent horz line pos
+,,,31216,115kv small angle horz line
+,,,31221,138kv small angle horz line
+,,,31227,start rus underground datab
+,,,31228,sgl ph cable deadend termin
+,,,31235,sgl ph cable tangent termin
+,,,31240,vee-ph cable ter pole w/cut
+,,,31247,3-ph cable term p w/cutouts
+,,,31254,3-ph cab ddend term pole w/
+,,,31258,3-ph cab tang term pole w/d
+,,,31262,sgl ph pad mtn trans (radia
+,,,31266,sgl ph pad mtn trans (loop
+,,,31270,3-ph pad mtn trans (radial
+,,,31274,3-ph pad mtn trans (loop fe
+,,,31278,3-ph pad mtn trans (lp w/ra
+,,,31282,secondary connector blocks
+,,,31290,secondary connector blocks
+,,,31298,secondary pedestal uk cable
+,,,31302,secondary handhole uk cable
+,,,31306,transformer pads
+,,,31310,3 ph transformer concrete p
+,,,31314,#4 reinforcing bar
+,,,31327,slg ph sectionalizing enclo
+,,,31331,sgl ph pad mtn sectional or
+,,,31336,3-sgl ph pad mtn reclosers
+,,,31340,secondary cable terminal po
+,,,31344,sgl ph reg assem w/ bp swt
+,,,31348,meter install ug source
+,,,31352,meter prdestal wood post
+,,,31356,meter & swit install ug sou
+,,,31360,c.t. meter install sgl phas
+,,,31364,c.t. meter install 3 phase
+,,,31368,pad mtn swit capacitor encl
+,,,31372,sac anode 4-cable splice pr
+,,,31376,sac anode 4 equip gr protec
+,,,31381,sac anode 4 cable gr protec
+,,,31385,multi ph sect encl pad/slee
+,,,31389,grd assem pas mtn sgl ph tr
+,,,31393,grd assem  mtn multi ph tra
+,,,31397,grd assem  ug primary cable
+,,,31401,grd assem  ug prim cab w/ t
+,,,31405,grd grid pad mtn eq install
+,,,31408,grd array 4 pad mtn eq inst
+,,,31412,sgl ph pad-mtn trans def un
+,,,31416,sgl ph trans def unit pad-s
+,,,31419,misc material & labor
+,,,31420,$1 dollar material
+,,,31439,one hour labor
+,,,31465,aluminum feeders /constants
+,,,31466,#3 emt d/s strap const al w
+,,,31472,#2 emt d/s strap const al w
+,,,31478,#1 emt d/s strap const al w
+,,,31484,#1/0 emt d/s strap const al
+,,,31490,#2/0 emt d/s strap const al
+,,,31496,#3/0 emt d/s strap const al
+,,,31502,#4/0 emt d/s strap const al
+,,,31508,#250 emt d/s strap const al
+,,,31514,#300 emt d/s strap const al
+,,,31520,#350 emt d/s strap const al
+,,,31526,#400 emt d/s strap const al
+,,,31532,#500 emt d/s strap const al
+,,,31538,#600 emt d/s strap const al
+,,,31544,#750 emt d/s strap const  a
+,,,31550,#3 emt d/s strap conc const
+,,,31556,#2 emt d/s strap conc const
+,,,31562,#1 emt d/s strap conc const
+,,,31568,#1/0 emt d/s strap conc con
+,,,31574,#2/0 emt d/s strap conc con
+,,,31580,#3/0 emt d/s strap conc con
+,,,31586,#4/0 emt d/s strap conc con
+,,,31592,#250 emt d/s strap conc con
+,,,31598,#300 emt d/s strap conc con
+,,,31604,#350 emt d/s strap conc con
+,,,31610,n400 emt d/s strap conc con
+,,,31616,#500 emt d/s strap conc con
+,,,31622,#600 emt d/s strap conc con
+,,,31628,#750 emt d/s strap conc con
+,,,31634,d/s feeder rack w/wire cons
+,,,31635,#3 emt d/s rack const al wi
+,,,31641,#2 emt d/s rack const al wi
+,,,31647,#1 emt d/s rack const al wi
+,,,31653,#1/0 emt d/s rack const al
+,,,31659,#2/0 emt d/s rack const al
+,,,31665,#3/0 emt d/s rack const al
+,,,31671,#4/0 emt d/s rack const al
+,,,31677,#250 emt d/s rack const al
+,,,31683,#300 emt d/s rack const al
+,,,31689,#350 emt d/s rack const al
+,,,31695,#400 emt d/s rack const al
+,,,31701,#500 emt d/s rack const al
+,,,31707,#600 emt d/s rack const al
+,,,31713,#750 emt d/s rack const al
+,,,31719,d/s emt feeder beam clamp w
+,,,31720,#3 emt d/s beam clamp 85A
+,,,31726,#2 emt d/s beam clamp 100A
+,,,31732,#1 emt d/s beam clamp 115A
+,,,31738,#1/0 emt d/s beam clamp 135
+,,,31744,#2/0 emt d/s beam clamp 150
+,,,31750,#3/0 emt d/s beam clamp 175
+,,,31756,#4/0 emt d/s beam clamp 205
+,,,31762,#250 emt d/s beam clamp 230
+,,,31768,#300 emt d/s beam clamp 255
+,,,31774,#350 emt d/s beam clamp 280
+,,,31780,#400 emt d/s beam clamp 305
+,,,31786,#500 emt d/s beam clamp 350
+,,,31792,#600 emt d/s beam clamp 385
+,,,31798,#750 emt d/s beam clamp
+,,,31805,#3 emt s/c strap const Al W
+,,,31811,#2 emt s/c strap const Al W
+,,,31817,#1 emt s/c strap const Al W
+,,,31823,#1/0 emt s/c strap const Al
+,,,31829,#2/0 emt s/c strap const Al
+,,,31835,#3/0 emt s/c strap const Al
+,,,31841,#4/0 emt s/c strap const Al
+,,,31847,#250 emt s/c strap const Al
+,,,31853,#300 emt s/c strap const Al
+,,,31859,#350 emt s/c strap const Al
+,,,31865,#400 emt s/c strap const Al
+,,,31871,#500 emt s/c strap const Al
+,,,31877,#600 emt s/c strap const Al
+,,,31883,#750 emt s/c strap const Al
+,,,31899,d/c feeder rack w/wire cons
+,,,31900,#3 emt d/c rack const al wi
+,,,31906,#2 emt d/c rack const al wi
+,,,31912,#1 emt d/c rack const al wi
+,,,31918,#1/0 emt d/c rack const al
+,,,31924,#2/0 emt d/c rack const al
+,,,31930,#3/0 emt d/c rack const al
+,,,31936,#4/0 emt d/c rack const al
+,,,31942,#250 emt d/c rack const al
+,,,31948,#300 emt d/c rack const al
+,,,31954,#350 emt d/c rack const al
+,,,31960,#400 emt d/c rack const al
+,,,31966,#500 emt d/c rack const al
+,,,31972,#600 emt d/c rack const al
+,,,31978,#750 emt d/c rack const al
+,,,31984,d/c emt feeder bc w/wire co
+,,,31985,#3 emt d/c beam clamp const
+,,,31991,#2 emt d/c beam clamp const
+,,,31997,#1 emt d/c beam clamp const
+,,,32003,#1/0 emt d/c beam clamp con
+,,,32009,#2/0 emt d/c beam clamp con
+,,,32015,#3/0 emt d/c beam clamp con
+,,,32021,#4/0 emt d/c beam clamp con
+,,,32027,#250 emt d/c beam clamp con
+,,,32033,#300 emt d/c beam clamp con
+,,,32039,#350 emt d/c beam clamp con
+,,,32045,#400 emt d/c beam clamp con
+,,,32051,#500 emt d/c beam clamp con
+,,,32057,#600 emt d/c beam clamp con
+,,,32063,#750 emt d/c beam clamp con
+,,,32069,s/s feeder w/wire const alu
+,,,32070,#3 emt s/s strap const al w
+,,,32076,#2 emt s/s strap const al w
+,,,32082,#1 emt s/s strap const al w
+,,,32088,#1/0 emt s/s strap const al
+,,,32094,#2/0 emt s/s strap const al
+,,,32100,#3/0 emt s/s strap const al
+,,,32106,#4/0 emt s/s strap const al
+,,,32112,#250 emt s/s strap const al
+,,,32118,#300 emt s/s strap const al
+,,,32124,#350 emt s/s strap const al
+,,,32130,#400 emt s/s strap const al
+,,,32136,#500 emt s/s strap const al
+,,,32142,#600 emt s/s strap const al
+,,,32148,#750 emt s/s strap const al
+,,,32154,s/s feeder w/wire const
+,,,32155,#3 emt s/s strap conc const
+,,,32161,#2 emt s/s strap conc const
+,,,32167,#1 emt s/s strap conc const
+,,,32173,#1/0 emt s/s strap conc con
+,,,32179,#2/0 emt s/s strap conc con
+,,,32185,#3/0 emt s/s strap conc con
+,,,32191,#4/0 emt s/s strap conc con
+,,,32197,#250 emt s/s strap conc con
+,,,32203,#300 emt s/s strap conc con
+,,,32209,#350 emt s/s strap conc con
+,,,32215,#400 emt s/s strap conc con
+,,,32221,#500 emt s/s strap conc con
+,,,32227,#600 emt s/s strap conc con
+,,,32233,#750 emt s/s strap conc con
+,,,32240,s/s emt feeder rack w/wire
+,,,32241,#3 emt s/s rack const alum
+,,,32247,#2 emt s/s rack const alum
+,,,32253,#1 emt s/s rack const alum
+,,,32259,#1/0 emt s/s rack const alu
+,,,32265,#2/0 emt s/s rack const alu
+,,,32271,#3/0 emt s/s rack const alu
+,,,32277,#4/0 emt s/s rack const alu
+,,,32283,#250 emt s/s rack const alu
+,,,32289,#300 emt s/s rack const alu
+,,,32295,#350 emt s/s rack const alu
+,,,32301,#400 emt s/s rack const alu
+,,,32307,#500 emt s/s rack const alu
+,,,32313,#600 emt s/s rack const alu
+,,,32319,#750 emt s/s rack const alu
+,,,32327,s/s emt feeder bc w/wire co
+,,,32328,#3  em s /s beam clamp cons
+,,,32334,#2 alum emt s/s beam clamp
+,,,32340,#1 alum emt s/s beam clamp
+,,,32346,#1/0 alum emt s/s beam clam
+,,,32352,#2/0 alum emt s/s beam clam
+,,,32358,#3/0 alum  emt s/s beam cla
+,,,32364,#4/0 alum emt s/s beam clam
+,,,32370,#250 alum emt s/s beam clam
+,,,32376,#300 alum emt s/s beam clam
+,,,32382,#350 alum emt s/s beam clam
+,,,32388,#400 alum emt s/s beam clam
+,,,32394,#500 alum emt s/s beam clam
+,,,32400,#600 alum emt s/s beam clam
+,,,32406,#750 alum emt s/s beam clam
+,,,32412,s/c emt feeder bc w/wire co
+,,,32413,#3 emt s/c beam clamp const
+,,,32419,#2 emt s/c beam clamp const
+,,,32425,#1 emt s/c beam clamp const
+,,,32431,#1/0 emt s/c beam clamp con
+,,,32437,#2/0 emt s/c  beam clamp co
+,,,32443,#3/0 emt s/c beam clamp con
+,,,32449,#4/0 emt s/c beam clamp con
+,,,32455,#250 emt s/c beam clamp con
+,,,32461,#300 emt s/c beam clamp con
+,,,32467,#350 emt s/c beam clamp con
+,,,32473,#400 emt s/c beam clamp con
+,,,32479,#500 emt s/c beam clamp con
+,,,32485,#600 emt s/c beam clamp con
+,,,32491,#750 emt s/c beam clamp con
+,,,32498,s/c emt feeder rack w/wire
+,,,32499,#3 emt s/c rack const alum
+,,,32505,#2 emt s/c rack const alum
+,,,32511,#1 emt s/c rack const alum
+,,,32517,#1/0 emt s/c rack const alu
+,,,32523,#2/0 emt s/c rack const alu
+,,,32529,#3/0 emt s/c rack const alu
+,,,32535,#4/0 emt s/c rack const alu
+,,,32541,#250 emt s/c rack const alu
+,,,32547,#300 emt s/c rack const alu
+,,,32553,#350 emt s/c rack const alu
+,,,32559,#400 emt s/c rack const alu
+,,,32565,#500 emt s/c rack const alu
+,,,32571,#600 emt s/c rack const alu
+,,,32577,#750 emt s/c rack const alu
+,,,32585,feeder grc strap const
+,,,32586,#3 grc strap const alum wir
+,,,32592,#2  grc strap const alum wi
+,,,32598,#1  grc strap const alum wi
+,,,32604,#1/0  grc strap const alum
+,,,32610,#2/0  grc strap const alum
+,,,32616,#3/0 grc strap const alum w
+,,,32622,#4/0  grc strap const alum
+,,,32628,#250 grc strap const alum w
+,,,32634,#300  grc  strap const alum
+,,,32640,#350  grc strap const alum
+,,,32646,#400 grc strap  const alum
+,,,32652,#500 grc  strap const alum
+,,,32658,n600 grc  strap const alum
+,,,32664,n750 grc  strap const alum
+,,,32670,grc feeder strap concrete c
+,,,32671,#3 grc strap concrete const
+,,,32677,#2  grc strap conc const al
+,,,32683,#1 grc strap conc const alu
+,,,32689,#1/0  grc strap conc const
+,,,32695,#2/0 grc strap conc const a
+,,,32701,#3/0 grc strap conc const a
+,,,32707,#4/0 grc strap conc const a
+,,,32713,#250grc strap conc const al
+,,,32719,#300 grc strap conc const c
+,,,32725,#350 grc strap conc const a
+,,,32731,#400  grc strap conc consta
+,,,32737,#500 grc  strap conc const
+,,,32743,#600 grc  strap conc const
+,,,32749,#750 grc  strap conc const
+,,,32755,grc feeder rack w/wire cons
+,,,32756,#3 GRC rack const 85A alum
+,,,32762,#2 GRC rack const 100A Al W
+,,,32768,#1 GRC  rack const 115A AL
+,,,32774,#1/0 GRC rack const 135A Al
+,,,32780,#2/0GRC rack const 150A Al
+,,,32786,#3/0 GRC  rack const 175A
+,,,32792,4/0 GRC Rack 175A Al Wire
+,,,32798,#250 GRC rack const 230A Al
+,,,32804,#300 GRC rack const  255A A
+,,,32810,#350 GRC rack const 280A Al
+,,,32816,#400 GRC rack const 305A Al
+,,,32822,#500 GRC rack const 350A Al
+,,,32828,#600 GRC rack cons 350A Al
+,,,32834,#750 GRC rack const 435A Al
+,,,32840,grc feeder underground cons
+,,,32841,#3  grc underground const 9
+,,,32847,#2 alum grc underground con
+,,,32853,#1 alum grc underground con
+,,,32859,#1/0 alum grc underground c
+,,,32865,#2/0 alum grc underground c
+,,,32871,#3/0 alum grc underground c
+,,,32877,#4/0 alum grc underground c
+,,,32883,#250 alum grc underground c
+,,,32889,#300 alum grc underground c
+,,,32895,#350 alum grc underground c
+,,,32901,#400 alum grc underground c
+,,,32907,#500 alum grc  underground
+,,,32913,#600 alum grc underground c
+,,,32919,#750 alum grc  underground
+,,,32925,grc feeder beam clamp w/wir
+,,,32926,#3 GRC beam clamp const 85A
+,,,32932,#2 GRC beam clamp const 100
+,,,32938,#1  Grc beam clamp const 11
+,,,32944,#1/0 GRC beam clamp const 1
+,,,32950,#2/0 GRC  beam clamp const
+,,,32956,#3/0 GRC beam clamp const 1
+,,,32962,#4/0 GRC beam clamp const 2
+,,,32968,#250 GRC beam clamp const 2
+,,,32974,#300 GRC beam clamp const 2
+,,,32980,#350 GRC beam clamp const 2
+,,,32986,#400 GRC beam clamp const 3
+,,,32992,#500 GRC beam clamp const 3
+,,,32998,#600 GRC beam clamp const 3
+,,,33004,#750 GRC  beam clamp const
+,,,33010,#3 al strap const alum wire
+,,,33016,#2 al strap const alum  wir
+,,,33022,#1 al strap const  alum wir
+,,,33028,#1/0 al strap const alum wi
+,,,33034,#2/0 al strap const alum wi
+,,,33040,#3/0  al strap const alum w
+,,,33046,#4/0 al strap const alum wi
+,,,33052,#250 al strap const alum wi
+,,,33058,#300 al strap const alum wi
+,,,33064,#350 al  strap const alum w
+,,,33070,#400 al strap const alum wi
+,,,33076,#500 al strap const alum wi
+,,,33082,#600 al strap const alum wi
+,,,33088,n750 al strap const alum wi
+,,,33095,al feeder concrete w/wire c
+,,,33096,#3 alum strap concrete cons
+,,,33102,#2 al strap concrete const
+,,,33108,#1 al strap concrete const
+,,,33114,31/0 al strap concrete cons
+,,,33120,#2/0 al strap concrete cons
+,,,33126,#3/0 al strap concrete cons
+,,,33132,#4/0 al strap concrete cons
+,,,33138,#250 al strap concrete cons
+,,,33144,#300 al strap concrete cons
+,,,33150,#350 al strap concrete cons
+,,,33156,#400 al strap concrete cons
+,,,33162,#500 al strap concrete cons
+,,,33168,#600 al strap concrete cons
+,,,33174,#750 al strap concrete cons
+,,,33181,al feeder rack w/wire const
+,,,33182,#3 al rack const alum wire
+,,,33188,#2 al rack const alum wire
+,,,33194,#1 al rack const alum wire
+,,,33200,#1/0 al rack const alum wir
+,,,33206,#2/0 al rack const alum wir
+,,,33212,#3/0 al rack const alum wir
+,,,33218,#4/0 al rack const alum wir
+,,,33224,#250 al rack const alum wir
+,,,33230,#300 al rack const alum wir
+,,,33236,#350 al rack const alum wir
+,,,33242,#400 al rack const alum wir
+,,,33248,n500 al rack const
+,,,33254,#600 al rack const alum ?wi
+,,,33260,#750 al  rack const  alum w
+,,,33266,al feeder beam clamp w/wire
+,,,33267,#3 al beam clamp
+,,,33273,#2 al beam clamp
+,,,33281,#1 al beam clamp
+,,,33287,#1/0 al beam clamp
+,,,33293,#2/0 al beam clamp
+,,,33299,#3/0  al beam clamp
+,,,33305,#4/0 al beam clamp
+,,,33311,#250 al beam clamp
+,,,33317,#300 al beam clamp
+,,,33323,#350 al beam clamp
+,,,33329,#400 al beam clamp
+,,,33335,#500 al beam clamp
+,,,33341,#600 al beam clamp
+,,,33347,#750 al beam clamp
+,,,33363,grc/pvc feeder no strap con
+,,,33364,#3 grc/pvc no strap const a
+,,,33370,#2 grc/pvc  no strap const
+,,,33376,#1 grc/pvc  no strap const
+,,,33382,#1/0 grc/pvc  no strap cons
+,,,33388,#2/0 grc/pvc  no strap cons
+,,,33394,#3/0 grc/pvc no strap const
+,,,33400,#4/0 grc/pvc  no strap cons
+,,,33406,#250 grc/pvc no strap const
+,,,33412,#300 grc/pvc no strap const
+,,,33418,#350 grc/pvc no strap const
+,,,33424,#400 grc/pvc no strap const
+,,,33430,#500 grc/pvc no strap const
+,,,33436,#600 grc/pvc no strap const
+,,,33442,#750 grc/pvc no strap const
+,,,33449,grc/pvc feeder strap conc c
+,,,33450,#3 grc/pvc strap concr cons
+,,,33456,#2 grc/pvc strap conc const
+,,,33462,#1 grc/pvc strap conc const
+,,,33468,3#1/0 grc/pvc strap conc co
+,,,33474,#2/0 grc/pvc strap conc con
+,,,33480,#3/0 grc/pvc strap conc con
+,,,33486,#4/0 grc/pvc strap conc con
+,,,33492,#250 grc/pvc strap conc con
+,,,33498,#300 grc/pvc strap conc con
+,,,33504,#350 grc/pvc strap conc con
+,,,33510,#400 grc/pvc strap conc con
+,,,33516,#500 grc/pvc strap conc con
+,,,33522,#600 grc/pvc strap conc con
+,,,33528,#750 grc/pvc strap conc con
+,,,33534,grc/pvc feeder rack const
+,,,33535,#3 grc/pvc rack const alum
+,,,33541,#2 grc/pvc rack const alum
+,,,33547,#1 grc/pvc rack const alum
+,,,33553,#1/0 grc/pvc rack const alu
+,,,33559,#2/0 grc/pvc rack const alu
+,,,33565,#3/0 grc/pvc rack const alu
+,,,33571,#4/0 grc/pvc rack const alu
+,,,33577,#250 grc/pvc rack const alu
+,,,33583,#300 grc/pvc rack constalum
+,,,33589,#350 grc/pvc rack const alu
+,,,33595,#400 grc/pvc rack constalum
+,,,33601,#500 grc/pvc rack const alu
+,,,33607,#600 grc/pvc rack const alu
+,,,33613,#750 grc/pvc rack const alu
+,,,33620,grc/pvc feeder ug w/wire co
+,,,33621,#3 grc/pvc underground cons
+,,,33627,#2 grc/pvc underground cons
+,,,33633,#1 grc/pvc underground cons
+,,,33639,#1/0 grc/pvcu/g  const alum
+,,,33645,#2/0 grc/pvc u/g const alum
+,,,33651,#3/0 grc/pvc u/g  const alu
+,,,33657,#4/0 grc/pvc u/g const alum
+,,,33663,#250 grc/pvc u/g const alum
+,,,33669,#300 grc/pvc u/g const alum
+,,,33675,#350 grc/pvc u/g const alum
+,,,33681,#400 grc/pvc u/g const alum
+,,,33687,#500 grc/pvc u/g const alum
+,,,33693,#600 grc/pvc u/g const alum
+,,,33699,#750 grc/pvc u/g const alum
+,,,33706,imc feeder conc.  const alu
+,,,33707,#3 imc strap conc const alu
+,,,33713,#2 imc strap conc  const al
+,,,33719,#1 imc strap conc const alu
+,,,33725,#1/0 imc strap conc const a
+,,,33731,#2/0 imc strap conc const a
+,,,33737,#3/0 imc strap conc const a
+,,,33743,#4/0 imc strap conc const a
+,,,33749,#250 imc strap conc const a
+,,,33755,#300 imc strap conc const a
+,,,33761,#350 imc strap conc const a
+,,,33767,#400 imc strap conc const a
+,,,33773,#500 imc strap conc const a
+,,,33779,#600 imc strap conc const a
+,,,33785,#750 imc  strap conc const
+,,,33792,imc feeder rack w/wire cons
+,,,33793,#3 imc rack const  alum wir
+,,,33799,#2 imc rack const alum wire
+,,,33805,#1 imc rack const alum wire
+,,,33811,#1/0 imc rack constam wire
+,,,33817,#2/0 imc rack const alum wi
+,,,33823,#3/0 imc rack const alum wi
+,,,33829,#4/0 imc rack const allum w
+,,,33835,#250 imc rack constalum wir
+,,,33841,#300 imc rack constalum wir
+,,,33847,#350 imc rack const alum wi
+,,,33853,#400 imc rack const alum wi
+,,,33859,#500 imc  rack const alum w
+,,,33865,#600 imc rack const alum wi
+,,,33871,#750 imc  rack const alum w
+,,,33878,imc feeder underground w/wi
+,,,33879,#3 imc underground const al
+,,,33885,#2 imc underground const al
+,,,33891,#1 imc underground const al
+,,,33897,#1/0 imc underground const
+,,,33903,#2/0 imc underground const
+,,,33909,#3/0 imc underground const
+,,,33915,#4/0 imc underground const
+,,,33921,#250 imc underground const
+,,,33927,#300 imc underground const
+,,,33933,#350 imc underground const
+,,,33939,#400 imc underground const
+,,,33945,#500 imc  underground cons
+,,,33951,#600 imc underground const
+,,,33957,#750 imc  underground const
+,,,33965,imc feeder beam clamp w/wir
+,,,33966,#3 imc beam clamp const alu
+,,,33972,#2 imc beam clamp const alu
+,,,33978,#1 iimc beam clamp constm w
+,,,33984,#1/0 imc beam clamp const a
+,,,33990,#2/0 imc beam clamp const a
+,,,33996,#3/0 imc beam clamp const a
+,,,34002,#4/0 imc beam clamp const a
+,,,34008,#250 imc beam clamp const a
+,,,34014,#300 imc beam clamp const a
+,,,34020,#350 imc beam clamp const a
+,,,34026,#400 imc beam clamp const a
+,,,34032,#500 imc  beam clamp const
+,,,34038,#600 imc beam clamp const a
+,,,34044,#750 imc  beam clamp cons t
+,,,34050,end
+,,,34051,d/c feeder strap const w/Al
+,,,34052,#3 emt d/c stap const Alum
+,,,34058,#2 emt d/c strap const.Alum
+,,,34064,#1 emt d/c strap const Alum
+,,,34070,#1/0 emt d/c strap const. A
+,,,34076,#2/0 emt d/c strap const.Al
+,,,34082,#3/0 emt d/c strap const. A
+,,,34088,#4/0 emt d/c strap const.Al
+,,,34094,#250 emt d/c strap const. A
+,,,34100,#300 emt d/c strap const. A
+,,,34106,#350 emt d/c strap const. A
+,,,34112,#400 emt d/c strap const Al
+,,,34118,#500 emt d/c strap const. A
+,,,34124,#600 emt d/c strap const.Al
+,,,34130,#750 emt d/c strap const. A
+,,,34136,#3 emt d/c strap concrete c
+,,,34142,#2 emt d/c strap concrete c
+,,,34148,#1 emt d/c strap concrete c
+,,,34154,#1/0 emt d/c strap concrete
+,,,34160,#2/0 emt d/c strap concrete
+,,,34166,#3/0 emt d/c strap concrete
+,,,34172,#4/0 emt d/c strap concrete
+,,,34178,#250 emt d/c strap concrete
+,,,34184,n300 emt d/c strap concrete
+,,,34190,#350 emt d/c strap concrete
+,,,34196,#400 emt d/c strap concrete
+,,,34202,#500 emt d/c strap concrete
+,,,34208,#600 emt d/c strap concrete
+,,,34214,#750 emt d/c strap concrete
+,,,34220,pvc feeder strap const.
+,,,34221,#3 SCH 40 pvc strap const.
+,,,34227,#2 SCH 40 pvc strap const.
+,,,34233,#1 SCH 40 pvc strap const.
+,,,34239,#1/0 SCH 40  pvc strap cons
+,,,34245,# 2/0 SCH 40 pvc strap cons
+,,,34251,#3/0 SCH 40 pvc strap const
+,,,34257,#4/0 SCH 40 pvc strap const
+,,,34263,#250 SCH 40 pvc strap const
+,,,34269,#300 SCH 40 pvc strap const
+,,,34275,#350  SCH 40 pvc strap cons
+,,,34281,# 400  PVC 40 pvc strap con
+,,,34287,#500 SCH 40 pvc strap const
+,,,34293,#600 SCH 40 pvc strap const
+,,,34299,#750 SCH 40 pvc strap const
+,,,34306,pvc feeder U/G  alum Wire
+,,,34307,#3 SCH 40 pvc u/g. Alum Wir
+,,,34313,#2 SCH 40 pvc U/G. Alum Wir
+,,,34319,#1 SCH 40 pvc strap u/g Alu
+,,,34325,#1/0 SCH 40 pvc U/G alum wi
+,,,34331,#2/0 SCH 40  pvc strap  U/G
+,,,34337,#3/0 pvc sch 40 strap  U/G
+,,,34343,#4/0 SCH 40 pv U/G t.Alum W
+,,,34349,#250 SCH40 pvc U/G ALum Wir
+,,,34355,#300  SCH 40 pvc U/G.Alum W
+,,,34361,# 350SCH 40 pvc U/G Alum Wi
+,,,34367,# 400SCH 40  pvc U/G Alum W
+,,,34373,#500SCH 4  pvc  strap U/G A
+,,,34379,#600SCH 40 pvc U/G. AL Wire
+,,,34385,#750SCH 40 pvc U/G ALUM WIR
+,,,34391,alu mc cable rack const.

@@ -1,0 +1,27 @@
+{
+  "comment": "Maps MC picker level1 categories to Takeoff Tooling Labor Book tabs. Edit freely, then re-run: node scripts/build-mc-labor-book.js",
+  "mapping": {
+    "Branch": "conduit",
+    "Branch with Constants": "conduit",
+    "Feeder": "conduit",
+    "Feeder with Constants": "conduit",
+    "Hangers/Racks": "conduit",
+    "Underground systems": "conduit",
+    "Wire": "wire",
+    "Devices": "devices",
+    "Residential": "devices",
+    "Fixtures": "lighting",
+    "Site/Highway": "lighting",
+    "Equipment": "gear",
+    "Industrial": "gear",
+    "Heavy Industrial": "gear",
+    "HVAC": "gear",
+    "Grounding": "gear",
+    "T-D Construction": "gear",
+    "TI Work": "gear",
+    "1$ Mat & 1 Hr Labor": "gear",
+    "Special Systems": "specialSystems",
+    "Voice/Data": "specialSystems",
+    "Telephone": "specialSystems"
+  }
+}

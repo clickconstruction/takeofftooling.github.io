@@ -18,6 +18,23 @@ const TakeoffManifestView = (function () {
     temporaryPower: 'TEMPORARY POWER',
   };
 
+  // Flow-generated component types, shown on child rows
+  const CHILD_TYPE_LABELS = {
+    outletsAndSwitches: 'Outlet/Switch',
+    box: 'Box',
+    backBoxSupport: 'Back Box Support',
+    cover: 'Cover',
+    screws: 'Screws',
+    misc: 'Misc.',
+    trenching: 'Trenching',
+    trenchingAddon: 'Trenching Add-on',
+    fitting: 'Fitting',
+    overage: 'Overage',
+    macAdapter: 'MAC Adapter',
+    conduit: 'Conduit',
+    wire: 'Wire',
+  };
+
   function renderRow(item, isChild = false) {
     const typeClass = item.type && TYPE_LABELS[item.type] ? item.type : 'default';
     const typeLabel = item.type ? TYPE_LABELS[item.type] || item.type : '';
@@ -27,20 +44,28 @@ const TakeoffManifestView = (function () {
       ? '<td></td>'
       : `<td><input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></td>`;
 
-    const typeLabelDisplay = item.type ? (TYPE_LABELS[item.type] || item.type) : '';
+    const typeLabelDisplay = item.type
+      ? (isChild ? CHILD_TYPE_LABELS[item.type] || TYPE_LABELS[item.type] || item.type : TYPE_LABELS[item.type] || item.type)
+      : '';
     const parentId = item.parentId || null;
     const parent = parentId ? TakeoffState.getItemById(parentId) : null;
     const parentHasFlow = parent && ['devices', 'conduit', 'wire'].includes(parent.type);
     const showEditFlow = (hasFlow && !isChild) || (isChild && parentHasFlow);
     const editFlowTargetId = isChild && parentHasFlow ? parentId : item.id;
-    const typeCell = item.type
-      ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span><button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
-      : `<td class="type-cell-add"><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
+    let typeCell;
+    if (isChild) {
+      // children are flow/book components: show a passive label, never type controls
+      typeCell = `<td class="type-cell-child">${item.type ? `<span class="type-badge child-type-badge">${escapeHtml(typeLabelDisplay)}</span>` : ''}${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`;
+    } else {
+      typeCell = item.type
+        ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span><button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
+        : `<td class="type-cell-add"><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
+    }
 
     const showRemove = TakeoffState.getShowRemoveIcons();
     const removeCell = `<td class="remove-cell ${showRemove ? 'visible' : ''}"><button type="button" class="remove-btn icon-btn" data-id="${item.id}" title="Remove">${TRASH_SVG}</button></td>`;
 
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>`;
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button><button type="button" class="part-book-icon-btn icon-btn" data-id="${item.id}" title="Part Book Search">PB</button></td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
@@ -57,10 +82,7 @@ const TakeoffManifestView = (function () {
   }
 
   function escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return TakeoffUtils.escapeHtml(str);
   }
 
   const SUMMARY_LABELS = {
@@ -167,7 +189,7 @@ const TakeoffManifestView = (function () {
               <th>Assembly Description</th>
               <th>Type</th>
               <th>Quantity</th>
-              <th>Labor</th>
+              <th>Labor (hrs/unit)</th>
               <th>Price</th>
               <th>Plan Page / Location</th>
             </tr>
@@ -190,11 +212,80 @@ const TakeoffManifestView = (function () {
             <button type="button" class="btn" id="print-form-btn">Print with Form</button>
           </div>
         </div>
+        ${renderPurchaseList()}
       </div>
     `;
   }
 
+  // ---------- Purchase list report ----------
+  let purchaseListVisible = false;
+
+  function renderPurchaseList() {
+    if (!purchaseListVisible) {
+      return `
+        <div class="purchase-list">
+          <button type="button" class="btn btn-secondary" id="purchase-list-toggle-btn">Generate Purchase List</button>
+        </div>`;
+    }
+    const report = TakeoffState.getPurchaseList();
+    const rows = report.lines
+      .map(
+        (l) => `
+        <tr class="${l.unpriced ? 'purchase-list-unpriced' : ''}">
+          <td class="purchase-list-qty">${l.quantity}</td>
+          <td>${escapeHtml(l.description)}${l.priceVaries ? ' <span class="purchase-list-varies" title="This material appears at different unit prices; the highest is shown and the extended cost is exact per line.">≠</span>' : ''}</td>
+          <td class="purchase-list-money">${l.unitPrice != null ? '$' + l.unitPrice.toFixed(2) : '—'}</td>
+          <td class="purchase-list-money">${l.extended ? '$' + formatMoney(l.extended) : '—'}</td>
+        </tr>`
+      )
+      .join('');
+    return `
+      <div class="purchase-list purchase-list-open">
+        <div class="purchase-list-header">
+          <h3>Purchase List</h3>
+          <span class="purchase-list-meta">${report.lines.length} materials${report.unpricedCount ? ` · ${report.unpricedCount} without a price` : ''}</span>
+          <button type="button" class="btn btn-small" id="purchase-list-copy-btn" title="Copy as tab-separated rows for a spreadsheet or email">Copy</button>
+          <button type="button" class="btn btn-small btn-secondary" id="purchase-list-toggle-btn">Hide</button>
+        </div>
+        ${report.lines.length ? `
+        <table class="purchase-list-table">
+          <thead><tr><th>Qty</th><th>Material</th><th>Unit $</th><th>Extended $</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td></td><td>Materials total (before tax)</td><td></td><td class="purchase-list-money">$${formatMoney(report.totalCost)}</td></tr></tfoot>
+        </table>` : '<p class="purchase-list-empty">No materials on the manifest yet.</p>'}
+      </div>`;
+  }
+
+  function copyPurchaseList() {
+    const report = TakeoffState.getPurchaseList();
+    const lines = [['Qty', 'Material', 'Unit $', 'Extended $'].join('\t')];
+    for (const l of report.lines) {
+      lines.push([l.quantity, l.description, l.unitPrice != null ? l.unitPrice.toFixed(2) : '', l.extended ? l.extended.toFixed(2) : ''].join('\t'));
+    }
+    lines.push(['', 'TOTAL', '', report.totalCost.toFixed(2)].join('\t'));
+    navigator.clipboard.writeText(lines.join('\n')).then(
+      () => {
+        const btn = document.getElementById('purchase-list-copy-btn');
+        if (btn) {
+          btn.textContent = 'Copied!';
+          setTimeout(() => { if (btn) btn.textContent = 'Copy'; }, 1500);
+        }
+      },
+      () => alert('Could not copy to clipboard.')
+    );
+  }
+
   function attachListeners() {
+    document.getElementById('purchase-list-toggle-btn')?.addEventListener('click', () => {
+      purchaseListVisible = !purchaseListVisible;
+      TakeoffApp.render();
+      if (purchaseListVisible) {
+        document.querySelector('.purchase-list-open')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+
+    document.getElementById('purchase-list-copy-btn')?.addEventListener('click', copyPurchaseList);
+
     document.getElementById('add-row-btn')?.addEventListener('click', () => {
       TakeoffState.addItem({
         type: null,
@@ -232,6 +323,12 @@ const TakeoffManifestView = (function () {
     document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         TakeoffApp.showLaborBookModal(e.currentTarget.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.part-book-icon-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        TakeoffApp.showPartBookSearchForManifestItem(e.currentTarget.dataset.id);
       });
     });
 

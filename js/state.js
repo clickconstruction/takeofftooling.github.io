@@ -23,9 +23,11 @@ const TakeoffState = (function () {
   let showPrintOptions = false;
   let laborRate = 0;
 
-  const UNDO_STACK_SIZE = 5;
+  const UNDO_STACK_SIZE = 50;
   let undoStack = [];
   let redoStack = [];
+  let batchDepth = 0;
+  let lastEdit = { id: null, keys: '', time: 0 };
 
   const LABOR_BOOK_TAB_ORDER = ['gear', 'lighting', 'devices', 'conduit', 'wire', 'specialSystems'];
   const LABOR_BOOK_TYPE_LABELS = { gear: 'Gear', lighting: 'Lighting', devices: 'Devices', conduit: 'Conduit', wire: 'Wire', specialSystems: 'Special Systems' };
@@ -705,11 +707,39 @@ const TakeoffState = (function () {
     return manifest;
   }
 
+  const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+  function sanitizeImportedItem(raw, parentId) {
+    if (!raw || typeof raw !== 'object') return null;
+    const id = typeof raw.id === 'string' && SAFE_ID_RE.test(raw.id) ? raw.id : generateId();
+    const price = Number(raw.price);
+    const item = {
+      id,
+      type: typeof raw.type === 'string' ? raw.type : null,
+      description: typeof raw.description === 'string' ? raw.description : '',
+      quantity: Number(raw.quantity) || 0,
+      labor: Number(raw.labor) || 0,
+      planPage: typeof raw.planPage === 'string' ? raw.planPage : '',
+      parentId: parentId ?? null,
+      price: isNaN(price) || raw.price == null || raw.price === '' ? null : price,
+      children: [],
+      conduitMeta: raw.conduitMeta && typeof raw.conduitMeta === 'object' ? raw.conduitMeta : null,
+      meta: raw.meta && typeof raw.meta === 'object' ? raw.meta : null,
+    };
+    if (Array.isArray(raw.children)) {
+      item.children = raw.children.map((c) => sanitizeImportedItem(c, item.id)).filter(Boolean);
+    }
+    return item;
+  }
+
   function loadManifestFromExport(data) {
-    if (!Array.isArray(data)) return false;
-    manifest = data;
+    // Accepts the versioned envelope {v, manifest} or a legacy bare array.
+    const list = Array.isArray(data) ? data : data && typeof data === 'object' && Array.isArray(data.manifest) ? data.manifest : null;
+    if (!list) return false;
+    manifest = list.map((raw) => sanitizeImportedItem(raw, null)).filter(Boolean);
     undoStack = [];
     redoStack = [];
+    schedulePersist();
     return true;
   }
 
@@ -745,16 +775,69 @@ const TakeoffState = (function () {
     return JSON.parse(JSON.stringify(manifest));
   }
 
-  function pushUndo() {
+  // --- Interim workspace persistence (until the database backend lands) ---
+  const WORKSPACE_STORAGE_KEY = 'takeoff-workspace';
+  let persistTimer = null;
+
+  function persistNow() {
+    try {
+      localStorage.setItem(
+        WORKSPACE_STORAGE_KEY,
+        JSON.stringify({ v: 1, savedAt: new Date().toISOString(), manifest, laborBook, laborRate })
+      );
+    } catch (err) {
+      console.warn('Takeoff: could not save workspace to localStorage', err);
+    }
+  }
+
+  function schedulePersist() {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(persistNow, 400);
+  }
+
+  function restoreWorkspace() {
+    try {
+      const raw = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (!data || data.v !== 1) return;
+      if (Array.isArray(data.manifest)) manifest = data.manifest;
+      if (data.laborBook && typeof data.laborBook === 'object') laborBook = data.laborBook;
+      if (typeof data.laborRate === 'number') laborRate = data.laborRate;
+    } catch (err) {
+      console.warn('Takeoff: could not restore saved workspace', err);
+    }
+  }
+
+  function pushUndoRaw() {
     undoStack.push(deepCloneManifest());
     if (undoStack.length > UNDO_STACK_SIZE) undoStack.shift();
     redoStack = [];
+    lastEdit = { id: null, keys: '', time: 0 };
+  }
+
+  function pushUndo() {
+    if (batchDepth > 0) return; // inside a batch: one snapshot was taken at beginBatch
+    pushUndoRaw();
+    schedulePersist();
+  }
+
+  // Group several mutations into a single undo frame (flow saves, bulk imports).
+  function beginBatch() {
+    if (batchDepth === 0) pushUndoRaw();
+    batchDepth++;
+  }
+
+  function endBatch() {
+    batchDepth = Math.max(0, batchDepth - 1);
+    if (batchDepth === 0) schedulePersist();
   }
 
   function undo() {
     if (undoStack.length === 0) return false;
     redoStack.push(deepCloneManifest());
     manifest = undoStack.pop();
+    schedulePersist();
     return true;
   }
 
@@ -762,6 +845,7 @@ const TakeoffState = (function () {
     if (redoStack.length === 0) return false;
     undoStack.push(deepCloneManifest());
     manifest = redoStack.pop();
+    schedulePersist();
     return true;
   }
 
@@ -786,6 +870,7 @@ const TakeoffState = (function () {
       price: item.price ?? null,
       children: item.children || [],
       conduitMeta: item.conduitMeta || null,
+      meta: item.meta && typeof item.meta === 'object' ? item.meta : null,
     };
     if (item.parentId) {
       const parent = getItemById(item.parentId);
@@ -802,9 +887,16 @@ const TakeoffState = (function () {
   }
 
   function updateItem(id, updates) {
-    pushUndo();
     const item = getItemById(id);
     if (!item) return null;
+    // Coalesce rapid edits to the same field of the same item (per-keystroke
+    // input events) into one undo frame.
+    const keys = Object.keys(updates).sort().join(',');
+    const now = Date.now();
+    const coalesce = lastEdit.id === id && lastEdit.keys === keys && now - lastEdit.time < 1200;
+    if (!coalesce) pushUndo();
+    if (batchDepth === 0) lastEdit = { id, keys, time: now };
+    schedulePersist();
     const parent = item.parentId ? getItemById(item.parentId) : null;
     const list = parent ? parent.children : manifest;
     const idx = list.findIndex((i) => i.id === id);
@@ -814,9 +906,9 @@ const TakeoffState = (function () {
   }
 
   function removeItem(id) {
-    pushUndo();
     const item = getItemById(id);
     if (!item) return false;
+    pushUndo();
     const parent = item.parentId ? getItemById(item.parentId) : null;
     const list = parent ? parent.children : manifest;
     const idx = list.findIndex((i) => i.id === id);
@@ -870,6 +962,20 @@ const TakeoffState = (function () {
   }
   function clearLaborBookTargetDeviceRow() {
     laborBookTargetDeviceRow = null;
+  }
+
+  // Fill target: + Add fills this row in place instead of adding children.
+  // {kind: 'manifest-row', id} | {kind:'device-row', section, index}
+  // | {kind:'conduit-fitting', index} | {kind:'wire-mac', index}
+  let laborBookFillTarget = null;
+  function setLaborBookFillTarget(target) {
+    laborBookFillTarget = target;
+  }
+  function getLaborBookFillTarget() {
+    return laborBookFillTarget;
+  }
+  function clearLaborBookFillTarget() {
+    laborBookFillTarget = null;
   }
 
   let laborBookExpandGroup = null;
@@ -966,6 +1072,7 @@ const TakeoffState = (function () {
 
   function setLaborRate(value) {
     laborRate = Number(value) || 0;
+    schedulePersist();
   }
 
   function getShowPrintOptions() {
@@ -1004,34 +1111,43 @@ const TakeoffState = (function () {
   function setLaborBookSection(type, section, entries) {
     if (!laborBook[type]) laborBook[type] = {};
     laborBook[type][section] = entries || [];
+    schedulePersist();
   }
 
   function addLaborBookRow(type, section, row) {
     if (!laborBook[type]) laborBook[type] = {};
     if (!laborBook[type][section]) laborBook[type][section] = [];
     laborBook[type][section].push(row || { name: '', labor: 0, price: '' });
+    schedulePersist();
   }
 
   function removeLaborBookRow(type, section, index) {
     if (!laborBook[type]?.[section]) return;
     laborBook[type][section].splice(index, 1);
+    schedulePersist();
   }
 
   function addLaborBookSection(type, sectionName) {
     if (!laborBook[type]) laborBook[type] = {};
     laborBook[type][sectionName] = [];
+    schedulePersist();
   }
 
   function updateLaborBookRow(type, section, index, updates) {
     if (!laborBook[type]?.[section]?.[index]) return;
     Object.assign(laborBook[type][section][index], updates);
+    schedulePersist();
   }
 
   function getTotalLabor() {
     function sumLabor(items) {
       let total = 0;
       for (const item of items) {
-        total += (item.labor || 0);
+        const unitLabor = Number(item.labor) || 0;
+        const qty = Number(item.quantity) || 0;
+        // labor is per-unit hours; a priced/labored line with qty 0 counts once (same rule as price)
+        const effectiveQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
+        total += unitLabor * effectiveQty;
         if (item.children && item.children.length) {
           total += sumLabor(item.children);
         }
@@ -1055,6 +1171,68 @@ const TakeoffState = (function () {
       return total;
     }
     return sumPrice(manifest.filter((i) => !i.parentId));
+  }
+
+  /**
+   * Aggregate every purchasable material line across the job.
+   * Included: all children with a description and qty > 0, plus childless
+   * top-level items (they represent the material directly). Parents WITH
+   * children are treated as groupings, and other-charges types are skipped.
+   * Identical descriptions merge: quantities sum, extended cost sums
+   * per-occurrence so price differences stay accurate.
+   */
+  function getPurchaseList() {
+    const OTHER = ['permits', 'powerCoCharges', 'temporaryPower'];
+    const byKey = new Map();
+
+    function addLine(item) {
+      const desc = (item.description || '').trim();
+      const qty = Number(item.quantity) || 0;
+      if (!desc || qty <= 0) return;
+      const key = desc.toLowerCase().replace(/\s+/g, ' ');
+      const price = item.price != null && item.price !== '' && !isNaN(Number(item.price)) ? Number(item.price) : null;
+      let line = byKey.get(key);
+      if (!line) {
+        byKey.set(key, (line = { description: desc, quantity: 0, extended: 0, prices: new Set(), unpricedQty: 0 }));
+      }
+      line.quantity += qty;
+      if (price != null) {
+        line.extended += qty * price;
+        line.prices.add(Math.round(price * 100) / 100);
+      } else {
+        line.unpricedQty += qty;
+      }
+    }
+
+    for (const item of manifest.filter((i) => !i.parentId)) {
+      if (OTHER.includes(item.type)) continue;
+      const children = item.children || [];
+      if (children.length === 0) {
+        addLine(item);
+      } else {
+        for (const c of children) addLine(c);
+      }
+    }
+
+    const lines = [...byKey.values()]
+      .map((l) => {
+        const prices = [...l.prices];
+        return {
+          description: l.description,
+          quantity: Math.round(l.quantity * 100) / 100,
+          unitPrice: prices.length === 1 ? prices[0] : prices.length > 1 ? Math.max(...prices) : null,
+          priceVaries: prices.length > 1,
+          unpriced: l.unpricedQty > 0,
+          extended: Math.round(l.extended * 100) / 100,
+        };
+      })
+      .sort((a, b) => a.description.localeCompare(b.description));
+
+    return {
+      lines,
+      totalCost: Math.round(lines.reduce((s, l) => s + l.extended, 0) * 100) / 100,
+      unpricedCount: lines.filter((l) => l.unpriced).length,
+    };
   }
 
   function getFlattenedItems() {
@@ -1081,14 +1259,18 @@ const TakeoffState = (function () {
     const otherCharges = { permits: 0, powerCoCharges: 0, temporaryPower: 0 };
 
     function processItems(items, parentType) {
+      // Children always roll up into their top-level parent's bucket, so flow
+      // components (boxes, fittings, overage...) count toward Devices/Conduit/
+      // Wire instead of Misc.
       for (const item of items) {
-        const type = item.type || parentType;
-        const effectiveType = type || parentType;
+        const effectiveType = parentType || item.type || null;
         const qty = Number(item.quantity) || 0;
         const priceVal = Number(item.price);
         const effectiveQty = qty > 0 ? qty : (!isNaN(priceVal) && priceVal > 0 ? 1 : 0);
         const priceAmount = !isNaN(priceVal) && priceVal > 0 ? priceVal * effectiveQty : 0;
-        const laborHrs = (item.labor || 0);
+        const unitLabor = Number(item.labor) || 0;
+        const laborQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
+        const laborHrs = unitLabor * laborQty;
 
         if (OTHER_TYPES.includes(effectiveType)) {
           otherCharges[effectiveType] = (otherCharges[effectiveType] || 0) + priceAmount;
@@ -1125,10 +1307,13 @@ const TakeoffState = (function () {
     };
   }
 
+  restoreWorkspace();
+
   return {
     ITEM_TYPES,
     LABOR_BOOK_TYPE_LABELS,
     getManifest,
+    persistNow,
     loadManifestFromExport,
     getTopLevelItems,
     getItemById,
@@ -1139,6 +1324,8 @@ const TakeoffState = (function () {
     setType,
     undo,
     redo,
+    beginBatch,
+    endBatch,
     canUndo,
     canRedo,
     setCurrentView,
@@ -1153,6 +1340,9 @@ const TakeoffState = (function () {
     getLaborBookTargetDeviceRow,
     clearLaborBookTargetDeviceRow,
     setLaborBookExpandGroup,
+    setLaborBookFillTarget,
+    getLaborBookFillTarget,
+    clearLaborBookFillTarget,
     getLaborBookExpandGroup,
     clearLaborBookExpandGroup,
     getTopLevelParentId,
@@ -1173,6 +1363,7 @@ const TakeoffState = (function () {
     getTotalLabor,
     getTotalPrice,
     getFlattenedItems,
+    getPurchaseList,
     getSummaryBreakdown,
     generateId,
     getLaborRate,

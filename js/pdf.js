@@ -17,7 +17,7 @@ const TakeoffPDF = (function () {
       return;
     }
     const jsPDF = jspdf.jsPDF;
-    const doc = new jspdf.jsPDF();
+    const doc = new jspdf.jsPDF({ unit: 'pt', format: 'letter' });
     const margin = 40;
     let y = margin;
 
@@ -75,7 +75,7 @@ const TakeoffPDF = (function () {
       alert('PDF library not loaded. Please refresh the page.');
       return;
     }
-    const doc = new jspdf.jsPDF();
+    const doc = new jspdf.jsPDF({ unit: 'pt', format: 'letter' });
     const margin = 40;
     let y = margin;
 
@@ -111,7 +111,7 @@ const TakeoffPDF = (function () {
       alert('PDF library not loaded. Please refresh the page.');
       return;
     }
-    const doc = new jspdf.jsPDF();
+    const doc = new jspdf.jsPDF({ unit: 'pt', format: 'letter' });
     const margin = 40;
     let y = margin;
 

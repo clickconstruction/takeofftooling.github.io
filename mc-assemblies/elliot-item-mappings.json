@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "comment": "Confirmed Elliot partNumber -> MC itemNum matches. Grown by the Update Elliot Prices flow; download the merged file from the app and commit it here.",
+  "mappings": {}
+}

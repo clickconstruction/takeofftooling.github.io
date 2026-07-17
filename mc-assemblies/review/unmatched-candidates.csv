@@ -1,0 +1,42 @@
+image,name,level1,level2,level3
+Screenshot_183.png,n1 pvc underground,Feeder,PVC 40,PVC 40 Underground
+Screenshot_239.png,n2/0 emt s/c beam clamp const,Feeder with Constants,EMT Copper wire feeders,"S/C, Beam Clamp"
+Screenshot_271.png,#750 emt s/c rack const al wire 435A,Feeder with Constants,EMT Aluminum wire feeders,alum feeders s/c rack
+Screenshot_274.png,#4/0 imc rack const alum wire 205A,Feeder with Constants,EMT Aluminum wire feeders,alum feeders IMC rack
+Screenshot_280.png,#3/0 grc/pvc  no strap const alu?m wire175A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#250 grc/pvc  no strap const alum wire 230A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#300 grc/pvc  no strap const alum wire 255A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#350 grc/pvc  no strap const alum wire 280A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#400 grc/pvc  no strap const alum wire 305A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#500 grc/pvc  no strap const alum wire 350A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#600 grc/pvc  no strap const alum wire 385A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_280.png,#750 grc/pvc  no strap const alum wire 435A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc pvc no strap
+Screenshot_281.png,#3/0 GRC  beam clamp const 175A Al Wire,Feeder with Constants,Aluminum wire feeders Misc,feeders grc alum beam
+Screenshot_282.png,"3 #750   3"" GRC CONC CONST",Feeder with Constants,Aluminum wire feeders Misc,feeders grc strap conc al wire
+Screenshot_283.png,#3/0 GRC rack const 175A  Al WIre,Feeder with Constants,Aluminum wire feeders Misc,feeders grc rack al wire
+Screenshot_287.png,"3 #3   1"" EMT   PVC u/g",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #2   1"" PVC U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #1   1 1/4"" PVC  U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #3/0   2"" PVC U/G ALUM",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #4/0   2"" PVC U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #250   2"" PVC  U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #300   2 1/2"" PVC CONC.",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #350   2 1/2"" PVC U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #400   2 1/2"" PVC  CONC.",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #500   2 1/2"" PVC U/G ALUM WIRE",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #600   3"" PVC U/G ALUM WIRE",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_287.png,"3 #750   3"" PVC U/G",Feeder with Constants,Aluminum wire feeders Misc,feeders pvc underground
+Screenshot_288.png,#3 grc/pvc strap conc const alum wire 85A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc/pvc strap conc
+Screenshot_289.png,#350 grc/pvc rack constalum wire 280A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc/pvc rack
+Screenshot_290.png,#4/0 grc/pvc u/g  const alum wire 205A,Feeder with Constants,Aluminum wire feeders Misc,feeders grc/pvc underground
+Screenshot_316.png,recpt 20a spec,Devices,Spec. Grade,Recpt Spec
+Screenshot_333.png,box 4/s deep,Devices,Box,
+Screenshot_414.png,led exit fixtrue,Fixtures,LED Emergency/Exit Fixtures,
+Screenshot_640.png,fa edwards heat detector,Special Systems,Fire Alarm,Edwards Fire Alarm
+Screenshot_699.png,cablofil I wire tray,Voice/Data,Pathways,Cablofil Cable Tray
+Screenshot_699.png,cablofil I fasclic tray,Voice/Data,Pathways,Cablofil Cable Tray
+Screenshot_699.png,cablofil tray cover 3.3' I,Voice/Data,Pathways,Cablofil Cable Tray
+Screenshot_699.png,cablofil standard I bracket,Voice/Data,Pathways,Cablofil Cable Tray
+Screenshot_745.png,single support miscellaneous,T-D Construction,24.9/14.4 KV,1 Ph Pri Pole Top RUS VA
+Screenshot_768.png,medium duty pole bands,T-D Construction,34.5 - 69 KV,Guy attachments
+Screenshot_780.png,medium duty pole bands,T-D Construction,115 - 230 KV,Guy Attachments

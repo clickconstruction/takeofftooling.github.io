@@ -1,0 +1,12 @@
+{
+  "comment": "Supplier price-file profiles for Update Supplier Prices. Add a new vendor by copying the elliot block: columns map CSV column indexes, unitDivisors normalize prices to per-each, bundledFile (optional) enables the quick-load button.",
+  "vendors": {
+    "elliot": {
+      "label": "Elliot Electric",
+      "columns": { "category": 0, "name": 1, "description": 2, "partNumber": 3, "price": 4, "cost": 5, "unit": 6 },
+      "headerMustInclude": ["category", "part number"],
+      "unitDivisors": { "THOUSAND": 1000, "HUNDRED": 100, "EACH": 1 },
+      "bundledFile": "import-files/HCP_1272501.csv"
+    }
+  }
+}

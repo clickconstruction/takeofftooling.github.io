@@ -4,10 +4,7 @@
 
 const TakeoffWireView = (function () {
   function escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return TakeoffUtils.escapeHtml(str);
   }
 
   function render(itemId) {
@@ -25,6 +22,7 @@ const TakeoffWireView = (function () {
       .map(
         (m, i) => `
       <tr>
+        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-mac-index="${i}" title="Part Book Search">PB</button></td>
         <td><input type="text" data-mac-index="${i}" data-field="description" value="${escapeHtml(m.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-mac-index="${i}" data-field="quantity" value="${m.quantity ?? ''}" min="0" /></td>
         <td><input type="number" data-mac-index="${i}" data-field="labor" value="${m.labor !== undefined ? m.labor : ''}" min="0" step="0.1" /></td>
@@ -56,7 +54,7 @@ const TakeoffWireView = (function () {
         <div class="flow-section">
           <h3>MAC Adapters (optional)</h3>
           <table>
-            <thead><tr><th>Description</th><th>Quantity</th><th>Labor</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th></th></tr></thead>
             <tbody>${macRows}</tbody>
           </table>
           <button type="button" class="btn add-mac-btn">Add MAC Adapter</button>
@@ -100,6 +98,13 @@ const TakeoffWireView = (function () {
       TakeoffApp.render();
     });
 
+    document.querySelectorAll('.part-book-icon-btn[data-mac-index]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(e.currentTarget.dataset.macIndex, 10);
+        TakeoffApp.showPartBookSearchForWireMac(index);
+      });
+    });
+
     document.querySelectorAll('.remove-mac-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const index = parseInt(e.target.dataset.index, 10);
@@ -132,6 +137,7 @@ const TakeoffWireView = (function () {
       if (!parent) return;
 
       // Remove existing wire children (overage, mac adapters)
+      TakeoffState.beginBatch(); // one undo frame per save
       parent.children = (parent.children || []).filter((c) => c.type !== 'overage' && c.type !== 'macAdapter');
 
       const baseLength = item.quantity || 0;
@@ -146,6 +152,7 @@ const TakeoffWireView = (function () {
           quantity: additional,
           labor: 0,
           parentId: itemId,
+          meta: { overagePercent },
         });
       }
 
@@ -157,11 +164,13 @@ const TakeoffWireView = (function () {
             description: m.description,
             quantity: m.quantity || 0,
             labor: m.labor || 0,
+            price: m.price !== '' && m.price != null && !isNaN(parseFloat(m.price)) ? parseFloat(m.price) : null,
             parentId: itemId,
           });
         }
       }
 
+      TakeoffState.endBatch();
       TakeoffApp.navigateToManifest();
     });
   }

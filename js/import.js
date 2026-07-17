@@ -42,10 +42,7 @@ const TakeoffImport = (function () {
   }
 
   function escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return TakeoffUtils.escapeHtml(str);
   }
 
   function getManifestDescriptions() {
@@ -84,6 +81,7 @@ const TakeoffImport = (function () {
 
   function performImport(items, overagesOnly) {
     const manifestDescs = overagesOnly ? getManifestDescriptions() : null;
+    TakeoffState.beginBatch(); // whole import = one undo frame
     for (const item of items) {
       if (overagesOnly) {
         const descNorm = (item.description || '').trim().toLowerCase();
@@ -98,6 +96,7 @@ const TakeoffImport = (function () {
         parentId: null,
       });
     }
+    TakeoffState.endBatch();
     TakeoffApp.render();
   }
 

@@ -1,0 +1,5 @@
+heads total:          4629
+heads assigned:       3776  {'unique': 2808, 'loose': 181, 'distance': 787}
+heads unmatched:      853
+candidates (uniq):    5000
+candidates unmatched: 41

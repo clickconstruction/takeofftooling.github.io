@@ -13,8 +13,9 @@
   <div id="app">
     <header>
       <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
+      <button type="button" id="new-takeoff-btn" class="btn btn-secondary header-import-btn" title="Clear the manifest and start fresh">New Takeoff</button>
       <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Import From CountTooling.com</button>
-      <button type="button" id="search-mc-prince-btn" class="btn btn-secondary header-import-btn">Search MC Prince Book</button>
+      <button type="button" id="labor-book-open-btn" class="btn btn-secondary header-import-btn">Labor &amp; Price Book</button>
       <div class="header-right-controls">
         <button type="button" id="undo-btn" class="btn btn-secondary header-undo-btn" title="Undo" disabled>Undo</button>
         <button type="button" id="redo-btn" class="btn btn-secondary header-redo-btn" title="Redo" disabled>Redo</button>
@@ -83,19 +84,47 @@
     <div class="modal-content labor-book-modal-content">
       <div class="labor-book-modal-header">
         <h2>Labor and Price Book</h2>
-        <button type="button" id="labor-book-abbreviation-key-btn" class="btn btn-link labor-book-abbreviation-key-btn">Abbreviation Key</button>
+        <div id="labor-book-section-toggle" class="labor-book-section-toggle" role="tablist">
+          <button type="button" class="labor-book-section-btn active" data-section="parts">Parts</button>
+          <button type="button" class="labor-book-section-btn" data-section="assemblies">Assemblies</button>
+        </div>
+        <div class="labor-book-header-links">
+          <button type="button" id="labor-book-abbreviation-key-btn" class="btn btn-link labor-book-abbreviation-key-btn">Abbreviation Key</button>
+        </div>
       </div>
+      <input type="text" id="labor-book-global-search" class="labor-book-global-search" placeholder="Search assemblies and parts..." autocomplete="off" />
       <div id="labor-book-apply-to" class="labor-book-apply-to">
         <label>Add to fixture: <select id="labor-book-target-select"><option value="">-- Select fixture --</option></select></label>
       </div>
       <div id="labor-book-tabs" class="labor-book-tabs"></div>
       <div id="labor-book-content" class="labor-book-content"></div>
+      <div id="labor-book-assemblies" class="labor-book-assemblies lb-hidden">
+        <div class="labor-book-assemblies-toolbar">
+          <span class="mc-book-status" id="mc-book-status"></span>
+        </div>
+        <div id="mc-book-tree" class="mc-book-tree"></div>
+      </div>
+      <div id="labor-book-search-results" class="labor-book-search-results lb-hidden"></div>
       <div class="labor-book-modal-actions">
         <button type="button" class="btn btn-secondary labor-book-export-structure-btn" id="labor-book-export-structure-btn">Export Groups & Sections</button>
+        <button type="button" id="mc-elliot-update-btn" class="btn btn-secondary">Update Supplier Prices</button>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="labor-book-close-btn">Close</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Update Elliot Prices modal -->
+  <div id="mc-elliot-modal" class="modal mc-book-modal" aria-hidden="true">
+    <div class="modal-content mc-book-modal-content">
+      <div class="mc-book-header">
+        <h2>Update Supplier Prices</h2>
+        <span id="mc-elliot-status" class="mc-elliot-status"></span>
+        <button type="button" id="mc-elliot-close-btn" class="btn btn-secondary">Close</button>
+      </div>
+      <div id="mc-elliot-tabs" class="labor-book-tabs mc-book-tabs"></div>
+      <div id="mc-elliot-body" class="mc-elliot-body"></div>
     </div>
   </div>
 
@@ -116,24 +145,6 @@
       <div class="modal-actions">
         <button type="button" id="abbreviation-key-close-btn" class="btn btn-secondary">Close</button>
       </div>
-    </div>
-  </div>
-
-  <!-- MC Prince Book search modal -->
-  <div id="mc-prince-modal" class="modal mc-prince-modal" aria-hidden="true">
-    <div class="modal-content mc-prince-modal-content">
-      <div class="mc-prince-header">
-        <h2>MC Prince Book</h2>
-        <input type="text" id="mc-prince-search" placeholder="Search..." autocomplete="off" />
-        <button type="button" id="mc-prince-close-btn" class="btn btn-secondary">Close</button>
-      </div>
-      <div class="mc-prince-table-wrapper">
-        <table id="mc-prince-table">
-          <thead id="mc-prince-thead"></thead>
-          <tbody id="mc-prince-tbody"></tbody>
-        </table>
-      </div>
-      <div class="mc-prince-footer" id="mc-prince-result-count"></div>
     </div>
   </div>
 
@@ -178,10 +189,15 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/utils.js"></script>
   <script src="js/data/fittings.js"></script>
   <script src="js/state.js"></script>
   <script src="js/import.js"></script>
-  <script src="js/mcPrinceBook.js"></script>
+  <script src="js/elliotPriceCore.js"></script>
+  <script src="js/mcElliotState.js"></script>
+  <script src="js/mcElliotMatch.js"></script>
+  <script src="js/mcElliotUpdate.js"></script>
+  <script src="js/mcBook.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/views/manifest.js"></script>
   <script src="js/views/modal.js"></script>

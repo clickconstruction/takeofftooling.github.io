@@ -1,0 +1,854 @@
+assmNum,assmName
+1,Electrical Database
+3,copper wire
+127,3 AL THHN STRANDED WIRE 85
+315,11' drop emt d/s strap
+328,emt 1/2 d/s misc
+345,emt 3/4 d/s misc
+362,emt 1 d/s misc
+380,emt 1 1/4 d/s misc
+401,emt 1 1/2 d/s misc
+422,emt 2 d/s misc
+442,emt 2 1/2 d/s misc
+459,emt 3 d/s misc
+476,emt 3 1/2 d/s misc
+492,emt 4 d/s misc
+555,d/s emt feeder w/wire
+687,d/s feeder w/wire
+774,feeder drops w/wire & 9' ma
+905,d/s emt feeder beam clamp w
+1170,s/s emt feeder beam clamp w
+1302,s/c emt feeder beam clamp w
+1520,n8 emt d/s/i strap
+1527,n6 emt d/s/i strap
+1534,n4 emt d/s/i strap
+1541,n2 emt d/s/i strap
+1594,emt 1/2 d/c branch parts
+1611,emt 3/4 d/c misc
+1629,emt 1 d/c misc
+1645,emt d/c feeder parts
+1646,emt 1 1/4 d/c misc
+1667,emt 1 1/2 d/c misc
+1689,emt 2 d/c misc
+1709,emt 2 1/2 d/c misc
+1726,emt 3 d/c misc
+1743,emt 3 1/2 d/c misc
+1759,emt 4 d/c misc
+1822,d/c feeder w/wire
+1956,d/c feeder w/wire
+2043,feeder drops w/wire & 9' ma
+2162,n8 emt d/c/i strap
+2169,n6 emt d/c/i strap
+2176,n4 emt d/c/i strap
+2183,n2 emt d/c/i strap
+2232,emt s/s branch parts
+2233,emt 1/2 s/s branch parts
+2250,emt 3/4 s/s misc
+2267,emt 1 s/s misc
+2283,emt s/s feeder parts
+2284,emt 1 1/4 s/s misc
+2305,emt 1 1/2 s/s misc
+2326,emt 2 s/s misc
+2346,emt 2 1/2 s/s misc
+2363,emt 3 s/s misc
+2380,emt 3 1/2 s/s misc
+2396,emt 4 s/s misc
+2459,s/s feeder w/wire
+2592,s/s feeder w/wire
+2679,feeder drops w/wire & 9' ma
+2791,n8 emt s/s/i strap
+2798,n6 emt s/s/i strap
+2805,n4 emt s/s/i strap
+2812,n2 emt s/s/i strap
+2857,emt s/c branch parts
+2858,emt 1/2 s/c misc
+2875,emt 3/4 s/c misc
+2892,emt 1 s/c misc
+2908,emt s/c feeder parts
+2909,emt 1 1/4 s/c misc
+2930,emt 1 1/2 s/c misc
+2951,emt 2 s/c misc
+2972,emt 2 1/2 s/c misc
+2989,emt 3 s/c misc
+3006,emt 3 1/2 s/c misc
+3022,emt 4 s/c misc
+3086,s/c feeder w/wire
+3219,s/c feeder w/wire
+3306,feeder drops w/wire & 9' ma
+3418,n8 emt s/c/i strap
+3425,n6 emt s/c/i strap
+3432,n4 emt s/c/i strap
+3439,n2 emt s/c/i strap
+3512,d/s feeder rack w/wire
+3626,n8 emt d/s/i racks
+3633,n6 emt d/s/i racks
+3640,n4 emt d/s/i rack
+3647,n2 emt d/s/i rack
+3713,d/c feeder rack w/wire
+3827,n8 emt d/c/i racks
+3834,n6 emt d/c/i racks
+3841,n4 emt d/c/i racks
+3848,n2 emt d/c/i racks
+3914,s/s emt feeder rack w/wire
+4028,n8 emt s/s/i racks
+4035,n6 emt s/s/i racks
+4042,n4 emt s/s/i racks
+4049,n2 emt s/s/i racks
+4115,s/c emt feeder rack w/wire
+4229,n8 emt s/c/i racks
+4236,n6 emt s/c/i racks
+4243,n4 emt s/c/i racks
+4250,n2 emt s/c/i racks
+4549,wp flex exposed
+4550,sealtite flex
+4616,grc branch
+4696,grc feeder
+5032,branch grc strap
+5096,feeder grc strap
+5182,branch grc strap concrete
+5247,grc feeder strap concrete
+5334,grc branch rack w/wire
+5399,grc feeder rack w/wire
+5487,grc branch underground w/wi
+5552,grc feeder underground w/wi
+5704,grc feeder beam clamp w/wir
+5792,imc branch
+5848,imc feeder
+6158,imc branch concrete w/wire
+6223,imc feeder concrete w/wire
+6309,imc branch rack w/wire
+6374,imc feeder rack w/wire
+6460,imc feeder underground w/wi
+6547,imc branch beam clamp w/wir
+6612,imc feeder beam clamp w/wir
+6698,branch aluminum
+6762,al feeder
+7073,al feeder strap w/wire
+7160,al feeder strap concrete w/
+7310,al feeder rack w/wire
+7359,n300 al rack
+7396,al feeder beam clamp w/wire
+7482,grc/pvc branch
+7533,grc/pvc feeder
+7667,grc/pvc branch no strap
+7713,grc/pvc feeder no strap w/w
+7762,n300 grc/pvc  no strap
+7799,grc/pvc branch strap
+7864,grc/pvc feeder strap  w/wir
+7952,grc/pvc branch strap concre
+8017,grc/pvc feeder strap concre
+8167,grc/pvc feeder rack w/wire
+8253,grc/pvc feeder underground
+8339,grc/pvc branch 90d bc w/wir
+8404,grc/pvc feeder rack w/wire
+8490,branch pvc 40
+8714,pvc 40 no strap
+8824,pvc feeder strap
+8910,pvc-40 branch strap concret
+8975,pvc feeder strap conc.
+9062,pvc-40 branch underground
+9127,pvc feeder underground
+9140,n1 pvc undergroud
+9213,pvc 40 branch beam clamp
+9278,pvc 40 feeder beam clamp
+9406,pvc 80 feeder
+9463,conduit chair
+9464,duct spacer
+9615,kindorf strut rack
+9616,rack kindorf
+9658,ss strut rack
+9659,rack ss
+9826,racks kindorf 3/8 rod beam
+9863,racks kindorf 1/2 rod beam
+9899,racks kindorf 3/8 rod hang
+10046,racks unistrut 3/8 rod bea
+10083,racks unistrut 1/2 rod bea
+10119,racks unistrut 3/8 rod han
+10390,grc/imc strap hanger
+10402,grc/imc concrete strap hang
+10416,grc/imc (rack) chnl strap
+10451,nmc cable with term const
+10471,nmc cable home run w/term c
+10505,mc cable with term
+10528,bx cable with Term const
+10542,mc cable with term const
+10584,mc termination
+10592,term
+10607,cntrl term
+10866,cable splice
+10901,x ray box dis by others
+10959,aluminum cable tray
+12029,cablofil cable tray
+12214,snake tray cable tray
+12353,cellular flr ftg
+12354,flr o/l ftg
+12359,xfmr 1 phase
+12360,transformer 1 ph
+12407,xfmr 3 phase
+12408,transformer 3 ph
+12452,"iso transf, 3ph"
+12529,masts
+12530,service mast
+12531,service mast grc
+12558,seb 250v
+12568,seb 600v
+12608,meter center
+12609,meter center 125a 1 phase
+12616,meter center 200a 1 phase
+12623,meter center 125a 3 phase
+12630,meter center 200a 3 phase
+12637,meter stack sockets
+12638,meter stack 125a 1 phase
+12647,meter stack 200a 1 phase
+12654,meter stack 125a 3 phase
+12662,meter stack 200a 3 phase
+12668,meter can
+12669,meter stack 400a
+12676,meter stacks
+12677,stack mcb 65krms
+12692,stack mcb 100krms
+12700,stack m switch 100krms
+12710,stack term box
+12765,load center 3 ph mlo
+12766,load center qo 3 ph mlo
+12776,load center 3r 1 ph mlo
+12791,load center 3r 3 ph mlo
+12800,load center w/mcb
+12801,"mcb load center,1ph"
+12819,"mcb load center, 3 phase"
+12831,mcb load center 1ph 3r
+12842,mcb load center 3ph 3r
+13120,motor connction
+13527,equip connect
+13732,mc whip
+13765,so cable drop
+13785,branch liquid tite w/term c
+13786,branch liquidtight ua w/ter
+13792,feeder liquid tite w/term c
+13793,feeder liquidtight ua w/ter
+13801,branch flex alum w/term con
+13808,feeder flex alum w/term con
+13818,switch safety
+13819,safety switch
+13820,general duty switch
+13821,safety switch 250a
+13964,nema 4x disc sw
+14011,nema 12 disc sw
+14058,safety switch 600v
+14059,disconnect switch 600v
+14266,air conditioning disconnect
+14305,auto xfer switch
+14306,auto-transfer switch
+14334,"man starter,nema 1"
+14344,"man starter,nema 4"
+14355,"man starter,nema 12"
+14405,starters
+14522,reversing starters
+14523,rev starter
+14543,comb starter reversing
+14601,redv starter
+14621,comb starter red volt
+14661,"comb starter redv,n4"
+14681,starter 2 speed
+14682,starter 2p spd
+14702,comb starter 2 spd
+14741,"comb starter 2spd,n4"
+14763,contactors
+14920,light
+14921,fixtures
+14922,led lay-in fixtures
+15063,light flanged led
+15201,led recessed can fixture
+15205,led recessed can wall washe
+15217,led wall mounted fixture
+15221,led rec can hi-intensity sp
+15224,motion sensor
+15232,led exit fixture
+15284,led reflector flood fixture
+15297,led track fixtures
+15345,led light
+15349,vapor tight led fixturs
+15350,vt led fixtures
+15379,exp proof class I led fixtu
+15432,led outdoor reflector fixtu
+15437,led flood light fixture
+15442,stadium fixture - led
+15448,led uplight light fixture
+15461,pool fixtures
+15468,light wet niche
+15475,led recessed fountain fixtu
+15488,site lighting
+15493,walkway lighting
+15548,commercial white occupancy
+15553,ceiling occupancy sensors
+15561,residential white occupancy
+15565,switch standard
+15604,switch 15a com
+15623,switch 20a com
+15645,switch commercial masonry
+15818,switch surface
+15830,switch 15a com surface
+15840,switch 20a com surface
+15851,switch 15 amp spec surf
+15861,comb sw/recpt surf
+15868,mtr sw
+15877,momentary cont sw
+15878,mom cont sw
+15883,dimmer eaton al Series
+15889,dimmer eaton aspire series
+15902,dimmer eaton commercial
+15944,afci & gfci 15a recept
+15948,afci & gfci 20a recept
+15960,recp standard
+15976,recp standard masonry
+16069,recpt clock
+16126,4 port 0.4a usb charger mas
+16130,recpt clock masonry
+16133,recpt sgl
+16148,recpt spec
+16170,clock outlet
+16217,clock outlet
+16221,recp wiremold
+16237,recpt duplex
+16259,clock outlet
+16263,recpt cell
+16264,rcpt cell-tap sgl
+16280,duplex recpt
+16301,recp floor box
+16302,rcpt flr box sgl
+16318,duplex recpt flr box
+16339,panel mounted recpt
+16340,panel recpt
+16345,ind recpt
+16373,straight blade power recept
+16416,twist-lock receptacles
+16453,exp device
+16455,expl sgl recpt
+16511,j box controls door
+16626,tile boxes
+16673,box ceiling
+16674,light box surface
+16729,wp alum box
+16788,guy kit
+16863,computer emt stub-ups
+16868,computer pvc stub-ups
+16883,thermostat
+16888,unit heater
+16901,bath heater
+16907,wall htr
+16918,rad ht panel
+16923,sill heater
+16931,toe space heater
+16938,duct heater
+16960,duct thermostat
+16963,humidistat
+16968,electronic air filter
+16969,elec air filter
+16975,sequence controller
+16979,temp controller
+16980,chromalox 3800 control
+16989,heat mat
+16997,heat trace
+17005,honeywell temp control
+17006,thermostat
+17007,t-stat
+17008,low volt thermostat
+17013,economy thermostat
+17016,chrono thermostat
+17019,line volt stat
+17029,thermostat guard
+17033,heating relay
+17039,vav (variable air volume) s
+17046,vav hot  water systems
+17051,vav electric heat systems
+17071,3ph 250v rooftop heat pump
+17093,3ph 250v rooftop heat pump
+17104,1ph 600v rooftop heat pump
+17115,3ph 600v rooftop heat pump
+17126,1ph 600v rooftop heat pump
+17137,3ph 600v rooftop heat pump
+17154,fans
+17177,ventilator
+17257,concr bedding
+17362,house wiring
+17363,residential
+17376,house switch
+17394,combo house switches
+17431,led bath fixture
+17452,house w/nm-b
+17453,house wiring w/nm-b
+17454,residential w/nm-b
+17455,house recept w/nm-b
+17474,15a tamper recept & usb w/n
+17480,20a tamper recept & usb w/n
+17486,30a/50a house recept w/nm-b
+17492,wp gfi house recept w/nm-b
+17498,gfi house recept w/nm-b
+17593,t-bill list
+17603,Begin Constants
+17604,emt d/s const
+17746,d/s emt feeder w/wire const
+17973,d/s feeder w/wire const
+18201,d/s feeder rack w/wire cons
+18429,d/s emt feeder bc w/wire co
+18516,emt d/c  const
+18656,d/c feeder w/wire const
+18884,d/c feeder w/wire const
+19113,d/c feeder rack w/wire cons
+19340,d/c emt feeder bc w/wire co
+19429,emt s/s const
+19572,s/s feeder w/wire const
+19799,s/s feeder w/wire const
+20028,s/s emt feeder rack w/wire
+20257,s/s emt feeder bc w/wire co
+20346,emt s/c const
+20489,s/c feeder w/wire const
+20716,s/c feeder w/wire const
+20944,s/c emt feeder rack w/wire
+21172,s/c emt feeder bc w/wire co
+21197,n2/0 emt s/c  beam clamp co
+21261,branch pvc 40 const
+21315,feeder pvc 40 const
+21636,pvc feeder strap const
+21852,pvc feeder strap conc const
+21942,pvc-40 branch underground c
+21988,n14 3/4 pvc-40 underground
+21997,n12 3/4 pvc-40 underground
+22008,pvc-40 branch hr undergroun
+22074,pvc feeder underground cons
+22164,pvc 40 hr branch beam clamp
+22230,pvc 40 branch hr beam clamp
+22295,pvc 40 feeder beam clamp co
+22386,imc branch const
+22453,imc feeder const
+22656,imc branch concrete w/wire
+22722,imc hr branch conc w/wire c
+22787,imc feeder concrete w/wire
+22876,imc branch rack w/wire cons
+22942,imc hr branch rack w/wire c
+23007,imc feeder rack w/wire cons
+23096,imc branch underground w/wi
+23162,imc branch hr ug w/wire con
+23227,imc feeder underground w/wi
+23316,imc branch bc w/wire const
+23382,imc hr branch bc w/wire con
+23446,imc feeder beam clamp w/wir
+23534,grc branch const
+23602,grc feeder const
+23896,branch grc strap const
+23962,branch grc hr strap const
+24029,feeder grc strap const
+24102,n600 grc  strap const
+24118,branch grc strap concrete c
+24184,branch grc hr strap concret
+24249,grc feeder strap concrete c
+24337,grc branch rack w/wire cons
+24403,grc branch hr rack w/wire c
+24557,grc branch underground cons
+24623,grc branch hr underground c
+24688,grc feeder underground cons
+24777,grc branch beam clamp w/wir
+24843,grc branch hr bc w/wire con
+24909,grc feeder beam clamp w/wir
+24996,branch aluminum const
+25260,n14 al  no strap const
+25269,n12 al no strap const
+25278,n10 al d/c no strap const
+25287,n8 al no strap const
+25294,n6 alum no strap const
+25301,n4 al no strap const
+25308,n2 al no strap const
+25444,alum feeder strap w/wire co
+25531,n14 aluminum branch concret
+25596,n14 aluminum branch concret
+25662,al feeder concrete w/wire c
+25876,al feeder rack w/wire const
+25962,al feeder bc w/wire const
+26051,grc/pvc branch const
+26263,grc/pvc branch no strap con
+26328,grc/pvc branch hr no strap
+26393,grc/pvc feeder no strap con
+26479,grc/pvc branch strap const
+26544,grc/pvc branch hr strap con
+26609,grc/pvc feeder strap const
+26697,grc/pvc branch conc w/wire
+26762,grc/pvc branch hr conc w/wi
+26817,n12 3/4grc/pvc hr strap co
+26827,grc/pvc feeder strap conc c
+27041,grc/pvc feeder rack const
+27127,grc/pvc feeder ug w/wire co
+27152,n2/0 grc/pvc underground co
+27200,n600 grc/pvc underground co
+27211,4#600 1-#3/0 4 pvc
+27213,grc/pvc branch 90d bc w/wir
+27278,grc/pvc branch hr 90d bc w/
+27343,grc/pvc feeder rack const
+27428,end of electrical assemby d
+27431,Automated  Building Systems
+27434,special systems database
+27436,generic fire equip
+27504,fire alarm edwards
+27570,duct smoke chase 0550
+27640,hospital equipment
+27642,hospital headwalls
+27650,medical service column
+27653,patient console
+27656,neonatal console
+27659,medical clocks
+27660,medical timers
+27661,surgical timers
+27670,medical lights
+27671,light surgical
+27678,or panel
+27683,icu panel
+27688,ground bus modules
+27695,x ray
+27708,nurse call - field devices
+27724,nurse call code blue system
+27941,catv
+27962,security systems peripheral
+27968,security systems detection
+27982,security systems signaling
+27988,security cables
+28014,access control field device
+28029,access control - misc items
+28079,parking
+28100,leak detection
+28112,uc wire
+28121,begin voice/data database
+28123,generic voice/data assembli
+28124,generic voice/telephone ass
+28125,voice/telephone
+28143,white ca6 voice outlets25'
+28148,white cat6 voice outlets 50
+28153,white cat6 voice outlets 10
+28158,white cat6 voice outlets 15
+28163,ivory cat6 voice outlets
+28168,grey cat6 voice outlets
+28173,almond cat6 voice outlets
+28179,wh cat6 plenum voice outlet
+28184,wh ca 6 plenum voice outlet
+28189,wh cat6 plenum voice outlet
+28194,wh cat6 plenum voice outlet
+28199,iv cat6 plenum voice outlet
+28204,grey cat6 plenum voice outl
+28209,alm cat6 plenum voice outle
+28215,white cat6 surface voice ou
+28220,ivory cat6 surface voice ou
+28225,grey cat6 surface voice out
+28230,almond cat6 surface voice o
+28236,wh cat6 surface plen voice
+28241,iv ca6 surface plen voice o
+28246,grey cat6 surface plen voic
+28251,alm cat6 surface plen voice
+28257,white 8c tel  outlets 11'
+28262,ivory 8c tel outlets 11'
+28267,grey 8c tel outlets 11'
+28272,black 8c tel outlets 11'
+28278,white 8c tel  outlets 25'
+28283,ivory 8c tel outlets 25'
+28288,grey 8c tel outlets 25'
+28293,black 8c tel outlets 25'
+28299,white 8c plenum tel  outlet
+28304,ivory 8c plenum tel outlets
+28309,grey 8c plenum tel outlets
+28314,black 8c plenum tel outlets
+28320,white 8c plenum tel  outlet
+28325,ivory 8c plenum tel outlets
+28330,grey 8c plenum tel outlets
+28335,black 8c plenum tel outlets
+28341,white 8c plenum tel  outlet
+28346,ivory 8c plenum tel outlets
+28351,grey 8c plenum tel outlets
+28356,black 8c plenum tel outlets
+28375,data/computer
+28376,computer
+28377,racks & enclosures
+28378,racks
+28392,cabinets
+28410,voice/data outlets
+28411,cat5e outlets
+28461,cat5e  plenum outlets
+28511,cat5e surface outlets
+28540,cat5e plenum surface outlet
+28569,cat6 surface outlets
+28598,cat6 surface plenum outlets
+28627,cat6a surface outlets
+28656,cat6a surface plenum outlet
+28685,cat7 surface outlets
+28714,cat7 surface plenum outlets
+28743,cat6 outlets
+28793,cat6  plenum outlets
+28843,cat6a  outlets
+28893,cat6a  plenum outlets
+28943,cat7 outlets
+28993,cat7  plenum outlets
+29197,3/4 innerduct fiber w/bc ha
+29232,2d4w cable tray fiber w/bc
+29267,2d4w cable tray fiber w/hb
+29335,end abs voice/data  databas
+29337,begin residential abs datab
+29380,end residential abs databas
+29383,start transmission & distri
+29384,start 12.47/7.2kv rus datab
+29489,12.47/7.2kv 2 ph pri pole t
+29599,12.47/7.2kv 3 ph pri pole t
+30000,start 24.9/14.4 kv rus data
+30001,single support miscellaneo
+30009,24.9/14.4 kv rus
+30015,24.9/14.4 kv rus
+30021,24.9/14.4 kv rus
+30026,24.9/14.4 kv rus
+30031,24.9/14.4 kv rus
+30036,24.9/14.4 kv rus
+30041,24.9/14.4 kv rus
+30046,24.9/14.4 kv rus
+30054,24.9/14.4 kv rus
+30058,24.9/14.4 kv rus
+30063,24.9/14.4 kv rus
+30069,24.9/14.4 kv rus
+30076,24.9/14.4 kv rus
+30082,24.9/14.4 kv rus
+30090,24.9/14.4 kv rus
+30095,24.9/14.4 kv rus
+30101,24.9/14.4 kv rus
+30106,24.9/14.4 kv rus
+30111,24.9/14.4 kv rus
+30116,24.9/14.4 kv rus
+30121,24.9/14.4 kv rus
+30127,24.9/14.4 kv rus
+30133,24.9/14.4 kv rus
+30138,24.9/14.4 kv rus
+30142,24.9/14.4 kv rus
+30147,24.9/14.4 kv rus
+30152,24.9/14.4 kv rus
+30160,24.9/14.4 kv rus
+30168,24.9/14.4 kv rus
+30174,24.9/14.4 kv rus
+30180,24.9/14.4 kv rus
+30186,24.9/14.4 kv rus
+30191,24.9/14.4 kv rus
+30196,24.9/14.4 kv rus
+30201,24.9/14.4 kv rus
+30206,24.9/14.4 kv rus
+30211,24.9/14.4 kv rus
+30216,24.9/14.4 kv rus
+30221,24.9/14.4 kv rus
+30226,24.9/14.4 kv rus
+30231,24.9/14.4 kv rus
+30236,24.9/14.4 kv rus
+30241,24.9/14.4 kv rus
+30246,24.9/14.4 kv rus
+30251,24.9/14.4 kv rus
+30256,24.9/14.4 kv rus
+30261,24.9/14.4 kv rus
+30266,24.9/14.4 kv rus
+30271,24.9/14.4 kv rus
+30276,24.9/14.4 kv rus
+30281,24.9/14.4 kv rus
+30286,24.9/14.4 kv rus
+30291,24.9/14.4 kv rus
+30296,24.9/14.4 kv rus
+30301,24.9/14.4 kv rus
+30307,24.9/14.4 kv rus
+30312,24.9/14.4 kv rus
+30317,24.9/14.4 kv rus
+30325,24.9/14.4 kv rus
+30334,24.9/14.4kv rus
+30339,24.9/14.4kv rus
+30344,24.9/14.4kv rus
+30349,24.9/14.4kv rus
+30354,24.9/14.4 kv rus
+30359,24.9/14.4kv rus
+30364,24.9/14.4 kv rus
+30369,24.9/14.4  kv rus
+30374,24.9/14.4 kv rus
+30379,24.9/14.4 kv rus
+30384,24.9/14.4 kv rus
+30389,24.9/14.4 kv rus
+30395,24.9/14.4 kv rus
+30400,24.9/14.4 kv rus
+30405,24.9/14.4 kv rus
+30410,24.9/14.4 kv rus
+30415,24.9/14.4 kv rus
+30420,24.9/14.4 kv rus
+30425,24.9/14.4 kv rus
+30430,24.9/14.4 kv rus
+30438,24.9/14.4 kv rus
+30446,24.9/14.4 kv rus
+30454,24.9/14.4 kv rus
+30460,24.9/14.4 kv rus
+30467,24.9/14.4 kv rus
+30474,24.9/14.4 kv rus
+30479,24.9/14.4 kv rus
+30484,24.9/14.4 kv rus
+30490,24.9/14.4 kv rus
+30494,24.9/14.4 kv rus
+30499,24.9/14.4 kv rus
+30504,24.9/14.4 kv rus
+30509,24.9/14.4 kv rus
+30514,24.9/14.4 kv rus
+30519,24.9/14.4 kv rus
+30520,3ph trans bl gr-y pri ct gr
+30524,24.9/14.4 kv rus
+30529,24.9/14.4 kv rus
+30534,24.9/14.4 kv rus
+30539,24.9/14.4 kv rus
+30544,24.9/14.4 kv rus
+30545,secondary assemblies (small
+30550,24.9/14.4 kv rus
+30556,24.9/14.4 kv rus
+30562,24.9/14.4 kv rus
+30570,24.9/14.4 kv rus
+30577,24.9/14.4 kv rus
+30583,24.9/14.4 kv rus
+30588,24.9/14.4 kv rus
+30593,24.9/14.4 kv rus
+30598,24.9/14.4 kv rus
+30603,24.9/14.4 kv rus
+30608,24.9/14.4 kv rus
+30612,24.9/14.4 kv rus
+30617,24.9/14.4 kv rus
+30622,24.9/14.4 kv rus
+30629,24.9/14.4 kv rus
+30635,24.9/14.4 kv rus
+30641,24.9/14.4 kv rus
+30648,24.9/14.4 kv rus
+30654,24.9/14.4 kv rus
+30659,24.9/14.4 kv rus
+30664,24.9/14.4 kv rus
+30670,24.9/14.4 kv rus
+30675,24.9/14.4 kv rus
+30680,24.9/14.4 kv rus
+30682,POLE PROT ASSY-WRAP TYPE (R
+30686,120/240 volts
+30691,120/240 volts
+30696,240/480 volts
+30701,120/208 volts
+30706,24.9/14.4 kv rus
+30711,24.9/14.4 kv rus
+30716,24.9/14.4 kv rus
+30721,24.9/14.4 kv rus
+30726,24.9/14.4 kv rus
+30731,24.9/14.4 kv rus
+30738,24.9/14.4 kv rus
+30743,24.9/14.4 kv rus
+30748,24.9/14.4 kv rus
+30753,24.9/14.4 kv rus
+30758,24.9/14.4 kv rus
+30764,24.9/14.4 kv rus
+30769,24.9/14.4 kv rus
+30774,24.9/14.4 kv rus
+30778,24.9/14.4 kv rus
+30783,start rus 34.5-69kv and 115
+30964,medium duly pole bands
+31036,"ld angle, guying & deadend"
+31045,ld angle guying &deadend po
+31053,ld angle guying &deadend po
+31061,md angle guying &deadend po
+31069,md angle guying &deadend po
+31077,md angle guying &deadend po
+31085,md angle guying &deadend po
+31149,tangent single pole suspens
+31155,34.5kv
+31159,46kv
+31163,69kv
+31169,34.5kv
+31172,46kv
+31175,69kv
+31180,34.5kv
+31184,46kv
+31188,69kv
+31193,34.5kv
+31196,46kv
+31199,69kv
+31227,start rus underground datab
+31419,misc material & labor
+31465,aluminum feeders /constants
+31634,d/s feeder rack w/wire cons
+31719,d/s emt feeder beam clamp w
+31805,#3 emt s/c strap const Al W
+31841,#4/0 emt s/c strap const Al
+31899,d/c feeder rack w/wire cons
+31984,d/c emt feeder bc w/wire co
+32039,#350 emt d/c beam clamp con
+32069,s/s feeder w/wire const alu
+32154,s/s feeder w/wire const
+32240,s/s emt feeder rack w/wire
+32327,s/s emt feeder bc w/wire co
+32382,#350 alum emt s/s beam clam
+32412,s/c emt feeder bc w/wire co
+32467,#350 emt s/c beam clamp con
+32498,s/c emt feeder rack w/wire
+32577,#750 emt s/c rack const alu
+32585,feeder grc strap const
+32628,#250 grc strap const alum w
+32670,grc feeder strap concrete c
+32725,#350 grc strap conc const a
+32749,#750 grc  strap conc const
+32756,#3 GRC rack const 85A alum
+32786,#3/0 GRC  rack const 175A
+32840,grc feeder underground cons
+32925,grc feeder beam clamp w/wir
+32932,#2 GRC beam clamp const 100
+32956,#3/0 GRC beam clamp const 1
+33095,al feeder concrete w/wire c
+33114,31/0 al strap concrete cons
+33156,#400 al strap concrete cons
+33181,al feeder rack w/wire const
+33188,#2 al rack const alum wire
+33266,al feeder beam clamp w/wire
+33267,#3 al beam clamp
+33273,#2 al beam clamp
+33281,#1 al beam clamp
+33287,#1/0 al beam clamp
+33293,#2/0 al beam clamp
+33299,#3/0  al beam clamp
+33305,#4/0 al beam clamp
+33311,#250 al beam clamp
+33317,#300 al beam clamp
+33323,#350 al beam clamp
+33329,#400 al beam clamp
+33335,#500 al beam clamp
+33341,#600 al beam clamp
+33347,#750 al beam clamp
+33363,grc/pvc feeder no strap con
+33394,#3/0 grc/pvc no strap const
+33406,#250 grc/pvc no strap const
+33412,#300 grc/pvc no strap const
+33418,#350 grc/pvc no strap const
+33424,#400 grc/pvc no strap const
+33430,#500 grc/pvc no strap const
+33436,#600 grc/pvc no strap const
+33442,#750 grc/pvc no strap const
+33449,grc/pvc feeder strap conc c
+33462,#1 grc/pvc strap conc const
+33492,#250 grc/pvc strap conc con
+33534,grc/pvc feeder rack const
+33589,#350 grc/pvc rack const alu
+33620,grc/pvc feeder ug w/wire co
+33627,#2 grc/pvc underground cons
+33657,#4/0 grc/pvc u/g const alum
+33699,#750 grc/pvc u/g const alum
+33706,imc feeder conc.  const alu
+33792,imc feeder rack w/wire cons
+33805,#1 imc rack const alum wire
+33829,#4/0 imc rack const allum w
+33878,imc feeder underground w/wi
+33965,imc feeder beam clamp w/wir
+34050,end
+34051,d/c feeder strap const w/Al
+34220,pvc feeder strap const.
+34306,pvc feeder U/G  alum Wire
+34307,#3 SCH 40 pvc u/g. Alum Wir
+34313,#2 SCH 40 pvc U/G. Alum Wir
+34319,#1 SCH 40 pvc strap u/g Alu
+34337,#3/0 pvc sch 40 strap  U/G
+34343,#4/0 SCH 40 pv U/G t.Alum W
+34349,#250 SCH40 pvc U/G ALum Wir
+34355,#300  SCH 40 pvc U/G.Alum W
+34361,# 350SCH 40 pvc U/G Alum Wi
+34367,# 400SCH 40  pvc U/G Alum W
+34373,#500SCH 4  pvc  strap U/G A
+34379,#600SCH 40 pvc U/G. AL Wire
+34385,#750SCH 40 pvc U/G ALUM WIR

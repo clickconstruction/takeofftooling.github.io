@@ -166,7 +166,7 @@ header h1 {
 }
 .manifest-view .qty-cell input {
   width: 5.5rem;
-  min-width: 0;
+  min-width: 3.2rem; /* quantity must stay legible when the table gets tight */
   box-sizing: border-box;
   -moz-appearance: textfield;
   appearance: textfield;
@@ -299,6 +299,25 @@ header h1 {
 .manifest-view .price-cell input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.labor-book-cell .part-book-icon-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 24px;
+}
+.labor-book-cell .part-book-icon-btn.icon-btn:hover {
+  color: var(--accent);
+  background: rgba(232, 197, 71, 0.15);
 }
 
 .labor-cell .labor-book-icon-btn.icon-btn,
@@ -495,11 +514,13 @@ header h1 {
   border-color: var(--border2);
 }
 
+.btn-primary,
 .btn-success {
   background: var(--accent);
   color: var(--bg);
 }
 
+.btn-primary:hover,
 .btn-success:hover {
   background: var(--accent2);
 }
@@ -562,6 +583,18 @@ header h1 {
 
 .modal[aria-hidden="false"] {
   display: flex;
+}
+
+.modal-fullpage {
+  background: var(--surface);
+}
+.modal-fullpage .modal-content {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  border: none;
 }
 
 .modal-content {
@@ -760,8 +793,389 @@ header h1 {
   margin: 0;
 }
 
-.labor-book-abbreviation-key-btn {
+.labor-book-header-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.labor-book-abbreviation-key-btn,
+.labor-book-import-btn {
   font-size: 0.9rem;
+}
+
+/* Labor Book Import modal */
+.labor-book-import-modal-content {
+  width: 90vw;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.labor-book-import-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.labor-book-import-modal-header h2 {
+  margin: 0;
+}
+
+.labor-book-import-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.labor-book-import-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.labor-book-import-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.labor-book-import-tab {
+  padding: 0.4rem 0.8rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.labor-book-import-tab:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.labor-book-import-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.labor-book-import-status #labor-book-import-status-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.labor-book-import-paste-link {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.labor-book-import-paste-link:hover {
+  color: var(--accent2);
+}
+
+.labor-book-import-paste-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.labor-book-import-paste-fallback textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.labor-book-import-paste-fallback .btn {
+  align-self: flex-start;
+}
+
+.labor-book-import-preview {
+  flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.labor-book-import-preview-empty {
+  color: var(--text3);
+  font-size: 0.9rem;
+  padding: 1rem;
+}
+
+.labor-book-import-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.labor-book-import-preview-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.75rem;
+}
+
+.labor-book-import-preview-item.import-preview-item-deleted {
+  opacity: 0.6;
+  background: var(--surface3);
+}
+
+.labor-book-import-preview-item-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.import-preview-item-name {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.import-preview-item-meta {
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.import-preview-item-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.import-type-buttons {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.import-type-btn {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  border: none;
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.import-type-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.import-type-btn.selected {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.import-type-legend-btn {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--surface2);
+  color: #d4a017;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.import-type-legend-btn:hover {
+  background: var(--surface3);
+  color: #e6b020;
+}
+
+.import-type-legend-popover {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.import-type-legend-popover[aria-hidden="false"] {
+  display: flex;
+}
+
+.import-type-legend-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  max-width: 280px;
+}
+
+.import-type-legend-content strong {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.import-type-legend-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0.75rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+.import-type-legend-list dt {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.import-type-legend-list dd {
+  margin: 0;
+  color: var(--text2);
+}
+
+.import-preview-item-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.import-preview-item-actions-bottom {
+  margin-left: 0;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.import-keep-btn {
+  background: var(--green);
+  color: var(--bg);
+}
+
+.import-keep-btn:hover {
+  filter: brightness(1.1);
+}
+
+.import-delete-btn {
+  background: var(--red);
+  color: var(--bg);
+}
+
+.import-delete-btn:hover {
+  filter: brightness(1.1);
+}
+
+.labor-book-import-edit-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.import-edit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.import-edit-meta label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.import-edit-meta select,
+.import-edit-meta input[type="text"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.import-edit-meta input[type="text"] {
+  min-width: 200px;
+}
+
+.import-edit-entries {
+  margin-bottom: 1rem;
+}
+
+.import-edit-entries table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.import-edit-entries th,
+.import-edit-entries td {
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.import-edit-entries th {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.import-edit-entries input {
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.import-edit-entries-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.labor-book-import-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.labor-book-import-actions-left {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.labor-book-import-download-btn {
+  margin-left: auto;
 }
 
 .labor-book-modal-content {
@@ -772,6 +1186,546 @@ header h1 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Part Book Elliot Import */
+.part-book-elliot-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.part-book-elliot-modal-header h2 {
+  margin: 0;
+}
+.part-book-type-mapping-toggle {
+  display: none;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.part-book-type-mapping-toggle:hover {
+  color: var(--accent2);
+  text-decoration: underline;
+}
+.part-book-type-mapping-toggle.visible {
+  display: block;
+}
+.part-book-category-mapping-section-hidden {
+  display: none !important;
+}
+.part-book-elliot-import-modal-content {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.part-book-elliot-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.part-book-elliot-tab {
+  padding: 0.4rem 0.8rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.part-book-elliot-tab:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.part-book-elliot-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+.part-book-elliot-tab-panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+.part-book-elliot-tab-panel.active {
+  display: flex;
+}
+#part-book-elliot-tab-match .part-book-matching-list {
+  min-height: 150px;
+}
+#part-book-elliot-tab-setSection {
+  overflow-y: auto;
+}
+.part-book-elliot-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-elliot-status {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-elliot-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.part-book-elliot-file-input {
+  flex: 0 0 auto;
+}
+#part-book-elliot-load-hcp-btn {
+  margin-left: auto;
+}
+.part-book-elliot-textarea {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* Part Book Matching */
+.part-book-matching-content {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.part-book-matching-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-matching-actions-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+.part-book-matching-actions-top .part-book-matching-select {
+  flex: 1;
+  min-width: 200px;
+}
+.part-book-matching-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+.part-book-matching-empty {
+  color: var(--text2);
+  font-style: italic;
+}
+.part-book-matching-row {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+}
+.part-book-matching-row:hover {
+  background: var(--surface3);
+}
+.part-book-matching-row.selected {
+  background: rgba(232, 197, 71, 0.15);
+  border-color: var(--accent);
+}
+.part-book-matching-select {
+  min-width: 200px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+/* Part Book Matching - destination indicator */
+.part-book-matching-destination {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+.part-book-matching-destination-label {
+  color: var(--text2);
+  margin-right: 0.5rem;
+}
+.part-book-matching-change-destination {
+  margin-left: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+.part-book-matching-change-destination:hover {
+  color: var(--accent2);
+  text-decoration: underline;
+}
+
+/* Part Book Set Section tab */
+.part-book-set-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+.part-book-set-section-block {
+  flex-shrink: 0;
+}
+.part-book-set-section-collapsible {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  overflow: hidden;
+}
+.part-book-set-section-collapsible .part-book-set-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--surface3);
+  user-select: none;
+}
+.part-book-set-section-collapsible .part-book-set-section-header:hover {
+  background: var(--border);
+}
+.part-book-set-section-chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--text2);
+  transition: transform 0.2s;
+}
+.part-book-set-section-collapsed .part-book-set-section-chevron {
+  transform: rotate(-90deg);
+}
+.part-book-set-section-collapsible .part-book-set-section-body {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+.part-book-set-section-collapsed .part-book-set-section-body {
+  display: none;
+}
+.part-book-set-section-desc {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.part-book-mapping-table th,
+.part-book-mapping-table td {
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.part-book-mapping-table th {
+  font-weight: 500;
+  color: var(--text2);
+}
+.part-book-mapping-category {
+  display: inline-block;
+  min-width: 120px;
+  font-size: 0.9rem;
+}
+.part-book-mapping-type {
+  min-width: 140px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.part-book-mapping-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.part-book-destination-columns {
+  display: flex;
+  gap: 0.5rem;
+  min-height: 200px;
+}
+.part-book-dest-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  overflow: hidden;
+}
+.part-book-dest-column-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.part-book-dest-column-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.part-book-dest-option {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.part-book-dest-option:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.part-book-dest-option.selected {
+  background: var(--accent);
+  color: var(--bg);
+}
+.part-book-structure-type {
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+}
+.part-book-structure-type-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--surface3);
+}
+.part-book-structure-type-body {
+  padding: 0.75rem 1rem;
+}
+.part-book-add-group-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: var(--surface3);
+  border-radius: var(--radius);
+}
+.part-book-add-group-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.part-book-add-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: var(--surface3);
+  border-radius: var(--radius);
+}
+.part-book-add-inline-form .part-book-add-group-input {
+  flex: 1;
+  min-width: 100px;
+}
+.part-book-structure-group {
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+}
+.part-book-structure-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.part-book-structure-sections {
+  margin-left: 0.5rem;
+}
+.part-book-structure-section {
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border2);
+}
+.part-book-structure-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+.part-book-structure-subsections {
+  list-style: none;
+  margin: 0.25rem 0 0 1rem;
+  padding: 0;
+}
+.part-book-structure-subsection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+.part-book-structure-label {
+  font-weight: 500;
+}
+.part-book-structure-count {
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.part-book-elliot-modal-actions {
+  justify-content: space-between;
+}
+.part-book-elliot-import-modal-content.part-book-elliot-has-csv #part-book-elliot-parse-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+}
+.part-book-elliot-import-modal-content.part-book-elliot-has-csv #part-book-elliot-parse-btn:hover {
+  background: var(--accent2);
+}
+.part-book-elliot-import-modal-content.part-book-elliot-has-csv #part-book-elliot-import-close-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.part-book-elliot-import-modal-content.part-book-elliot-has-csv #part-book-elliot-import-close-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.part-book-elliot-modal-actions .modal-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.part-book-export-status {
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+/* Part Book Search modal */
+.part-book-search-content {
+  max-width: 500px;
+}
+.part-book-search-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1rem;
+}
+.part-book-search-results {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+}
+.part-book-search-result {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.part-book-search-result:last-child {
+  border-bottom: none;
+}
+.part-book-search-result:hover,
+.part-book-search-result:focus {
+  background: var(--surface3);
+  outline: none;
+}
+.part-book-search-name {
+  font-weight: 500;
+}
+.part-book-search-meta {
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+.part-book-search-empty {
+  padding: 1rem;
+  color: var(--text2);
+  font-style: italic;
+}
+
+.part-book-mc-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+.part-book-mc-import-status {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text2);
 }
 
 /* MC Prince Book modal */
@@ -929,6 +1883,10 @@ header h1 {
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface);
+}
+
+.modal-content .labor-book-group-header {
+  margin-bottom: 0;
 }
 
 .labor-book-group-header {
@@ -1923,4 +2881,661 @@ header h1 {
   font-family: 'DM Mono', monospace;
   font-size: 0.9rem;
   text-align: right;
+}
+
+/* MC Book browser modal */
+.mc-book-modal .modal-content {
+  max-width: none;
+  max-height: none;
+}
+
+.mc-book-modal-content {
+  width: 98vw;
+  max-width: 98vw;
+  height: 95vh;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mc-book-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.mc-book-header h2 {
+  margin: 0;
+}
+
+.mc-book-header input[type="text"] {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.mc-book-tabs {
+  flex-shrink: 0;
+}
+
+.mc-book-tab-count {
+  opacity: 0.6;
+  font-size: 0.75em;
+}
+
+.mc-book-tree {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+}
+
+.mc-book-group {
+  margin-bottom: 0.5rem;
+}
+
+.mc-book-group .labor-book-group-header {
+  cursor: pointer;
+  user-select: none;
+  font-size: 1.05rem;
+  padding: 0.6rem 0.9rem;
+}
+
+.mc-book-group .labor-book-group-body {
+  padding: 0.25rem 0.75rem 0.5rem;
+}
+
+.mc-book-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-book-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mc-book-section-header:hover {
+  background: var(--surface3);
+}
+
+.mc-book-section-name {
+  font-weight: 500;
+}
+
+.mc-book-section-meta {
+  color: var(--muted, #999);
+  font-size: 0.8rem;
+}
+
+.mc-book-section-count {
+  margin-left: auto;
+  color: var(--muted, #999);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.mc-book-section .mc-book-import-btn {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.mc-book-section-body {
+  display: none;
+  padding: 0 0.5rem 0.5rem 1.6rem;
+}
+
+.mc-book-section-expanded .mc-book-section-body {
+  display: block;
+}
+
+.mc-book-section .labor-book-section-chevron::before {
+  content: '\25B8';
+}
+
+.mc-book-section-expanded .labor-book-section-chevron::before {
+  content: '\25BE';
+}
+
+.mc-book-entries {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.mc-book-entries th,
+.mc-book-entries td {
+  padding: 0.3rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-book-entries th {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mc-book-entry-labor,
+.mc-book-entry-price {
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+}
+
+.mc-book-result-count,
+.mc-book-status {
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+  color: var(--muted, #999);
+  font-size: 0.85rem;
+}
+
+.mc-book-empty {
+  color: var(--muted, #999);
+  padding: 1rem;
+}
+
+/* MC Book nested level-2 subgroups */
+.mc-book-subgroup {
+  margin: 0.25rem 0 0.25rem 0.5rem;
+  border-left: 2px solid var(--border);
+}
+
+.mc-book-subgroup-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mc-book-subgroup-header:hover {
+  background: var(--surface3);
+}
+
+.mc-book-subgroup-body {
+  padding-left: 0.75rem;
+}
+
+.mc-book-subgroup-collapsed .mc-book-subgroup-body {
+  display: none;
+}
+
+.mc-book-subgroup > .mc-book-subgroup-header .labor-book-section-chevron::before {
+  content: '\25B8';
+}
+
+.mc-book-subgroup:not(.mc-book-subgroup-collapsed) > .mc-book-subgroup-header .labor-book-section-chevron::before {
+  content: '\25BE';
+}
+
+/* MC Book per-entry import buttons */
+.mc-book-entry-add {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.mc-book-entries .mc-book-entry-import-btn {
+  padding: 0.1rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+/* Child (component) rows: read as parts of the assembly above */
+.manifest-view tr.child-row input[data-field="description"] {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.type-badge.child-type-badge {
+  background: var(--surface3);
+  color: var(--muted, #aaa);
+  font-size: 0.72rem;
+}
+
+/* Update Elliot Prices modal */
+.mc-elliot-body {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+.mc-elliot-status {
+  flex: 1;
+  color: var(--muted, #999);
+  font-size: 0.85rem;
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+.mc-elliot-current {
+  color: var(--muted, #aaa);
+}
+
+.mc-elliot-upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.mc-elliot-body textarea {
+  width: 100%;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.mc-elliot-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.mc-elliot-actions progress {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.mc-elliot-stats {
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+
+.mc-elliot-stats td {
+  padding: 0.3rem 1rem 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-elliot-stats td:last-child {
+  font-family: 'DM Mono', monospace;
+}
+
+.mc-elliot-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.mc-elliot-cat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mc-elliot-hint {
+  color: var(--muted, #999);
+  font-size: 0.85rem;
+}
+
+.mc-elliot-warn {
+  color: var(--accent);
+}
+
+.mc-elliot-review-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-elliot-review-item {
+  flex: 0 0 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-elliot-review-select {
+  flex: 1;
+  min-width: 12rem;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.25rem;
+}
+
+.mc-book-entry-flag {
+  color: var(--accent);
+  cursor: help;
+}
+
+/* Labor & Price Book: Parts | Assemblies section toggle + assemblies panel */
+.lb-hidden {
+  display: none !important;
+}
+
+.labor-book-section-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.labor-book-section-btn {
+  padding: 0.4rem 1.1rem;
+  background: var(--surface2);
+  border: none;
+  color: var(--text);
+  opacity: 0.7;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.labor-book-section-btn:hover {
+  background: var(--surface3);
+  opacity: 1;
+}
+
+.labor-book-section-btn.active {
+  background: var(--accent);
+  color: #1a1a1a;
+  opacity: 1;
+}
+
+.labor-book-assemblies {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.labor-book-assemblies-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.labor-book-assemblies-toolbar input[type="text"] {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.labor-book-assemblies .mc-book-tree {
+  flex: 1;
+  min-height: 8rem;
+}
+
+.labor-book-assemblies .mc-book-status {
+  flex-shrink: 0;
+}
+
+.mc-book-entries .mc-book-entry-add-btn {
+  padding: 0.1rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+/* Elliot supply-house parts group inside the Parts section */
+.elliot-parts-group .elliot-parts-filter {
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  margin: 0.25rem 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+/* Assembly bill-of-materials expansion */
+.mc-book-bom-toggle {
+  cursor: pointer;
+  color: var(--accent);
+  user-select: none;
+  display: inline-block;
+  width: 1em;
+}
+
+.mc-book-bom-cell {
+  padding: 0.25rem 0.5rem 0.6rem;
+}
+
+.mc-book-bom {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: var(--surface);
+  border-left: 2px solid var(--border);
+}
+
+.mc-book-bom th,
+.mc-book-bom td {
+  padding: 0.22rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-book-bom th {
+  color: var(--muted, #999);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.mc-book-bom-qty {
+  font-family: 'DM Mono', monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mc-book-bom tfoot td {
+  color: var(--muted, #aaa);
+  font-size: 0.78rem;
+  border-bottom: none;
+}
+
+/* Purchase list report */
+.purchase-list {
+  margin: 1.5rem 0;
+}
+
+.purchase-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.purchase-list-header h3 {
+  margin: 0;
+  color: var(--accent);
+}
+
+.purchase-list-meta {
+  color: var(--muted, #999);
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.purchase-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.purchase-list-table th,
+.purchase-list-table td {
+  padding: 0.35rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.purchase-list-table th {
+  background: var(--surface2);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.purchase-list-qty,
+.purchase-list-money {
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.purchase-list-table tfoot td {
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.purchase-list-unpriced td {
+  color: var(--muted, #999);
+}
+
+.purchase-list-varies {
+  color: var(--accent);
+  cursor: help;
+}
+
+.purchase-list-empty {
+  color: var(--muted, #999);
+}
+
+/* Labor & Price Book global search */
+.labor-book-global-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.labor-book-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.lb-search-group h3 {
+  color: var(--accent);
+  margin: 0.75rem 0 0.4rem;
+}
+
+.lb-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lb-search-row .lb-search-add {
+  padding: 0.1rem 0.55rem;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.lb-search-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-search-context {
+  color: var(--muted, #999);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-search-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  min-width: 4.5rem;
+  text-align: right;
+}
+
+.lb-search-none,
+.lb-search-loading {
+  color: var(--muted, #999);
+  font-size: 0.85rem;
+}
+
+.labor-book-assemblies-toolbar .mc-book-status {
+  flex: 1;
+  margin: 0;
+}
+
+/* Background scroll lock while the Labor & Price Book is open */
+body.lb-modal-open {
+  overflow: hidden;
+}
+
+/* Components preview in search results */
+.lb-search-bom-toggle {
+  cursor: pointer;
+  color: var(--accent);
+  user-select: none;
+  width: 1em;
+  flex-shrink: 0;
+}
+
+.lb-search-bom {
+  padding: 0.25rem 0 0.5rem 3.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-elliot-cat select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
 }

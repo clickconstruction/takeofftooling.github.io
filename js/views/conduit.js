@@ -17,10 +17,7 @@ const TakeoffConduitView = (function () {
   ];
 
   function escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return TakeoffUtils.escapeHtml(str);
   }
 
   function renderStep1(itemId) {
@@ -116,6 +113,7 @@ const TakeoffConduitView = (function () {
       .map(
         (f, i) => `
       <tr>
+        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-fittings-index="${i}" title="Part Book Search">PB</button></td>
         <td><input type="text" data-fittings-index="${i}" data-field="description" value="${escapeHtml(f.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-fittings-index="${i}" data-field="quantity" value="${f.quantity ?? ''}" min="0" /></td>
         <td><input type="number" data-fittings-index="${i}" data-field="labor" value="${f.labor !== undefined ? f.labor : ''}" min="0" step="0.1" /></td>
@@ -150,7 +148,7 @@ const TakeoffConduitView = (function () {
             ${presetOptions}
           </select>
           <table class="fittings-table">
-            <thead><tr><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
             <tbody>${fittingRows}</tbody>
           </table>
           <button type="button" class="btn add-fitting-btn">Add Fitting Row</button>
@@ -294,6 +292,7 @@ const TakeoffConduitView = (function () {
           temp.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
         }
         TakeoffState.setConduitTempData(temp);
+        TakeoffState.beginBatch(); // one undo frame per step transition
         const parent = TakeoffState.getItemById(itemId);
         if (parent) {
           const trenchIdx = (parent.children || []).findIndex((c) => c.type === 'trenching');
@@ -307,6 +306,12 @@ const TakeoffConduitView = (function () {
           labor: trenchData.labor,
           price: parseFloat(pricePerFoot) || undefined,
           parentId: itemId,
+          meta: {
+            feet: parseFloat(qty) || 0,
+            material: material || '',
+            depth: depth || '',
+            pricePerFoot: parseFloat(pricePerFoot) || 0,
+          },
         });
         if (parent) {
           parent.children = (parent.children || []).filter((c) => c.type !== 'trenchingAddon');
@@ -324,6 +329,7 @@ const TakeoffConduitView = (function () {
             });
           }
         }
+        TakeoffState.endBatch();
         TakeoffState.setConduitStep(2);
         TakeoffApp.render();
       });
@@ -358,6 +364,13 @@ const TakeoffConduitView = (function () {
         TakeoffApp.render();
       });
 
+      document.querySelectorAll('.part-book-icon-btn[data-fittings-index]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const index = parseInt(e.currentTarget.dataset.fittingsIndex, 10);
+          TakeoffApp.showPartBookSearchForConduitFitting(index);
+        });
+      });
+
       document.querySelectorAll('.remove-fitting-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const index = parseInt(e.currentTarget.dataset.index, 10);
@@ -387,6 +400,7 @@ const TakeoffConduitView = (function () {
 
       document.getElementById('conduit-next-overage')?.addEventListener('click', () => {
         const temp = TakeoffState.getConduitTempData();
+        TakeoffState.beginBatch(); // one undo frame per step transition
         const parent = TakeoffState.getItemById(itemId);
         if (parent) {
           parent.children = (parent.children || []).filter((c) => c.type !== 'fitting');
@@ -399,11 +413,12 @@ const TakeoffConduitView = (function () {
               description: f.description,
               quantity: f.quantity || 0,
               labor: f.labor || 0,
-              price: f.price != null && !isNaN(f.price) ? parseFloat(f.price) : null,
+              price: f.price !== '' && f.price != null && !isNaN(parseFloat(f.price)) ? parseFloat(f.price) : null,
               parentId: itemId,
             });
           }
         }
+        TakeoffState.endBatch();
         TakeoffState.setConduitStep(3);
         TakeoffApp.render();
       });
@@ -435,6 +450,7 @@ const TakeoffConduitView = (function () {
         if (!item) return;
 
         const temp = TakeoffState.getConduitTempData();
+        TakeoffState.beginBatch(); // one undo frame per save
         const parent = TakeoffState.getItemById(itemId);
         if (parent) {
           parent.children = (parent.children || []).filter((c) => c.type !== 'overage');
@@ -451,9 +467,11 @@ const TakeoffConduitView = (function () {
             quantity: additional,
             labor: 0,
             parentId: itemId,
+            meta: { overagePercent },
           });
         }
 
+        TakeoffState.endBatch();
         TakeoffApp.navigateToManifest();
       });
     }

@@ -22,7 +22,7 @@ const TakeoffDeviceView = (function () {
       .map(
         (r, i) => `
       <tr>
-        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="${sectionKey}" data-index="${i}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>
+        <td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-section="${sectionKey}" data-index="${i}" title="Open Labor and Price Book">${BOOK_SVG}</button><button type="button" class="part-book-icon-btn icon-btn" data-section="${sectionKey}" data-index="${i}" title="Part Book Search">PB</button></td>
         <td><input type="text" data-section="${sectionKey}" data-index="${i}" data-field="description" value="${escapeHtml(r.description || '')}" placeholder="Description" /></td>
         <td class="device-qty-cell"><div class="device-qty-wrap"><input type="number" data-section="${sectionKey}" data-index="${i}" data-field="quantity" value="${r.quantity ?? ''}" min="0" /><span class="device-qty-buttons-row"><button type="button" class="btn btn-small device-qty-x2-btn" data-section="${sectionKey}" data-index="${i}" title="Multiply by 2">×2</button><button type="button" class="btn btn-small device-qty-div2-btn" data-section="${sectionKey}" data-index="${i}" title="Divide by 2">/2</button></span></div></td>
         <td><input type="number" data-section="${sectionKey}" data-index="${i}" data-field="labor" value="${r.labor !== undefined ? r.labor : ''}" min="0" step="0.1" /></td>
@@ -54,7 +54,6 @@ const TakeoffDeviceView = (function () {
     if (!item) return '';
 
     const tempData = TakeoffState.getDeviceTempData();
-    const canSave = DEVICE_SECTIONS.every((s) => (tempData[s.key] || []).length >= 1);
     const childTotals = getCumulativeChildTotals(tempData);
 
     const sectionsHtml = DEVICE_SECTIONS.map(
@@ -130,17 +129,14 @@ const TakeoffDeviceView = (function () {
         </div>
         ${sectionsHtml}
         <div class="flow-actions">
-          <button type="button" class="btn btn-success" id="device-save-btn" ${canSave ? '' : 'disabled'}>Save and Back to Manifest</button>
+          <button type="button" class="btn btn-success" id="device-save-btn">Save and Back to Manifest</button>
         </div>
       </div>
     `;
   }
 
   function escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return TakeoffUtils.escapeHtml(str);
   }
 
   function attachListeners(itemId) {
@@ -165,6 +161,14 @@ const TakeoffDeviceView = (function () {
         const section = e.currentTarget.dataset.section;
         const index = parseInt(e.currentTarget.dataset.index, 10);
         TakeoffApp.showLaborBookModalForDeviceRow(section, index);
+      });
+    });
+
+    document.querySelectorAll('.part-book-icon-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const section = e.currentTarget.dataset.section;
+        const index = parseInt(e.currentTarget.dataset.index, 10);
+        TakeoffApp.showPartBookSearchForDeviceRow(section, index);
       });
     });
 
@@ -307,16 +311,20 @@ const TakeoffDeviceView = (function () {
       const sectionToType = { outletsAndSwitches: 'outletsAndSwitches', boxes: 'box', backBoxSupport: 'backBoxSupport', covers: 'cover', conduit: 'conduit', wire: 'wire', screws: 'screws', misc: 'misc' };
       const defaultLabels = { outletsAndSwitches: 'Outlets and Switches', box: 'Box', backBoxSupport: 'Back Box Support', cover: 'Cover', conduit: 'Conduit', wire: 'Wire', screws: 'Screws', misc: 'Misc.' };
 
-      if (!DEVICE_SECTIONS.every((s) => (temp[s.key] || []).length >= 1)) return;
-
+      TakeoffState.beginBatch(); // one undo frame per save
       const parent = TakeoffState.getItemById(itemId);
       if (parent) {
         parent.children = (parent.children || []).filter((c) => !allTypes.includes(c.type));
       }
 
+      // a row is junk unless the user gave it a description, labor, or price;
+      // quantity alone carries no information (empty sections are seeded with a qty-1 blank row)
+      const isMeaningful = (r) =>
+        (r.description || '').trim() !== '' || (parseFloat(r.labor) || 0) > 0 || (parseFloat(r.price) || 0) > 0;
+
       for (const s of DEVICE_SECTIONS) {
         const type = sectionToType[s.key];
-        const rows = temp[s.key] || [];
+        const rows = (temp[s.key] || []).filter(isMeaningful);
         for (const r of rows) {
           TakeoffState.addItem({
             id: TakeoffState.generateId(),
@@ -330,6 +338,7 @@ const TakeoffDeviceView = (function () {
         }
       }
 
+      TakeoffState.endBatch();
       TakeoffApp.navigateToManifest();
     });
   }

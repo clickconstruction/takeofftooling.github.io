@@ -1,0 +1,20 @@
+{
+  "comment": "Maps Elliot Electric CSV categories to MC Book tabs for new items (the 'Elliot' branch). null = skip that category. Edit freely; takes effect on the next upload in Update Elliot Prices.",
+  "mapping": {
+    "Conduit & Raceways": "conduit",
+    "Fittings": "conduit",
+    "Anchors & Connectors": "conduit",
+    "Wire": "wire",
+    "Wiring Devices": "devices",
+    "Boxes & Covers": "devices",
+    "Lighting": "lighting",
+    "Distribution Equipment": "gear",
+    "Fuses": "gear",
+    "Controls": "gear",
+    "Line Construction Material": "gear",
+    "Builders Products": "gear",
+    "Telecom": "specialSystems",
+    "Tools & Testers": null,
+    "N/A": null
+  }
+}
