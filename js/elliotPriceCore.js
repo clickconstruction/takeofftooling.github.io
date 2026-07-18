@@ -206,7 +206,9 @@ const McElliotCore = (function () {
   function extractTradeSize(str) {
     const s = canonFractions((str || '').toLowerCase().replace(/½/g, '1/2').replace(/¾/g, '3/4').replace(/¼/g, '1/4'));
     for (const size of TRADE_SIZES) {
-      const re = new RegExp(`(^|[^\\d/])${size.replace(/[/-]/g, '\\$&')}(\\s|"|in\\b|$)`);
+      // [^\d/-] guard: without excluding '-', the '1/2' in '1-1/2' matches
+      // first and compound sizes are never reached.
+      const re = new RegExp(`(^|[^\\d/-])${size.replace(/[/-]/g, '\\$&')}(\\s|"|in\\b|$)`);
       if (re.test(s)) return size;
     }
     return null;

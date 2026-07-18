@@ -4,8 +4,13 @@
  *
  * Usage:
  *   node scripts/apply-elliot-prices.js path/to/elliot.csv
- *     — parse the CSV, apply SAVED mappings only (no interactive matching),
+ *     — parse the CSV, apply SAVED mappings only (no matching),
  *       rebuild the overlay, patch the book.
+ *   node scripts/apply-elliot-prices.js path/to/elliot.csv --match
+ *     — additionally run the same fuzzy matcher as the in-app flow:
+ *       auto matches are persisted into elliot-item-mappings.json,
+ *       review-grade candidates are written to source-data/elliot-review-queue.json
+ *       (confirm them via the in-app "Update Supplier Prices" review tab).
  *   node scripts/apply-elliot-prices.js
  *     — re-apply the committed mc-assemblies/elliot-price-overlay.json as-is.
  *
@@ -18,12 +23,16 @@ const core = require('../js/elliotPriceCore.js');
 
 const ROOT = path.join(__dirname, '..');
 const p = (rel) => path.join(ROOT, 'mc-assemblies', rel);
+const round4 = (n) => Math.round(n * 10000) / 10000;
 
-function main() {
-  const csvArg = process.argv[2];
+async function main() {
+  const args = process.argv.slice(2);
+  const csvArg = args.find((a) => !a.startsWith('--'));
+  const doMatch = args.includes('--match');
   const model = JSON.parse(fs.readFileSync(p('mc-price-model.json'), 'utf8'));
   const categoryMapping = JSON.parse(fs.readFileSync(p('elliot-category-mapping.json'), 'utf8')).mapping;
-  const mappings = JSON.parse(fs.readFileSync(p('elliot-item-mappings.json'), 'utf8')).mappings || {};
+  const mappingsFile = JSON.parse(fs.readFileSync(p('elliot-item-mappings.json'), 'utf8'));
+  const mappings = mappingsFile.mappings || {};
 
   let overlay;
   if (csvArg) {
@@ -37,13 +46,45 @@ function main() {
 
     const itemPrices = {};
     const usedPns = new Set();
-    for (const [pn, itemNum] of Object.entries(mappings)) {
-      const row = rowByPn.get(pn);
+    const applyMatch = (itemNum, partNumber, perEach) => {
       const item = model.items[itemNum];
-      if (!row || !item) continue;
-      usedPns.add(pn);
-      if (row.perEach > 0 && (item.p === 0 || Math.abs(row.perEach - item.p) / item.p > 0.001)) {
-        itemPrices[itemNum] = Math.round(row.perEach * 10000) / 10000;
+      if (!item) return;
+      usedPns.add(partNumber);
+      if (perEach > 0 && (item.p === 0 || Math.abs(perEach - item.p) / item.p > 0.001)) {
+        itemPrices[itemNum] = round4(perEach);
+      }
+    };
+
+    let matchStats = null;
+    if (doMatch) {
+      const matcher = require('../js/mcElliotMatch.js');
+      const result = await matcher.runMatching(model.items, deduped, mappings, (done, total) => {
+        if (done % 2000 === 0 || done === total) console.log(`  matched ${done}/${total} items`);
+      });
+      let newAuto = 0;
+      for (const [itemNum, m] of Object.entries(result.auto)) {
+        applyMatch(itemNum, m.partNumber, m.perEach);
+        if (m.via === 'auto' && mappings[m.partNumber] === undefined) {
+          mappings[m.partNumber] = Number(itemNum);
+          newAuto++;
+        }
+      }
+      fs.writeFileSync(
+        p('elliot-item-mappings.json'),
+        JSON.stringify({ ...mappingsFile, mappings }, null, 1)
+      );
+      const reviewPath = path.join(ROOT, 'source-data/elliot-review-queue.json');
+      fs.writeFileSync(reviewPath, JSON.stringify(result.review, null, 1));
+      matchStats = {
+        savedMappingsApplied: result.mappedApplied,
+        autoMatched: newAuto,
+        needsReview: result.review.length,
+        reviewQueueWrittenTo: 'source-data/elliot-review-queue.json',
+      };
+    } else {
+      for (const [pn, itemNum] of Object.entries(mappings)) {
+        const row = rowByPn.get(pn);
+        if (row) applyMatch(itemNum, pn, row.perEach);
       }
     }
 
@@ -51,7 +92,7 @@ function main() {
     for (const r of deduped) {
       if (usedPns.has(r.partNumber)) continue;
       if (!categoryMapping[r.category]) continue;
-      newItems.push([r.category, r.description || r.name, r.partNumber, Math.round(r.perEach * 10000) / 10000]);
+      newItems.push([r.category, r.description || r.name, r.partNumber, round4(r.perEach)]);
     }
 
     overlay = {
@@ -63,8 +104,9 @@ function main() {
       newItems,
     };
     fs.writeFileSync(p('elliot-price-overlay.json'), JSON.stringify(overlay));
-    console.log(`Overlay rebuilt: ${Object.keys(itemPrices).length} item prices via saved mappings, ${newItems.length} new items, ${duplicateWarnings.length} duplicate-price warnings.`);
-    console.log('Note: headless mode applies saved mappings only — run the in-app flow to match new SKUs.');
+    console.log(`Overlay rebuilt: ${Object.keys(itemPrices).length} item prices, ${newItems.length} new items, ${duplicateWarnings.length} duplicate-price warnings.`);
+    if (matchStats) console.log(JSON.stringify(matchStats, null, 2));
+    else console.log('Note: saved mappings only — pass --match (or run the in-app flow) to match new SKUs.');
   } else {
     overlay = JSON.parse(fs.readFileSync(p('elliot-price-overlay.json'), 'utf8'));
     console.log(`Re-applying committed overlay from ${overlay.sourceFile} (${overlay.importedAt}).`);

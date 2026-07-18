@@ -5,16 +5,29 @@
  */
 
 const McElliotMatch = (function () {
+  // Dual browser/Node: in the browser McElliotCore is a prior <script>;
+  // in Node (scripts/apply-elliot-prices.js --match) we require it.
+  const core = typeof McElliotCore !== 'undefined'
+    ? McElliotCore
+    : require('./elliotPriceCore.js');
   const CHUNK_SIZE = 500;
   const MAX_CANDIDATES = 500;
 
   // Yield to the event loop without setTimeout: timer chains get throttled
   // hard in backgrounded/occluded tabs, but MessageChannel posts do not.
+  // In Node use setImmediate — open MessageChannel ports would keep the
+  // process alive after the run completes.
   const yieldToLoop = (() => {
+    if (typeof setImmediate === 'function') {
+      return (fn) => setImmediate(fn);
+    }
     if (typeof MessageChannel !== 'undefined') {
       return (fn) => {
         const ch = new MessageChannel();
-        ch.port1.onmessage = () => fn();
+        ch.port1.onmessage = () => {
+          ch.port1.close();
+          fn();
+        };
         ch.port2.postMessage(null);
       };
     }
@@ -28,7 +41,7 @@ const McElliotMatch = (function () {
     const index = new Map();
     const metas = new Array(rows.length);
     for (let i = 0; i < rows.length; i++) {
-      const meta = McElliotCore.metaFor(rows[i].description + ' ' + rows[i].name);
+      const meta = core.metaFor(rows[i].description + ' ' + rows[i].name);
       metas[i] = meta;
       for (const t of meta.tokens) {
         let list = index.get(t);
@@ -100,15 +113,15 @@ const McElliotMatch = (function () {
         const end = Math.min(pos + CHUNK_SIZE, total);
         for (; pos < end; pos++) {
           const [itemNum, item] = todo[pos];
-          const meta = McElliotCore.metaFor(item.n);
+          const meta = core.metaFor(item.n);
           if (!meta.tokens.size) continue;
           const scored = [];
           for (const i of candidatesFor(meta, elliotIndex)) {
-            const s = McElliotCore.scoreMatch(meta, elliotIndex.metas[i]);
+            const s = core.scoreMatch(meta, elliotIndex.metas[i]);
             if (s > 0.2) scored.push({ row: rows[i], score: s });
           }
           scored.sort((a, b) => b.score - a.score);
-          const cls = McElliotCore.classifyMatches(scored, item.p);
+          const cls = core.classifyMatches(scored, item.p);
           if (cls.kind === 'auto') {
             auto[itemNum] = { partNumber: cls.best.row.partNumber, perEach: cls.best.row.perEach, via: 'auto', score: cls.best.score };
           } else if (cls.kind === 'review') {
@@ -139,3 +152,8 @@ const McElliotMatch = (function () {
 
   return { runMatching, buildElliotIndex };
 })();
+
+// Node (scripts/); inert in the browser.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = McElliotMatch;
+}

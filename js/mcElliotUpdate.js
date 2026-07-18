@@ -9,7 +9,6 @@ const McElliotUpdate = (function () {
 
   let activeTab = 'upload';
   let lastSummary = null; // {stats, matching, duplicateWarnings, categories: {cat: count}}
-  let parsedRows = null;  // deduped rows of the last upload (session only)
 
   // ---------- modal plumbing ----------
 
@@ -103,7 +102,6 @@ const McElliotUpdate = (function () {
         return;
       }
       const { rows: deduped, duplicateWarnings } = McElliotCore.dedupeElliotRows(rows, categoryMapping);
-      parsedRows = deduped;
 
       setStatus(`Parsed ${rows.length.toLocaleString()} rows (${deduped.length.toLocaleString()} unique parts). Matching against ${Object.keys(priceModel.items).length.toLocaleString()} MC items...`);
       if (progressEl) progressEl.style.display = '';
@@ -191,7 +189,6 @@ const McElliotUpdate = (function () {
     const stats = s?.stats;
     const catMapping = McElliotState.getCategoryMapping() || {};
     const counts = s?.categoryCounts || countCategories(overlay);
-    const enabled = new Set(overlay.enabledCategories || []);
 
     const TAB_LABELS = { gear: 'Gear', lighting: 'Lighting', devices: 'Devices', conduit: 'Conduit', wire: 'Wire', specialSystems: 'Special Systems' };
     const catChecks = Object.entries(counts)
