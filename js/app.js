@@ -399,6 +399,20 @@
     } catch (err) {
       alert('This shared link could not be loaded — it may be truncated or corrupted.');
     }
+  } else if (hash && hash.startsWith('#import=')) {
+    // Structured count handoff (from Count Tooling): #import= + base64 JSON
+    // {v:1, source, items:[{description, count, page, type?}]}. Items go
+    // through the normal import preview modal.
+    try {
+      const json = decodeURIComponent(escape(atob(hash.slice(8))));
+      const payload = JSON.parse(json);
+      window.history.replaceState(null, '', window.location.pathname);
+      if (!TakeoffImport.importFromPayload(payload)) {
+        alert('This import link contained no valid items.');
+      }
+    } catch (err) {
+      alert('This import link could not be loaded — it may be truncated or corrupted.');
+    }
   }
 
   // Ensure at least one row exists on load

@@ -164,6 +164,35 @@ const TakeoffImport = (function () {
     }
   }
 
+  /**
+   * Structured handoff from Count Tooling (or any host app) — no clipboard.
+   * payload: { v: 1, source?: string, items: [{ description, count|quantity, page?, type? }] }
+   * Items flow through the same preview modal as the clipboard import.
+   * Returns the number of items queued (0 = nothing valid; caller may alert).
+   */
+  function importFromPayload(payload) {
+    if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return 0;
+    const items = [];
+    for (const raw of payload.items) {
+      if (!raw || typeof raw !== 'object') continue;
+      const description = String(raw.description || '').trim();
+      if (!description) continue;
+      const quantity = Number(raw.quantity ?? raw.count) || 0;
+      const type = typeof raw.type === 'string' && TakeoffState.ITEM_TYPES.includes(raw.type)
+        ? raw.type
+        : inferType(description);
+      items.push({
+        description,
+        quantity,
+        labor: null,
+        planPage: String(raw.page ?? raw.planPage ?? '').trim(),
+        type,
+      });
+    }
+    if (items.length) showImportPreviewModal(items);
+    return items.length;
+  }
+
   let importPreviewListenersAttached = false;
   function ensureImportPreviewListeners() {
     if (importPreviewListenersAttached) return;
@@ -171,5 +200,5 @@ const TakeoffImport = (function () {
     attachImportPreviewListeners();
   }
 
-  return { importFromClipboard, parseCountToolingClipboard, showImportPreviewModal, hideImportPreviewModal, ensureImportPreviewListeners };
+  return { importFromClipboard, importFromPayload, parseCountToolingClipboard, showImportPreviewModal, hideImportPreviewModal, ensureImportPreviewListeners };
 })();
