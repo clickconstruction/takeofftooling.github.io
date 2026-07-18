@@ -1,6 +1,13 @@
 # Takeoff Tooling
 
-A static web app for electrical estimators to create manifest-based bids. Enter fixtures and runs, add type-specific child items (boxes, covers, trenching, fittings, overage, MAC adapters), save reusable assemblies, import from CountTooling.com, and export to PDF or shareable links.
+A static web app for electrical estimators to create manifest-based bids. Enter fixtures and runs, add type-specific child items (boxes, covers, trenching, fittings, overage, MAC adapters), save reusable assemblies, look up labor and prices in the MC assemblies book, update supplier prices, import from CountTooling.com, and export to PDF or shareable links.
+
+## Documentation
+
+- [CLAUDE.md](CLAUDE.md) — orientation for coding agents: layout, conventions, gotchas
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime modules, state shapes, view pattern, storage keys
+- [docs/DATA-PIPELINE.md](docs/DATA-PIPELINE.md) — how `mc-assemblies/*.json` is built and updated
+- [docs/REFACTOR-PLAN.md](docs/REFACTOR-PLAN.md) — planned file splits and cleanup
 
 ## Features
 
@@ -60,14 +67,19 @@ Paste clipboard data (fixture, count, page per line). A **preview modal** shows:
 
 ### Labor and Price Book
 
+Two sides, toggled at the top of the modal:
+
+- **Parts** — Editable per-tab sections (labor hours + price per item), plus a live "Elliot Parts" supplier group
+- **Assemblies** — The MC assemblies book (24k+ entries) as a browsable category tree; add entries rolled-up or exploded into their component items
+- **Global search** — Searches parts, assemblies, and supplier parts together
+- **Add to fixture / fill mode** — Apply a selected entry to a manifest row, or fill a specific flow row via the per-row "PB" buttons
+- **Update Supplier Prices** — Import a vendor CSV (e.g. Elliot Electric), auto-match against MC items with a review queue, and download updated JSON to commit back into `mc-assemblies/`
 - **Abbreviation Key** — Reference for labor codes
-- **Add to fixture** — Apply selected items to a manifest row
 - **Export Groups & Sections** — Export structure for customization
 
 ### Other
 
-- **Undo / Redo** — History for manifest changes
-- **Search MC Prince Book** — External reference link
+- **Undo / Redo** — History for manifest changes (manifest only)
 
 ## Hosting on GitHub Pages
 
@@ -77,10 +89,20 @@ Paste clipboard data (fixture, count, page per line). A **preview modal** shows:
 
 ## Local Development
 
-Open `index.html` in a browser, or serve the folder with any static server:
+Serve the folder with the bundled dev server (disables caching, which matters when iterating on the large JSON data files):
 
 ```bash
-npx serve .
+python3 scripts/dev-server.py 4173
+```
+
+Then open http://localhost:4173. Don't open `index.html` directly via `file://` — the Labor & Price Book fetches JSON from `mc-assemblies/`, which requires an HTTP server.
+
+### Tests & lint
+
+```bash
+npm install            # dev-only deps (eslint, Playwright)
+npm run check          # eslint + unit tests
+npx playwright test    # browser smoke tests (starts the dev server itself)
 ```
 
 ## Customization
