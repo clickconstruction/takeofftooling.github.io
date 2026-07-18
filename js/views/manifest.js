@@ -37,7 +37,6 @@ const TakeoffManifestView = (function () {
 
   function renderRow(item, isChild = false) {
     const typeClass = item.type && TYPE_LABELS[item.type] ? item.type : 'default';
-    const typeLabel = item.type ? TYPE_LABELS[item.type] || item.type : '';
     const hasFlow = ['devices', 'conduit', 'wire'].includes(item.type);
 
     const planPageCell = isChild
