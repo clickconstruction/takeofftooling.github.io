@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Convert mc-assemblies/*.csv to a single JSON file.
+ * Convert source-data/*.csv to a single JSON file.
  * Parses assembly rows (Assm #, Assm Name, Material, Labor, Unit Price) and
  * their child item rows (Item #, Item Name, BPQty, Price 1, Bid Lbr).
  */
@@ -8,8 +8,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const MC_DIR = path.join(__dirname, '../mc-assemblies');
-const OUTPUT_PATH = path.join(__dirname, '../mc-assemblies/mc-assemblies.json');
+const MC_DIR = path.join(__dirname, '../source-data');
+const OUTPUT_PATH = path.join(__dirname, '../source-data/mc-assemblies.json');
 
 const CSV_FILES = [
   'mc1to10000.csv',
@@ -52,20 +52,7 @@ function parseNum(val) {
 
 // Format 1 (mc1to10000): leading empty column - Assm # in col 1, Name in col 3
 // Format 2 (mc10001+): no leading empty - Assm # in col 0, Name in col 2
-function detectFormat(cells) {
-  const c0 = (cells[0] || '').trim();
-  const c1 = (cells[1] || '').trim();
-  if (c1 === 'Assm #' || c1 === 'Item #') return 1;
-  if (c0 === 'Assm #' || c0 === 'Item #') return 2;
-  const num0 = parseNum(c0);
-  const num1 = parseNum(c1);
-  const name1 = (cells[3] || '').trim();
-  const name2 = (cells[2] || '').trim();
-  if (num1 !== null && name1.length > 0) return 1;
-  if (num0 !== null && name2.length > 0) return 2;
-  return 1; // default
-}
-
+// (format is detected inline in parseCSVFile from the first data row)
 function isAssemblyRow(cells, fmt) {
   if (fmt === 1) {
     const col1 = cells[1];
@@ -205,7 +192,7 @@ function main() {
 
   const result = {
     meta: {
-      source: 'mc-assemblies/*.csv',
+      source: 'source-data/*.csv',
       generatedAt: new Date().toISOString(),
       totalAssemblies: allAssemblies.length,
       byFile,

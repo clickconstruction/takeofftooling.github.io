@@ -7,8 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const MAPPING_PATH = path.join(__dirname, '../mc-assemblies/mc-hierarchy-mapping.csv');
-const JSON_PATH = path.join(__dirname, '../mc-assemblies/mc-assemblies.json');
+const MAPPING_PATH = path.join(__dirname, '../source-data/mc-hierarchy-mapping.csv');
+const JSON_PATH = path.join(__dirname, '../source-data/mc-assemblies.json');
 
 function parseCSVLine(line) {
   const result = [];

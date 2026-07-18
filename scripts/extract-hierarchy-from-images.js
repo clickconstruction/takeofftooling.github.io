@@ -18,8 +18,8 @@ const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const limitArg = process.argv.find((a) => a.startsWith('--limit='));
 const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : null;
 
-const IMAGES_DIR = path.resolve(process.cwd(), args[0] || 'hierarchy-images');
-const STAGING_PATH = path.join(__dirname, '../mc-assemblies/hierarchy-staging.jsonl');
+const IMAGES_DIR = path.resolve(process.cwd(), args[0] || 'source-data/hierarchy-images');
+const STAGING_PATH = path.join(__dirname, '../source-data/hierarchy-staging.jsonl');
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const MODEL = process.env.OLLAMA_MODEL || 'llava:13b';
 const DELAY_MS = parseInt(process.env.DELAY_MS || '500', 10);

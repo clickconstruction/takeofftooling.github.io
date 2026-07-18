@@ -7,8 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const INPUT_PATH = path.join(__dirname, '../mc-assemblies/mc-assemblies.json');
-const OUTPUT_PATH = path.join(__dirname, '../mc-assemblies/mc-section-heads.csv');
+const INPUT_PATH = path.join(__dirname, '../source-data/mc-assemblies.json');
+const OUTPUT_PATH = path.join(__dirname, '../source-data/mc-section-heads.csv');
 
 function isSectionHead(a) {
   return (

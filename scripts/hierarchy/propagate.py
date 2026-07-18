@@ -2,20 +2,20 @@
 """Propagate hierarchy from assigned section heads to every assembly.
 
 Reads heads-assigned.csv + mc-assemblies.json; writes:
-  - mc-assemblies/mc-assemblies.json (updated in place: level1-3, section, subsection)
-  - mc-assemblies/mc-hierarchy.csv   (full per-assembly mapping, keyed by assmNum)
+  - source-data/mc-assemblies.json (updated in place: level1-3, section, subsection)
+  - source-data/mc-hierarchy.csv   (full per-assembly mapping, keyed by assmNum)
 Prints coverage stats.
 """
 import json, csv, os, collections
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = '/Users/robertdouglas/_SYNC/github/Click-Construction/takeofftooling.github.io'
+REPO = os.path.dirname(os.path.dirname(HERE))
 
 assigned = {}
 for row in csv.DictReader(open(os.path.join(HERE, 'heads-assigned.csv'))):
     assigned[int(row['assmNum'])] = (row['level1'], row['level2'], row['level3'], row['matchType'])
 
-data = json.load(open(os.path.join(REPO, 'mc-assemblies/mc-assemblies.json')))
+data = json.load(open(os.path.join(REPO, 'source-data/mc-assemblies.json')))
 assemblies = data['assemblies']
 
 def is_head(a):
@@ -47,10 +47,10 @@ for a in assemblies:
         a['subsection'] = cur_sub
         stats['assembly_with_path' if cur[0] else 'assembly_no_path'] += 1
 
-with open(os.path.join(REPO, 'mc-assemblies/mc-assemblies.json'), 'w') as f:
+with open(os.path.join(REPO, 'source-data/mc-assemblies.json'), 'w') as f:
     json.dump(data, f, indent=2)
 
-with open(os.path.join(REPO, 'mc-assemblies/mc-hierarchy.csv'), 'w', newline='') as f:
+with open(os.path.join(REPO, 'source-data/mc-hierarchy.csv'), 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(['assmNum', 'assmName', 'isHead', 'level1', 'level2', 'level3', 'section', 'subsection', 'material', 'laborHours'])
     for a in assemblies:

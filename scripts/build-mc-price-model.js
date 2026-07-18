@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const INPUT = path.join(ROOT, 'mc-assemblies/mc-assemblies.json');
+const INPUT = path.join(ROOT, 'source-data/mc-assemblies.json');
 const OUTPUT = path.join(ROOT, 'mc-assemblies/mc-price-model.json');
 
 const DIVISOR = { M: 1000, C: 100, Q: 100 };

@@ -25,7 +25,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'mc-assemblies/mc-assemblies.json'), 'utf8'));
+const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'source-data/mc-assemblies.json'), 'utf8'));
 const tabMapping = JSON.parse(fs.readFileSync(path.join(ROOT, 'mc-assemblies/tab-mapping.json'), 'utf8')).mapping;
 
 function isHead(a) {

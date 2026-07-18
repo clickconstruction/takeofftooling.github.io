@@ -2,14 +2,14 @@
 """Align extracted picker hierarchy against MC flat-book section heads.
 
 Inputs (same dir): merged.jsonl, overrides.json
-             repo: mc-assemblies/mc-assemblies.json
+             repo: source-data/mc-assemblies.json
 Outputs (same dir): heads-assigned.csv, unmatched-heads.csv,
                     unmatched-candidates.csv, stats.txt
 """
 import json, csv, re, collections, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = '/Users/robertdouglas/_SYNC/github/Click-Construction/takeofftooling.github.io'
+REPO = os.path.dirname(os.path.dirname(HERE))
 
 def norm(s):
     return re.sub(r'\s+', ' ', (s or '').strip().lower())
@@ -78,7 +78,7 @@ def cand_paths(cands):
     return sorted(set((c[3], c[4], c[5]) for c in cands))
 
 # ---------- load flat book ----------
-data = json.load(open(os.path.join(REPO, 'mc-assemblies/mc-assemblies.json')))
+data = json.load(open(os.path.join(REPO, 'source-data/mc-assemblies.json')))
 assemblies = data['assemblies']
 
 def is_head(a):
