@@ -296,7 +296,7 @@ header .header-redo-btn {
 
 /* Parent rows open their block: a stronger border chunks the table into
    assemblies (parent + its children) */
-.manifest-view tbody tr:not(.child-row) td {
+.manifest-table-scroll tbody tr:not(.child-row) td {
   border-top: 2px solid var(--border2);
 }
 
@@ -454,16 +454,16 @@ header .header-redo-btn {
     display: block;
   }
 
-  .manifest-view thead,
-  .manifest-view colgroup {
+  .manifest-table-scroll thead,
+  .manifest-table-scroll colgroup {
     display: none;
   }
 
-  .manifest-view tbody {
+  .manifest-table-scroll tbody {
     display: block;
   }
 
-  .manifest-view tbody tr {
+  .manifest-table-scroll tbody tr {
     display: grid;
     grid-template-columns: auto minmax(6.5rem, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
     gap: 0.45rem 0.7rem;
@@ -475,20 +475,20 @@ header .header-redo-btn {
     background: var(--surface);
   }
 
-  .manifest-view tbody tr td,
-  .manifest-view tbody tr:not(.child-row) td {
+  .manifest-table-scroll tbody tr td,
+  .manifest-table-scroll tbody tr:not(.child-row) td {
     display: block;
     padding: 0;
     border: none;
   }
 
   /* icon rail down the left: remove on top, book/+ below */
-  .manifest-view tbody tr td:nth-child(1) {
+  .manifest-table-scroll tbody tr td:nth-child(1) {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .manifest-view tbody tr td:nth-child(2) {
+  .manifest-table-scroll tbody tr td:nth-child(2) {
     grid-column: 1;
     grid-row: 2;
     display: flex;
@@ -498,21 +498,21 @@ header .header-redo-btn {
   }
 
   /* description across the top; the table-mode indent guide is off here */
-  .manifest-view tbody tr td:nth-child(3) {
+  .manifest-table-scroll tbody tr td:nth-child(3) {
     grid-column: 2 / span 3;
     grid-row: 1;
     padding-left: 0;
   }
 
-  .manifest-view tbody tr.child-row td:nth-child(3) {
+  .manifest-table-scroll tbody tr.child-row td:nth-child(3) {
     padding-left: 0;
   }
 
-  .manifest-view tbody tr td:nth-child(3)::before {
+  .manifest-table-scroll tbody tr td:nth-child(3)::before {
     display: none;
   }
 
-  .manifest-view tbody tr td:nth-child(4) {
+  .manifest-table-scroll tbody tr td:nth-child(4) {
     grid-column: 5;
     grid-row: 1;
     justify-self: end;
@@ -520,30 +520,30 @@ header .header-redo-btn {
   }
 
   /* labeled value fields */
-  .manifest-view tbody tr td:nth-child(5),
-  .manifest-view tbody tr td:nth-child(6),
-  .manifest-view tbody tr td:nth-child(7),
-  .manifest-view tbody tr td:nth-child(8) {
+  .manifest-table-scroll tbody tr td:nth-child(5),
+  .manifest-table-scroll tbody tr td:nth-child(6),
+  .manifest-table-scroll tbody tr td:nth-child(7),
+  .manifest-table-scroll tbody tr td:nth-child(8) {
     grid-row: 2;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
   }
 
-  .manifest-view tbody tr td:nth-child(5) { grid-column: 2; }
-  .manifest-view tbody tr td:nth-child(6) { grid-column: 3; }
-  .manifest-view tbody tr td:nth-child(7) { grid-column: 4; }
-  .manifest-view tbody tr td:nth-child(8) { grid-column: 5; }
+  .manifest-table-scroll tbody tr td:nth-child(5) { grid-column: 2; }
+  .manifest-table-scroll tbody tr td:nth-child(6) { grid-column: 3; }
+  .manifest-table-scroll tbody tr td:nth-child(7) { grid-column: 4; }
+  .manifest-table-scroll tbody tr td:nth-child(8) { grid-column: 5; }
 
-  .manifest-view tbody tr td:nth-child(5)::before { content: 'Qty'; }
-  .manifest-view tbody tr td:nth-child(6)::before { content: 'Labor'; }
-  .manifest-view tbody tr td:nth-child(7)::before { content: 'Price'; }
-  .manifest-view tbody tr td:nth-child(8)::before { content: 'Plan page'; }
+  .manifest-table-scroll tbody tr td:nth-child(5)::before { content: 'Qty'; }
+  .manifest-table-scroll tbody tr td:nth-child(6)::before { content: 'Labor'; }
+  .manifest-table-scroll tbody tr td:nth-child(7)::before { content: 'Price'; }
+  .manifest-table-scroll tbody tr td:nth-child(8)::before { content: 'Plan page'; }
 
-  .manifest-view tbody tr td:nth-child(5)::before,
-  .manifest-view tbody tr td:nth-child(6)::before,
-  .manifest-view tbody tr td:nth-child(7)::before,
-  .manifest-view tbody tr td:nth-child(8)::before {
+  .manifest-table-scroll tbody tr td:nth-child(5)::before,
+  .manifest-table-scroll tbody tr td:nth-child(6)::before,
+  .manifest-table-scroll tbody tr td:nth-child(7)::before,
+  .manifest-table-scroll tbody tr td:nth-child(8)::before {
     font-size: 0.62rem;
     color: var(--text3);
     text-transform: uppercase;
@@ -551,11 +551,11 @@ header .header-redo-btn {
   }
 
   /* children don't render a plan-page input — drop the empty labeled slot */
-  .manifest-view tbody tr td:nth-child(8):empty {
+  .manifest-table-scroll tbody tr td:nth-child(8):empty {
     display: none;
   }
 
-  .manifest-view tbody tr input {
+  .manifest-table-scroll tbody tr input {
     width: 100%;
     min-width: 0;
   }
@@ -579,7 +579,7 @@ header .header-redo-btn {
   }
 
   /* children: indented nested cards */
-  .manifest-view tr.child-row {
+  .manifest-table-scroll tr.child-row {
     margin-left: 1.4rem;
     background: rgba(0, 0, 0, 0.25);
   }
@@ -3125,6 +3125,38 @@ header .header-redo-btn {
   font-weight: 700;
   font-family: 'DM Mono', monospace;
   color: var(--text);
+}
+
+/* Mobile: the three summary tables stack as clean, compact full-width
+   sections instead of wrapping/squeezing side by side */
+@media (max-width: 640px) {
+  .manifest-summary {
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1rem;
+  }
+
+  .manifest-summary-section {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .manifest-summary-title {
+    text-align: left;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .manifest-summary-table {
+    font-size: 0.85rem;
+  }
+
+  .manifest-summary-table td {
+    padding: 0.28rem 0.4rem;
+  }
 }
 
 #labor-rate-input {
