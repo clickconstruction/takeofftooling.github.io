@@ -62,9 +62,11 @@ header h1 {
   color: var(--accent2);
 }
 
-.header-import-btn {
+/* header selector needed: the generic .btn rule later in the file would
+   otherwise win the specificity tie and restore its larger padding */
+header .header-import-btn {
   font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.3rem 0.65rem;
 }
 
 .header-trash-toggle {
@@ -128,10 +130,35 @@ header h1 {
   gap: 0.5rem;
 }
 
-.header-undo-btn,
-.header-redo-btn {
+header .header-undo-btn,
+header .header-redo-btn {
   font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.3rem 0.65rem;
+}
+
+.header-undo-redo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* When the header gets tight enough that the title wraps to
+   "Takeoff / Tooling", stack Undo/Redo vertically too. */
+@media (max-width: 860px) {
+  header h1 {
+    width: min-content;
+    line-height: 1.15;
+  }
+
+  .header-undo-redo {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .header-undo-redo .btn {
+    width: 100%;
+    padding: 0.15rem 0.65rem;
+  }
 }
 
 #main-content {
@@ -419,22 +446,17 @@ header h1 {
   color: var(--red);
 }
 
-.manifest-view .edit-flow-btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface2);
-  color: var(--text2);
+/* Flow-type badges are buttons: clicking opens the flow editor */
+.manifest-view .type-badge-flow {
+  border: none;
   cursor: pointer;
   font-family: inherit;
-  margin-left: 0.25rem;
+  line-height: inherit;
 }
 
-.manifest-view .edit-flow-btn:hover {
-  background: var(--surface3);
-  color: var(--text);
-  border-color: var(--border2);
+.manifest-view .type-badge-flow:hover {
+  filter: brightness(1.35);
+  text-decoration: underline;
 }
 
 .manifest-actions {
@@ -2191,6 +2213,37 @@ header h1 {
   margin-top: 0;
   margin-bottom: 1rem;
   color: var(--text);
+}
+
+/* Conduit wizard step indicator: current step boxed in accent */
+.conduit-step-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.conduit-step-pill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: inherit;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.conduit-step-pill:hover {
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.conduit-step-pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .device-header-row {
