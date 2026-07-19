@@ -71,7 +71,8 @@ const TakeoffManifestView = (function () {
     const showRemove = TakeoffState.getShowRemoveIcons();
     const removeCell = `<td class="remove-cell ${showRemove ? 'visible' : ''}"><button type="button" class="remove-btn icon-btn" data-id="${item.id}" title="Remove">${TRASH_SVG}</button></td>`;
 
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>`;
+    // parents also get "+" to append a blank child row (children can't nest)
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${isChild ? '' : `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">+</button>`}</td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
@@ -177,6 +178,7 @@ const TakeoffManifestView = (function () {
 
     return `
       <div class="manifest-view">
+        <div class="manifest-table-scroll">
         <table>
           <colgroup>
             <col class="col-remove" />
@@ -204,6 +206,7 @@ const TakeoffManifestView = (function () {
             ${rows}
           </tbody>
         </table>
+        </div>
         <div class="manifest-actions">
           <button type="button" class="btn btn-success" id="add-row-btn">Add Row</button>
         </div>
@@ -393,6 +396,14 @@ const TakeoffManifestView = (function () {
       btn.addEventListener('click', (e) => {
         TakeoffState.setType(e.target.dataset.id, null);
         TakeoffApp.render();
+      });
+    });
+
+    document.querySelectorAll('.add-child-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const child = TakeoffState.addItem({ parentId: e.currentTarget.dataset.id, description: '', quantity: 0, labor: 0, planPage: '' });
+        TakeoffApp.render();
+        document.querySelector(`input[data-field="description"][data-id="${child.id}"]`)?.focus();
       });
     });
 

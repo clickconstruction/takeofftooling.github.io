@@ -180,10 +180,14 @@ header .header-redo-btn {
   overflow: hidden;
 }
 
-.manifest-view col.col-remove { width: 3%; }
-.manifest-view col.col-labor-book { width: 3%; }
-.manifest-view col.col-desc { width: 26%; }
-.manifest-view col.col-qty { width: 8.5%; }
+/* Columns are sized to what their content actually needs (worst case),
+   fixed in px; Description is the only open-ended column and absorbs all
+   remaining width. Percentages bloated these at wide widths and crushed
+   them at narrow ones. */
+.manifest-view col.col-remove { width: 40px; }
+.manifest-view col.col-labor-book { width: 60px; }
+/* col-desc: no width — takes the leftover */
+.manifest-view col.col-qty { width: 150px; } /* − input + spinner, 5-digit qty */
 
 .manifest-view .qty-spinner {
   display: flex;
@@ -233,10 +237,10 @@ header .header-redo-btn {
 .manifest-view .qty-down-btn:active {
   transform: scale(0.95);
 }
-.manifest-view col.col-labor { width: 9%; }
-.manifest-view col.col-plan { width: 14%; }
-.manifest-view col.col-type { width: 20%; }
-.manifest-view col.col-price { width: 8.5%; }
+.manifest-view col.col-labor { width: 90px; }
+.manifest-view col.col-plan { width: 135px; }
+.manifest-view col.col-type { width: 185px; } /* fits "Special Systems" badge + × */
+.manifest-view col.col-price { width: 110px; }
 
 .manifest-view th,
 .manifest-view td {
@@ -273,8 +277,27 @@ header .header-redo-btn {
   background: var(--surface2);
 }
 
+/* Child rows: indent guide line down the description column */
 .manifest-view tr.child-row td:nth-child(3) {
-  padding-left: 2rem;
+  padding-left: 2.2rem;
+  position: relative;
+}
+
+.manifest-view tr.child-row td:nth-child(3)::before {
+  content: '';
+  position: absolute;
+  left: 1.1rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border2);
+  border-radius: 1px;
+}
+
+/* Parent rows open their block: a stronger border chunks the table into
+   assemblies (parent + its children) */
+.manifest-view tbody tr:not(.child-row) td {
+  border-top: 2px solid var(--border2);
 }
 
 .remove-cell,
@@ -346,6 +369,28 @@ header .header-redo-btn {
   background: rgba(232, 197, 71, 0.15);
 }
 
+/* "+" on parent rows: append a blank child row */
+.manifest-view .labor-book-cell .add-child-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  min-width: 20px;
+}
+
+.manifest-view .labor-book-cell .add-child-btn:hover {
+  color: var(--accent);
+  background: rgba(232, 197, 71, 0.15);
+}
+
 .labor-cell .labor-book-icon-btn.icon-btn,
 .manifest-view .labor-book-cell .labor-book-icon-btn.icon-btn {
   display: inline-flex;
@@ -377,8 +422,167 @@ header .header-redo-btn {
   padding: 0.4rem 0;
 }
 
+/* Child rows sit recessed so the parent reads as the block's header */
 .manifest-view tr.child-row {
-  background: var(--surface);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Responsive manifest table.
+   Tier 1 (mid widths): the table keeps a working minimum width and scrolls
+   sideways inside its own wrapper rather than crushing columns into each
+   other (the qty steppers were the first casualty).
+   Tier 2 (<=640px): rows become stacked cards — pure CSS on the same
+   markup: description on top, type badge top-right, labeled field row,
+   icon rail on the left. */
+.manifest-table-scroll {
+  overflow-x: auto;
+}
+
+.manifest-table-scroll > table {
+  min-width: 900px;
+  width: 100%;
+}
+
+/* the qty spinner (− input +) must never lose its buttons to column crush */
+.manifest-view .qty-cell {
+  min-width: 140px;
+}
+
+@media (max-width: 640px) {
+  .manifest-table-scroll > table {
+    min-width: 0;
+    display: block;
+  }
+
+  .manifest-view thead,
+  .manifest-view colgroup {
+    display: none;
+  }
+
+  .manifest-view tbody {
+    display: block;
+  }
+
+  .manifest-view tbody tr {
+    display: grid;
+    grid-template-columns: auto minmax(6.5rem, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.45rem 0.7rem;
+    align-items: end;
+    padding: 0.7rem 0.8rem;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .manifest-view tbody tr td,
+  .manifest-view tbody tr:not(.child-row) td {
+    display: block;
+    padding: 0;
+    border: none;
+  }
+
+  /* icon rail down the left: remove on top, book/+ below */
+  .manifest-view tbody tr td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .manifest-view tbody tr td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  /* description across the top; the table-mode indent guide is off here */
+  .manifest-view tbody tr td:nth-child(3) {
+    grid-column: 2 / span 3;
+    grid-row: 1;
+    padding-left: 0;
+  }
+
+  .manifest-view tbody tr.child-row td:nth-child(3) {
+    padding-left: 0;
+  }
+
+  .manifest-view tbody tr td:nth-child(3)::before {
+    display: none;
+  }
+
+  .manifest-view tbody tr td:nth-child(4) {
+    grid-column: 5;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  /* labeled value fields */
+  .manifest-view tbody tr td:nth-child(5),
+  .manifest-view tbody tr td:nth-child(6),
+  .manifest-view tbody tr td:nth-child(7),
+  .manifest-view tbody tr td:nth-child(8) {
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .manifest-view tbody tr td:nth-child(5) { grid-column: 2; }
+  .manifest-view tbody tr td:nth-child(6) { grid-column: 3; }
+  .manifest-view tbody tr td:nth-child(7) { grid-column: 4; }
+  .manifest-view tbody tr td:nth-child(8) { grid-column: 5; }
+
+  .manifest-view tbody tr td:nth-child(5)::before { content: 'Qty'; }
+  .manifest-view tbody tr td:nth-child(6)::before { content: 'Labor'; }
+  .manifest-view tbody tr td:nth-child(7)::before { content: 'Price'; }
+  .manifest-view tbody tr td:nth-child(8)::before { content: 'Plan page'; }
+
+  .manifest-view tbody tr td:nth-child(5)::before,
+  .manifest-view tbody tr td:nth-child(6)::before,
+  .manifest-view tbody tr td:nth-child(7)::before,
+  .manifest-view tbody tr td:nth-child(8)::before {
+    font-size: 0.62rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* children don't render a plan-page input — drop the empty labeled slot */
+  .manifest-view tbody tr td:nth-child(8):empty {
+    display: none;
+  }
+
+  .manifest-view tbody tr input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* the tier-1 qty floor is a table concern — in card mode the grid track
+     sizes the cell, and the leaked min-width made it overflow onto Labor */
+  .manifest-view .qty-cell {
+    min-width: 0;
+  }
+
+  /* the spinner shares its row with the − / + buttons: let the input flex
+     instead of claiming the full width and pushing + out of the card */
+  .manifest-view .qty-spinner {
+    width: 100%;
+  }
+
+  .manifest-view .qty-cell input {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 2rem;
+  }
+
+  /* children: indented nested cards */
+  .manifest-view tr.child-row {
+    margin-left: 1.4rem;
+    background: rgba(0, 0, 0, 0.25);
+  }
 }
 
 .manifest-view input,
