@@ -20,6 +20,112 @@ const TakeoffConduitView = (function () {
     return TakeoffUtils.escapeHtml(str);
   }
 
+  // "Conduit:" + the three wizard steps, the current one boxed in accent.
+  // Pills are clickable: jumping forward commits the intermediate steps
+  // (same as the Next buttons); jumping back just switches (same as Back).
+  function renderStepHeader(activeStep) {
+    const steps = [[1, 'Trenching'], [2, 'Fittings'], [3, 'Overage']];
+    const pills = steps
+      .map(([n, label]) => `<button type="button" class="conduit-step-pill${n === activeStep ? ' active' : ''}" data-step="${n}">${label}</button>`)
+      .join('');
+    return `<h2 class="conduit-step-title">Conduit: ${pills}</h2>`;
+  }
+
+  // Commit step 1 (trenching + addons) to parent.children. Reads the step-1
+  // fields from the DOM, so only call while step 1 is rendered.
+  function commitStep1(itemId) {
+    const qty = document.getElementById('trench-qty')?.value;
+    const material = document.getElementById('trench-material')?.value;
+    const depth = document.getElementById('trench-depth')?.value;
+    const pricePerFoot = document.getElementById('trench-price-per-foot')?.value;
+    const desc = `Trenching: ${qty || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}`;
+    const trenchData = { description: desc, quantity: parseFloat(qty) || 0, labor: 0 };
+    const temp = TakeoffState.getConduitTempData();
+    temp.trenching = trenchData;
+    temp.trenchQty = qty;
+    temp.trenchMaterial = material;
+    temp.trenchDepth = depth;
+    temp.trenchPricePerFoot = pricePerFoot;
+    if (!temp.fittings || temp.fittings.length === 0) {
+      temp.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
+    }
+    TakeoffState.setConduitTempData(temp);
+    TakeoffState.beginBatch(); // one undo frame per step transition
+    const parent = TakeoffState.getItemById(itemId);
+    if (parent) {
+      const trenchIdx = (parent.children || []).findIndex((c) => c.type === 'trenching');
+      if (trenchIdx >= 0) parent.children.splice(trenchIdx, 1);
+    }
+    TakeoffState.addItem({
+      id: TakeoffState.generateId(),
+      type: 'trenching',
+      description: trenchData.description,
+      quantity: trenchData.quantity,
+      labor: trenchData.labor,
+      price: parseFloat(pricePerFoot) || undefined,
+      parentId: itemId,
+      meta: {
+        feet: parseFloat(qty) || 0,
+        material: material || '',
+        depth: depth || '',
+        pricePerFoot: parseFloat(pricePerFoot) || 0,
+      },
+    });
+    if (parent) {
+      parent.children = (parent.children || []).filter((c) => c.type !== 'trenchingAddon');
+    }
+    for (const a of temp.trenchingAddons || []) {
+      if (a.description) {
+        TakeoffState.addItem({
+          id: TakeoffState.generateId(),
+          type: 'trenchingAddon',
+          description: a.description,
+          quantity: parseFloat(a.quantity) || 0,
+          labor: parseFloat(a.labor) || 0,
+          price: parseFloat(a.price) || null,
+          parentId: itemId,
+        });
+      }
+    }
+    TakeoffState.endBatch();
+  }
+
+  // Commit step 2 (fittings) to parent.children — works from temp data.
+  function commitStep2(itemId) {
+    const temp = TakeoffState.getConduitTempData();
+    TakeoffState.beginBatch(); // one undo frame per step transition
+    const parent = TakeoffState.getItemById(itemId);
+    if (parent) {
+      parent.children = (parent.children || []).filter((c) => c.type !== 'fitting');
+    }
+    for (const f of temp.fittings || []) {
+      if (f.description) {
+        TakeoffState.addItem({
+          id: TakeoffState.generateId(),
+          type: 'fitting',
+          description: f.description,
+          quantity: f.quantity || 0,
+          labor: f.labor || 0,
+          price: f.price !== '' && f.price != null && !isNaN(parseFloat(f.price)) ? parseFloat(f.price) : null,
+          parentId: itemId,
+        });
+      }
+    }
+    TakeoffState.endBatch();
+  }
+
+  // Move the wizard: forward commits each step it passes; backward just switches.
+  function goToStep(target, itemId) {
+    const current = TakeoffState.getConduitStep();
+    if (target === current) return;
+    if (target > current) {
+      if (current === 1) commitStep1(itemId);
+      if (target === 3 && current <= 2) commitStep2(itemId);
+    }
+    TakeoffState.setConduitStep(target);
+    TakeoffApp.render();
+  }
+
   function renderStep1(itemId) {
     const item = TakeoffState.getItemById(itemId);
     if (!item) return '';
@@ -27,7 +133,7 @@ const TakeoffConduitView = (function () {
 
     return `
       <div class="flow-page conduit-flow">
-        <h2>Conduit - Trenching</h2>
+        ${renderStepHeader(1)}
         <div class="parent-summary">
           <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
           <div class="parent-summary-line">Quantity: ${item.quantity}</div>
@@ -135,7 +241,7 @@ const TakeoffConduitView = (function () {
 
     return `
       <div class="flow-page conduit-flow">
-        <h2>Conduit - Fittings</h2>
+        ${renderStepHeader(2)}
         <div class="parent-summary">
           <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
           <div class="parent-summary-line">Quantity: ${item.quantity}</div>
@@ -170,7 +276,7 @@ const TakeoffConduitView = (function () {
 
     return `
       <div class="flow-page conduit-flow">
-        <h2>Conduit - Overage</h2>
+        ${renderStepHeader(3)}
         <div class="parent-summary">
           <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
           <div class="parent-summary-line">Current length: ${baseLength}</div>
@@ -193,6 +299,13 @@ const TakeoffConduitView = (function () {
 
   function attachListeners(itemId) {
     const step = TakeoffState.getConduitStep();
+
+    // step pills jump directly to a step (forward commits, backward switches)
+    document.querySelectorAll('.conduit-step-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        goToStep(Number(btn.dataset.step), itemId);
+      });
+    });
 
     if (step === 1) {
       document.getElementById('conduit-cancel-btn')?.addEventListener('click', () => {
@@ -263,69 +376,13 @@ const TakeoffConduitView = (function () {
       });
 
       document.getElementById('conduit-next-fittings')?.addEventListener('click', () => {
-        const qty = document.getElementById('trench-qty')?.value;
-        const material = document.getElementById('trench-material')?.value;
-        const depth = document.getElementById('trench-depth')?.value;
-        const pricePerFoot = document.getElementById('trench-price-per-foot')?.value;
-        const desc = `Trenching: ${qty || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}`;
-        const trenchData = { description: desc, quantity: parseFloat(qty) || 0, labor: 0 };
-        const temp = TakeoffState.getConduitTempData();
-        temp.trenching = trenchData;
-        temp.trenchQty = qty;
-        temp.trenchMaterial = material;
-        temp.trenchDepth = depth;
-        temp.trenchPricePerFoot = pricePerFoot;
-        if (!temp.fittings || temp.fittings.length === 0) {
-          temp.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
-        }
-        TakeoffState.setConduitTempData(temp);
-        TakeoffState.beginBatch(); // one undo frame per step transition
-        const parent = TakeoffState.getItemById(itemId);
-        if (parent) {
-          const trenchIdx = (parent.children || []).findIndex((c) => c.type === 'trenching');
-          if (trenchIdx >= 0) parent.children.splice(trenchIdx, 1);
-        }
-        TakeoffState.addItem({
-          id: TakeoffState.generateId(),
-          type: 'trenching',
-          description: trenchData.description,
-          quantity: trenchData.quantity,
-          labor: trenchData.labor,
-          price: parseFloat(pricePerFoot) || undefined,
-          parentId: itemId,
-          meta: {
-            feet: parseFloat(qty) || 0,
-            material: material || '',
-            depth: depth || '',
-            pricePerFoot: parseFloat(pricePerFoot) || 0,
-          },
-        });
-        if (parent) {
-          parent.children = (parent.children || []).filter((c) => c.type !== 'trenchingAddon');
-        }
-        for (const a of temp.trenchingAddons || []) {
-          if (a.description) {
-            TakeoffState.addItem({
-              id: TakeoffState.generateId(),
-              type: 'trenchingAddon',
-              description: a.description,
-              quantity: parseFloat(a.quantity) || 0,
-              labor: parseFloat(a.labor) || 0,
-              price: parseFloat(a.price) || null,
-              parentId: itemId,
-            });
-          }
-        }
-        TakeoffState.endBatch();
-        TakeoffState.setConduitStep(2);
-        TakeoffApp.render();
+        goToStep(2, itemId);
       });
     }
 
     if (step === 2) {
       document.getElementById('conduit-back-trench')?.addEventListener('click', () => {
-        TakeoffState.setConduitStep(1);
-        TakeoffApp.render();
+        goToStep(1, itemId);
       });
 
       document.getElementById('conduit-fittings-labor-book-btn')?.addEventListener('click', () => {
@@ -386,35 +443,13 @@ const TakeoffConduitView = (function () {
       });
 
       document.getElementById('conduit-next-overage')?.addEventListener('click', () => {
-        const temp = TakeoffState.getConduitTempData();
-        TakeoffState.beginBatch(); // one undo frame per step transition
-        const parent = TakeoffState.getItemById(itemId);
-        if (parent) {
-          parent.children = (parent.children || []).filter((c) => c.type !== 'fitting');
-        }
-        for (const f of temp.fittings || []) {
-          if (f.description) {
-            TakeoffState.addItem({
-              id: TakeoffState.generateId(),
-              type: 'fitting',
-              description: f.description,
-              quantity: f.quantity || 0,
-              labor: f.labor || 0,
-              price: f.price !== '' && f.price != null && !isNaN(parseFloat(f.price)) ? parseFloat(f.price) : null,
-              parentId: itemId,
-            });
-          }
-        }
-        TakeoffState.endBatch();
-        TakeoffState.setConduitStep(3);
-        TakeoffApp.render();
+        goToStep(3, itemId);
       });
     }
 
     if (step === 3) {
       document.getElementById('conduit-back-fittings')?.addEventListener('click', () => {
-        TakeoffState.setConduitStep(2);
-        TakeoffApp.render();
+        goToStep(2, itemId);
       });
 
       document.querySelectorAll('.overage-buttons button').forEach((btn) => {
