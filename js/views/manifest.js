@@ -64,7 +64,7 @@ const TakeoffManifestView = (function () {
     const showRemove = TakeoffState.getShowRemoveIcons();
     const removeCell = `<td class="remove-cell ${showRemove ? 'visible' : ''}"><button type="button" class="remove-btn icon-btn" data-id="${item.id}" title="Remove">${TRASH_SVG}</button></td>`;
 
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button><button type="button" class="part-book-icon-btn icon-btn" data-id="${item.id}" title="Part Book Search">PB</button></td>`;
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button></td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
@@ -322,12 +322,6 @@ const TakeoffManifestView = (function () {
     document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         TakeoffApp.showLaborBookModal(e.currentTarget.dataset.id);
-      });
-    });
-
-    document.querySelectorAll('.part-book-icon-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        TakeoffApp.showPartBookSearchForManifestItem(e.currentTarget.dataset.id);
       });
     });
 
