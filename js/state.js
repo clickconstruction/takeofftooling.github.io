@@ -1,21 +1,19 @@
 /**
- * Manifest state management for Takeoff Tooling
+ * TakeoffState — the single state facade the rest of the app talks to.
+ *
+ * Owns the durable data (manifest, labor book, labor rate, assemblies),
+ * undo/redo, and persistence scheduling. Delegates to (loaded before this):
+ *   js/storage.js              — TakeoffStorage, the persistence adapter
+ *   js/uiState.js              — TakeoffUiState, ephemeral UI state (re-exported here)
+ *   js/selectors.js            — TakeoffSelectors, pure computed views over the manifest
+ *   js/data/laborBookDefaults.js — LABOR_BOOK_DEFAULTS / LABOR_BOOK_DEFAULT_GROUPS
  */
 
 const TakeoffState = (function () {
   const ITEM_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems', 'permits', 'powerCoCharges', 'temporaryPower'];
 
   let manifest = [];
-  let currentView = 'manifest'; // 'manifest' | 'device' | 'conduit' | 'wire'
-  let currentItemId = null;
-  let modalItemId = null;
-  let conduitStep = 1; // 1: trenching, 2: fittings, 3: overage
-  let conduitTempData = {};
-  let deviceTempData = { outletsAndSwitches: [], boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
-  let wireTempData = { overagePercent: null, macAdapters: [] };
   let assemblies = TakeoffStorage.loadAssemblies();
-  let showRemoveIcons = false;
-  let showPrintOptions = false;
   let laborRate = 0;
 
   const UNDO_STACK_SIZE = 50;
@@ -241,105 +239,7 @@ const TakeoffState = (function () {
     return updateItem(id, { type });
   }
 
-  function setCurrentView(view, itemId = null) {
-    currentView = view;
-    currentItemId = itemId;
-  }
-
-  function getCurrentView() {
-    return currentView;
-  }
-
-  function getCurrentItemId() {
-    return currentItemId;
-  }
-
-  function setModalItemId(id) {
-    modalItemId = id;
-  }
-
-  function getModalItemId() {
-    return modalItemId;
-  }
-
-  let laborBookPreselectedItemId = null;
-  function setLaborBookPreselectedItemId(id) {
-    laborBookPreselectedItemId = id;
-  }
-  function getLaborBookPreselectedItemId() {
-    return laborBookPreselectedItemId;
-  }
-  function clearLaborBookPreselectedItemId() {
-    laborBookPreselectedItemId = null;
-  }
-
-  let laborBookTargetDeviceRow = null;
-  function setLaborBookTargetDeviceRow(val) {
-    laborBookTargetDeviceRow = val;
-  }
-  function getLaborBookTargetDeviceRow() {
-    return laborBookTargetDeviceRow;
-  }
-  function clearLaborBookTargetDeviceRow() {
-    laborBookTargetDeviceRow = null;
-  }
-
-  // Fill target: + Add fills this row in place instead of adding children.
-  // {kind: 'manifest-row', id} | {kind:'device-row', section, index}
-  // | {kind:'conduit-fitting', index} | {kind:'wire-mac', index}
-  let laborBookFillTarget = null;
-  function setLaborBookFillTarget(target) {
-    laborBookFillTarget = target;
-  }
-  function getLaborBookFillTarget() {
-    return laborBookFillTarget;
-  }
-  function clearLaborBookFillTarget() {
-    laborBookFillTarget = null;
-  }
-
-  let laborBookExpandGroup = null;
-  function setLaborBookExpandGroup(name) {
-    laborBookExpandGroup = name;
-  }
-  function getLaborBookExpandGroup() {
-    return laborBookExpandGroup;
-  }
-  function clearLaborBookExpandGroup() {
-    laborBookExpandGroup = null;
-  }
-
-  function setConduitStep(step) {
-    conduitStep = step;
-  }
-
-  function getConduitStep() {
-    return conduitStep;
-  }
-
-  function setConduitTempData(data) {
-    conduitTempData = { ...conduitTempData, ...data };
-  }
-
-  function getConduitTempData() {
-    return conduitTempData;
-  }
-
-  function clearConduitTempData() {
-    conduitTempData = {};
-  }
-
-  function setDeviceTempData(data) {
-    deviceTempData = { ...deviceTempData, ...data };
-  }
-
-  function getDeviceTempData() {
-    return deviceTempData;
-  }
-
-  function clearDeviceTempData() {
-    deviceTempData = { outletsAndSwitches: [], boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
-  }
+  // --- Device-flow assemblies (saved presets) ---
 
   function getAssemblies() {
     return assemblies;
@@ -357,30 +257,7 @@ const TakeoffState = (function () {
     TakeoffStorage.saveAssemblies(assemblies);
   }
 
-  function setWireTempData(data) {
-    wireTempData = { ...wireTempData, ...data };
-  }
-
-  function getWireTempData() {
-    return wireTempData;
-  }
-
-  function clearWireTempData() {
-    wireTempData = { overagePercent: null, macAdapters: [] };
-  }
-
-  function getShowRemoveIcons() {
-    return showRemoveIcons;
-  }
-
-  function setShowRemoveIcons(value) {
-    showRemoveIcons = !!value;
-  }
-
-  function toggleShowRemoveIcons() {
-    showRemoveIcons = !showRemoveIcons;
-    return showRemoveIcons;
-  }
+  // --- Labor rate ---
 
   function getLaborRate() {
     return laborRate;
@@ -391,14 +268,7 @@ const TakeoffState = (function () {
     schedulePersist();
   }
 
-  function getShowPrintOptions() {
-    return showPrintOptions;
-  }
-
-  function toggleShowPrintOptions() {
-    showPrintOptions = !showPrintOptions;
-    return showPrintOptions;
-  }
+  // --- Labor & Price Book (editable Parts data) ---
 
   function getLaborBook() {
     return laborBook;
@@ -455,172 +325,26 @@ const TakeoffState = (function () {
     schedulePersist();
   }
 
+  // --- Computed views (pure logic lives in TakeoffSelectors) ---
+
   function getTotalLabor() {
-    function sumLabor(items) {
-      let total = 0;
-      for (const item of items) {
-        const unitLabor = Number(item.labor) || 0;
-        const qty = Number(item.quantity) || 0;
-        // labor is per-unit hours; a priced/labored line with qty 0 counts once (same rule as price)
-        const effectiveQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
-        total += unitLabor * effectiveQty;
-        if (item.children && item.children.length) {
-          total += sumLabor(item.children);
-        }
-      }
-      return total;
-    }
-    return sumLabor(manifest.filter((i) => !i.parentId));
+    return TakeoffSelectors.getTotalLabor(manifest);
   }
 
   function getTotalPrice() {
-    function sumPrice(items) {
-      let total = 0;
-      for (const item of items) {
-        const p = Number(item.price);
-        const q = Number(item.quantity) || 0;
-        if (!isNaN(p) && p > 0) total += p * q;
-        if (item.children && item.children.length) {
-          total += sumPrice(item.children);
-        }
-      }
-      return total;
-    }
-    return sumPrice(manifest.filter((i) => !i.parentId));
+    return TakeoffSelectors.getTotalPrice(manifest);
   }
 
-  /**
-   * Aggregate every purchasable material line across the job.
-   * Included: all children with a description and qty > 0, plus childless
-   * top-level items (they represent the material directly). Parents WITH
-   * children are treated as groupings, and other-charges types are skipped.
-   * Identical descriptions merge: quantities sum, extended cost sums
-   * per-occurrence so price differences stay accurate.
-   */
   function getPurchaseList() {
-    const OTHER = ['permits', 'powerCoCharges', 'temporaryPower'];
-    const byKey = new Map();
-
-    function addLine(item) {
-      const desc = (item.description || '').trim();
-      const qty = Number(item.quantity) || 0;
-      if (!desc || qty <= 0) return;
-      const key = desc.toLowerCase().replace(/\s+/g, ' ');
-      const price = item.price != null && item.price !== '' && !isNaN(Number(item.price)) ? Number(item.price) : null;
-      let line = byKey.get(key);
-      if (!line) {
-        byKey.set(key, (line = { description: desc, quantity: 0, extended: 0, prices: new Set(), unpricedQty: 0 }));
-      }
-      line.quantity += qty;
-      if (price != null) {
-        line.extended += qty * price;
-        line.prices.add(Math.round(price * 100) / 100);
-      } else {
-        line.unpricedQty += qty;
-      }
-    }
-
-    for (const item of manifest.filter((i) => !i.parentId)) {
-      if (OTHER.includes(item.type)) continue;
-      const children = item.children || [];
-      if (children.length === 0) {
-        addLine(item);
-      } else {
-        for (const c of children) addLine(c);
-      }
-    }
-
-    const lines = [...byKey.values()]
-      .map((l) => {
-        const prices = [...l.prices];
-        return {
-          description: l.description,
-          quantity: Math.round(l.quantity * 100) / 100,
-          unitPrice: prices.length === 1 ? prices[0] : prices.length > 1 ? Math.max(...prices) : null,
-          priceVaries: prices.length > 1,
-          unpriced: l.unpricedQty > 0,
-          extended: Math.round(l.extended * 100) / 100,
-        };
-      })
-      .sort((a, b) => a.description.localeCompare(b.description));
-
-    return {
-      lines,
-      totalCost: Math.round(lines.reduce((s, l) => s + l.extended, 0) * 100) / 100,
-      unpricedCount: lines.filter((l) => l.unpriced).length,
-    };
+    return TakeoffSelectors.getPurchaseList(manifest);
   }
 
   function getFlattenedItems() {
-    const result = [];
-    function flatten(items, depth = 0) {
-      for (const item of items) {
-        result.push({ ...item, _depth: depth });
-        if (item.children && item.children.length) {
-          flatten(item.children, depth + 1);
-        }
-      }
-    }
-    flatten(manifest.filter((i) => !i.parentId));
-    return result;
+    return TakeoffSelectors.getFlattenedItems(manifest);
   }
 
-  const MATERIAL_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems'];
-  const OTHER_TYPES = ['permits', 'powerCoCharges', 'temporaryPower'];
-  const SALES_TAX_RATE = 0.085;
-
   function getSummaryBreakdown() {
-    const materials = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
-    const labor = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
-    const otherCharges = { permits: 0, powerCoCharges: 0, temporaryPower: 0 };
-
-    function processItems(items, parentType) {
-      // Children always roll up into their top-level parent's bucket, so flow
-      // components (boxes, fittings, overage...) count toward Devices/Conduit/
-      // Wire instead of Misc.
-      for (const item of items) {
-        const effectiveType = parentType || item.type || null;
-        const qty = Number(item.quantity) || 0;
-        const priceVal = Number(item.price);
-        const effectiveQty = qty > 0 ? qty : (!isNaN(priceVal) && priceVal > 0 ? 1 : 0);
-        const priceAmount = !isNaN(priceVal) && priceVal > 0 ? priceVal * effectiveQty : 0;
-        const unitLabor = Number(item.labor) || 0;
-        const laborQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
-        const laborHrs = unitLabor * laborQty;
-
-        if (OTHER_TYPES.includes(effectiveType)) {
-          otherCharges[effectiveType] = (otherCharges[effectiveType] || 0) + priceAmount;
-        } else if (MATERIAL_TYPES.includes(effectiveType)) {
-          materials[effectiveType] = (materials[effectiveType] || 0) + priceAmount;
-          labor[effectiveType] = (labor[effectiveType] || 0) + laborHrs;
-        } else {
-          materials.misc += priceAmount;
-          labor.misc += laborHrs;
-        }
-
-        if (item.children && item.children.length) {
-          processItems(item.children, effectiveType || parentType);
-        }
-      }
-    }
-    processItems(manifest.filter((i) => !i.parentId), null);
-
-    const materialsSubtotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (materials[t] || 0), 0);
-    const salesTax = materialsSubtotal * SALES_TAX_RATE;
-    const materialsTotal = materialsSubtotal + salesTax;
-    const laborTotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (labor[t] || 0), 0);
-    const otherTotal = OTHER_TYPES.reduce((s, t) => s + (otherCharges[t] || 0), 0);
-
-    return {
-      materials,
-      materialsSubtotal,
-      salesTax,
-      materialsTotal,
-      labor,
-      laborTotal,
-      otherCharges,
-      otherTotal,
-    };
+    return TakeoffSelectors.getSummaryBreakdown(manifest);
   }
 
   restoreWorkspace();
@@ -628,12 +352,15 @@ const TakeoffState = (function () {
   return {
     ITEM_TYPES,
     LABOR_BOOK_TYPE_LABELS,
+    // ephemeral UI state (see js/uiState.js)
+    ...TakeoffUiState,
     getManifest,
     persistNow,
     loadManifestFromExport,
     getTopLevelItems,
     getItemById,
     getParentItem,
+    getTopLevelParentId,
     addItem,
     updateItem,
     removeItem,
@@ -644,38 +371,9 @@ const TakeoffState = (function () {
     endBatch,
     canUndo,
     canRedo,
-    setCurrentView,
-    getCurrentView,
-    getCurrentItemId,
-    setModalItemId,
-    getModalItemId,
-    setLaborBookPreselectedItemId,
-    getLaborBookPreselectedItemId,
-    clearLaborBookPreselectedItemId,
-    setLaborBookTargetDeviceRow,
-    getLaborBookTargetDeviceRow,
-    clearLaborBookTargetDeviceRow,
-    setLaborBookExpandGroup,
-    setLaborBookFillTarget,
-    getLaborBookFillTarget,
-    clearLaborBookFillTarget,
-    getLaborBookExpandGroup,
-    clearLaborBookExpandGroup,
-    getTopLevelParentId,
-    setConduitStep,
-    getConduitStep,
-    setConduitTempData,
-    getConduitTempData,
-    clearConduitTempData,
-    setDeviceTempData,
-    getDeviceTempData,
-    clearDeviceTempData,
     getAssemblies,
     addAssembly,
     removeAssembly,
-    setWireTempData,
-    getWireTempData,
-    clearWireTempData,
     getTotalLabor,
     getTotalPrice,
     getFlattenedItems,
@@ -684,11 +382,6 @@ const TakeoffState = (function () {
     generateId,
     getLaborRate,
     setLaborRate,
-    getShowRemoveIcons,
-    setShowRemoveIcons,
-    toggleShowRemoveIcons,
-    getShowPrintOptions,
-    toggleShowPrintOptions,
     getLaborBook,
     getLaborBookTabOrder,
     getLaborBookGroups,
