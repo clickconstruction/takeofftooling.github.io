@@ -7,11 +7,14 @@ const TakeoffModal = (function () {
     const itemId = TakeoffState.getModalItemId();
     if (!itemId) return;
 
-    // Tag the row and stay on the manifest — rapid takeoff entry shouldn't be
-    // interrupted by the flow editor. Flows open via the "Edit in flow" button.
     TakeoffState.setType(itemId, type);
     TakeoffApp.hideTypeModal();
-    TakeoffApp.render();
+    // Flow types go straight into their editor; the type badge on the
+    // manifest reopens it later.
+    if (type === 'devices') TakeoffApp.navigateToDevice(itemId);
+    else if (type === 'conduit') TakeoffApp.navigateToConduit(itemId);
+    else if (type === 'wire') TakeoffApp.navigateToWire(itemId);
+    else TakeoffApp.render();
   }
 
   function attachListeners() {

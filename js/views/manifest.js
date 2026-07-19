@@ -51,13 +51,20 @@ const TakeoffManifestView = (function () {
     const parentHasFlow = parent && ['devices', 'conduit', 'wire'].includes(parent.type);
     const showEditFlow = (hasFlow && !isChild) || (isChild && parentHasFlow);
     const editFlowTargetId = isChild && parentHasFlow ? parentId : item.id;
+    // Flow types (devices/conduit/wire): the badge itself is the flow-editor
+    // button — no separate "Edit in flow" control. Child badges target the
+    // parent's flow.
+    const badge = (extraClass) =>
+      showEditFlow
+        ? `<button type="button" class="type-badge ${extraClass} type-badge-flow" data-id="${editFlowTargetId}" title="Edit in flow">${escapeHtml(typeLabelDisplay)}</button>`
+        : `<span class="type-badge ${extraClass}">${escapeHtml(typeLabelDisplay)}</span>`;
     let typeCell;
     if (isChild) {
-      // children are flow/book components: show a passive label, never type controls
-      typeCell = `<td class="type-cell-child">${item.type ? `<span class="type-badge child-type-badge">${escapeHtml(typeLabelDisplay)}</span>` : ''}${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`;
+      // children are flow/book components: label only, never type controls
+      typeCell = `<td class="type-cell-child">${item.type ? badge('child-type-badge') : ''}</td>`;
     } else {
       typeCell = item.type
-        ? `<td><span class="type-badge ${typeClass}">${escapeHtml(typeLabelDisplay)}</span><button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button>${showEditFlow ? ` <button type="button" class="edit-flow-btn" data-id="${editFlowTargetId}">Edit in flow</button>` : ''}</td>`
+        ? `<td>${badge(typeClass)}<button type="button" class="clear-type-btn icon-btn" data-id="${item.id}" title="Remove type">×</button></td>`
         : `<td class="type-cell-add"><button type="button" class="select-type-btn btn" data-id="${item.id}">Add</button></td>`;
     }
 
@@ -389,9 +396,9 @@ const TakeoffManifestView = (function () {
       });
     });
 
-    document.querySelectorAll('.edit-flow-btn').forEach((btn) => {
+    document.querySelectorAll('.type-badge-flow').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
+        const id = e.currentTarget.dataset.id;
         const item = TakeoffState.getItemById(id);
         if (item.type === 'devices') TakeoffApp.navigateToDevice(id);
         else if (item.type === 'conduit') TakeoffApp.navigateToConduit(id);
