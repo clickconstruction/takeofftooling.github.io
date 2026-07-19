@@ -14,8 +14,6 @@ const TakeoffWireView = (function () {
     const temp = TakeoffState.getWireTempData();
     const baseLength = item.quantity || 0;
     const overagePercent = temp.overagePercent ?? null;
-    const additional = overagePercent != null ? Math.ceil(baseLength * (overagePercent / 100)) : 0;
-    const totalQty = baseLength + additional;
     const macAdapters = temp.macAdapters || [];
 
     const macRows = macAdapters
@@ -39,18 +37,7 @@ const TakeoffWireView = (function () {
           <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
           <div class="parent-summary-line">Current length: ${baseLength}</div>
         </div>
-        <div class="flow-section">
-          <h3>Overage</h3>
-          <p>Select overage percentage:</p>
-          <div class="overage-buttons">
-            <button type="button" data-percent="5">5%</button>
-            <button type="button" data-percent="10">10%</button>
-            <button type="button" data-percent="15">15%</button>
-            <button type="button" data-percent="20">20%</button>
-          </div>
-          <label>Overage % <input type="number" id="wire-overage-percent" value="${overagePercent ?? ''}" min="0" max="100" step="1" placeholder="0" /></label>
-          <p><strong>Wire quantity:</strong> ${baseLength} + ${additional} additional = <strong>${totalQty}</strong> total</p>
-        </div>
+        ${TakeoffViewShared.renderOverageSection({ inputId: 'wire-overage-percent', noun: 'Wire', baseLength, overagePercent })}
         <div class="flow-section">
           <h3>MAC Adapters (optional)</h3>
           <table>
@@ -142,7 +129,7 @@ const TakeoffWireView = (function () {
 
       const baseLength = item.quantity || 0;
       const overagePercent = temp.overagePercent ?? 0;
-      const additional = Math.ceil(baseLength * (overagePercent / 100));
+      const { additional } = TakeoffViewShared.computeOverage(baseLength, overagePercent);
 
       if (additional > 0) {
         TakeoffState.addItem({
