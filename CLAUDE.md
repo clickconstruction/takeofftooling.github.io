@@ -16,11 +16,12 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 | Path | What |
 |---|---|
 | `index.html` | App shell + all modal skeletons (6 modals) + script load order |
-| `js/state.js` | `TakeoffState` — all app state, undo/redo, computed totals |
+| `js/state.js` | `TakeoffState` — the state facade: manifest CRUD, undo/redo, labor-book data, assemblies |
 | `js/storage.js` | `TakeoffStorage` — the persistence adapter (currently localStorage). **The seam to swap for a database backend** |
+| `js/uiState.js`, `js/selectors.js` | Ephemeral UI state (re-exported by TakeoffState) and pure manifest selectors (unit-tested) |
 | `js/data/laborBookDefaults.js` | Default Labor & Price Book data (pure data; state.js deep-clones it) |
 | `js/app.js` | `TakeoffApp` — init, view routing, navigation, modal open/close, export-via-link, `#d=`/`#import=` hash routes |
-| `js/views/` | `manifest.js` (main table), `device.js` / `conduit.js` / `wire.js` (flow editors), `laborBook.js` (Labor & Price Book modal), `modal.js` (type-select modal only) |
+| `js/views/` | `manifest.js` (main table), `device.js` / `conduit.js` / `wire.js` (flow editors), `shared.js` (icons/overage helpers), `laborBook*.js` (Labor & Price Book modal: facade + targets/Elliot/search modules), `modal.js` (type-select modal only) |
 | `js/mcBook.js`, `js/mcElliot*.js`, `js/elliotPriceCore.js` | MC assemblies tree + supplier price-update pipeline (runtime side) |
 | `js/import.js`, `js/pdf.js` | CountTooling clipboard import; jsPDF exports |
 | `js/data/fittings.js` | Conduit fitting presets (user-editable) |

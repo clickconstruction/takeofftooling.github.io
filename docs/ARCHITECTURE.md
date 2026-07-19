@@ -8,6 +8,8 @@ js/utils.js            → TakeoffUtils
 js/data/fittings.js    → FITTINGS_LIST
 js/data/laborBookDefaults.js → LABOR_BOOK_DEFAULTS, LABOR_BOOK_DEFAULT_GROUPS
 js/storage.js          → TakeoffStorage  (persistence adapter)
+js/uiState.js          → TakeoffUiState  (ephemeral UI state; re-exported by TakeoffState)
+js/selectors.js        → TakeoffSelectors (pure manifest selectors; dual browser/Node)
 js/state.js            → TakeoffState
 js/import.js           → TakeoffImport
 js/elliotPriceCore.js  → McElliotCore   (dual browser/Node)
@@ -16,9 +18,13 @@ js/mcElliotMatch.js    → McElliotMatch
 js/mcElliotUpdate.js   → McElliotUpdate
 js/mcBook.js           → McBook
 js/pdf.js              → TakeoffPDF
+js/views/shared.js     → TakeoffViewShared (icons, overage helpers)
 js/views/manifest.js   → TakeoffManifestView
 js/views/modal.js      → TakeoffModal
-js/views/laborBook.js  → TakeoffLaborBookView
+js/views/laborBookTargets.js → TakeoffLaborBookTargets (apply-to-takeoff logic)
+js/views/laborBookElliot.js  → TakeoffLaborBookElliot  (supplier parts group)
+js/views/laborBookSearch.js  → TakeoffLaborBookSearch  (global search, owns the term)
+js/views/laborBook.js  → TakeoffLaborBookView (facade; stable public API)
 js/views/device.js     → TakeoffDeviceView
 js/views/conduit.js    → TakeoffConduitView
 js/views/wire.js       → TakeoffWireView
@@ -35,7 +41,9 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | data/fittings.js | `FITTINGS_LIST` | — |
 | data/laborBookDefaults.js | `LABOR_BOOK_DEFAULTS`, `LABOR_BOOK_DEFAULT_GROUPS` (pure data) | — |
 | storage.js | `TakeoffStorage` (load/saveWorkspace, load/saveAssemblies) | localStorage |
-| state.js | `TakeoffState` (~70 exports) | TakeoffStorage, LABOR_BOOK_DEFAULTS |
+| uiState.js | `TakeoffUiState` (view/modal ids, temp buffers, fill targets, toggles) | — |
+| selectors.js | `TakeoffSelectors` (pure fns over a manifest arg; CommonJS export for tests) | — |
+| state.js | `TakeoffState` (facade, ~70 exports; spreads TakeoffUiState) | TakeoffStorage, TakeoffUiState, TakeoffSelectors, LABOR_BOOK_DEFAULTS |
 | import.js | `TakeoffImport` | TakeoffState, TakeoffApp, TakeoffUtils |
 | pdf.js | `TakeoffPDF` | TakeoffState, `jspdf` |
 | elliotPriceCore.js | `McElliotCore` | — (pure; also `require`d by Node scripts) |
@@ -43,9 +51,13 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | mcElliotMatch.js | `McElliotMatch` | McElliotCore |
 | mcElliotUpdate.js | `McElliotUpdate` | McElliotState/Core/Match, McBook, TakeoffLaborBookView, TakeoffUtils |
 | mcBook.js | `McBook` | TakeoffState, TakeoffUtils, McElliotState, TakeoffLaborBookView, TakeoffApp |
-| views/manifest.js | `TakeoffManifestView` | TakeoffState, TakeoffApp, TakeoffPDF, TakeoffUtils |
+| views/shared.js | `TakeoffViewShared` (TRASH_SVG, BOOK_SVG, computeOverage, renderOverageSection) | — |
+| views/manifest.js | `TakeoffManifestView` | TakeoffState, TakeoffApp, TakeoffPDF, TakeoffUtils, TakeoffViewShared |
 | views/modal.js | `TakeoffModal` | TakeoffState, TakeoffApp |
-| views/laborBook.js | `TakeoffLaborBookView` | TakeoffState (heavily), TakeoffApp, McBook, TakeoffUtils |
+| views/laborBookTargets.js | `TakeoffLaborBookTargets` (describeBookRow, addEntryToTarget, addComponentsToTarget, hasFillTarget) | TakeoffState, TakeoffApp |
+| views/laborBookElliot.js | `TakeoffLaborBookElliot` (injectElliotParts) | McBook, TakeoffState, TakeoffLaborBookTargets, TakeoffUtils |
+| views/laborBookSearch.js | `TakeoffLaborBookSearch` (getTerm/setTerm/renderResults + one-time search listeners) | TakeoffState, McBook, TakeoffLaborBookTargets, TakeoffLaborBookView, TakeoffApp, TakeoffUtils |
+| views/laborBook.js | `TakeoffLaborBookView` (facade — re-exports the Targets API) | TakeoffState (heavily), TakeoffApp, McBook, TakeoffUtils, TakeoffLaborBook{Targets,Elliot,Search}, TakeoffViewShared |
 | views/device.js | `TakeoffDeviceView` | TakeoffState, TakeoffApp, TakeoffUtils |
 | views/conduit.js | `TakeoffConduitView` | TakeoffState, TakeoffApp, TakeoffUtils, FITTINGS_LIST |
 | views/wire.js | `TakeoffWireView` | TakeoffState, TakeoffApp, TakeoffUtils |

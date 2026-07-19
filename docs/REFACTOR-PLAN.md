@@ -1,8 +1,6 @@
 # Refactor Plan — making the codebase manageable
 
-Status: **in progress.** Done so far: step 1 (labor-book defaults → `js/data/laborBookDefaults.js`; state.js 1,388 → ~700 lines), the persistence half of step 2 (`js/storage.js` adapter — all `takeoff-*` writes go through it), dead-code removal (`detectFormat`, several unused locals), and the repo now has a quality gate (`npm run check` + Playwright specs) to protect the remaining extractions.
-
-Remaining goal: split the large files along their natural seams and remove duplication/dead weight, without changing behavior or introducing a build step.
+Status: **steps 1–5 done** (2026-07-18). Landed: labor-book defaults extraction, the `TakeoffStorage` adapter, the full state.js split (`js/uiState.js` + `js/selectors.js`; state.js 1,388 → ~400 lines), the laborBook.js split (1,030 → ~540 + 3 modules), the shared-view module (`js/views/shared.js`: icons + overage helpers), dead-code removal, and the quality gate (`npm run check` + Playwright). Remaining: item 6 dead-weight candidates and the optional/later items below.
 
 ## Constraints every split must respect
 
@@ -16,31 +14,17 @@ Remaining goal: split the large files along their natural seams and remove dupli
 ### 1. ~~Extract labor-book default data from state.js~~ ✅ DONE
 Now `js/data/laborBookDefaults.js` (`LABOR_BOOK_DEFAULTS` + `LABOR_BOOK_DEFAULT_GROUPS`); state.js deep-clones the defaults at load.
 
-### 2. Split the rest of state.js (~700 lines now)
-✅ **Persistence adapter done** — `js/storage.js` (`TakeoffStorage`); state.js keeps only the debounce/restore logic. Remaining seams:
-- **Manifest CRUD + import sanitization**.
-- **UI/ephemeral state**: current view, modal ids, temp buffers, fill targets — independent of manifest data.
-- **Computed selectors**: pure functions over manifest (`getTotalLabor`, `getPurchaseList`, `getSummaryBreakdown`, …).
-- **Labor-book CRUD + assemblies**.
-Keep `TakeoffState` as the single exported facade composing the parts.
+### 2. ~~Split the rest of state.js~~ ✅ DONE
+`js/storage.js` (persistence adapter), `js/uiState.js` (ephemeral UI state, re-exported by the facade via spread), `js/selectors.js` (pure manifest selectors, dual browser/Node, unit-tested in selectors.test.js). state.js (~400 lines) keeps manifest CRUD, undo/redo, labor-book CRUD, assemblies, and the facade.
 
-### 3. Split views/laborBook.js (1,030 lines)
-Self-contained seams:
-- **Apply-to-takeoff logic** (`addEntryToTarget`, `addComponentsToTarget`, `hasFillTarget`, `describeBookRow`; ~L21–125, 331–417): no rendering, also consumed by McBook — best first extraction.
-- **Elliot parts group** (~L419–548): fully self-contained (own listeners, own debounced filter).
-- **Global search** (~L554–648 + its delegated listener L974–1023).
-- **Parts rendering + listeners** (~L127–283, 816–908).
-- **Modal chrome / apply-to header / one-time init** (~L650–723, 911–1027).
+### 3. ~~Split views/laborBook.js~~ ✅ DONE
+`js/views/laborBookTargets.js` (apply-to-takeoff; also consumed by McBook), `js/views/laborBookElliot.js` (supplier parts group), `js/views/laborBookSearch.js` (global search + its one-time listeners; owns the search term). laborBook.js (~540 lines) is the facade — its public API is unchanged and delegates the target functions.
 
-### 4. Split views/conduit.js (481 lines)
-Cleanly splits by wizard step (render + listeners per step): step1 trenching L23–104/210–336, step2 fittings L106–162/338–425, step3 overage L164–198/427–477. Alternatively keep one file but factor the shared overage logic (see 5).
+### 4. Split views/conduit.js (481 lines) — deferred
+Still splits cleanly by wizard step if it grows further; the shared overage logic was extracted in step 5, which was the load-bearing part.
 
-### 5. Deduplicate shared view code → `js/views/shared.js` (or fold into utils.js)
-- `TRASH_SVG` / `BOOK_SVG` duplicated verbatim in manifest.js, device.js, conduit.js.
-- Local `escapeHtml` alias in every view.
-- Overage render/compute/save logic near-identical in conduit step 3 and wire.js.
-- Blank-row-reseed idiom repeated in device/conduit/wire remove handlers.
-- `TYPE_LABELS` / `CHILD_TYPE_LABELS` (manifest.js) overlap `LABOR_BOOK_TYPE_LABELS` (state.js).
+### 5. ~~Deduplicate shared view code~~ ✅ DONE (the valuable parts)
+`js/views/shared.js` (`TakeoffViewShared`): `TRASH_SVG`/`BOOK_SVG` (now aliased in manifest/device/conduit/laborBook), `computeOverage`, and `renderOverageSection` (used by conduit step 3 and wire). Deliberately not done: the blank-row-reseed idiom (shapes differ per flow; low value) and merging `TYPE_LABELS`/`CHILD_TYPE_LABELS` with `LABOR_BOOK_TYPE_LABELS` (different label sets).
 
 ### 6. Dead weight removal
 - `source-data/mcPriceBook.json` — 8.8 MB, referenced nowhere (moved out of `js/data/` with the rest of the build-only data). Delete whenever, or let it leave with `source-data/`.

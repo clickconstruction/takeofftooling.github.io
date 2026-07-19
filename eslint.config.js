@@ -12,13 +12,19 @@ const globals = require('globals');
 const appGlobals = {
   TakeoffUtils: 'readonly',
   TakeoffStorage: 'readonly',
+  TakeoffUiState: 'readonly',
+  TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
   TakeoffImport: 'readonly',
   TakeoffPDF: 'readonly',
   TakeoffApp: 'readonly',
+  TakeoffViewShared: 'readonly',
   TakeoffManifestView: 'readonly',
   TakeoffModal: 'readonly',
   TakeoffLaborBookView: 'readonly',
+  TakeoffLaborBookTargets: 'readonly',
+  TakeoffLaborBookElliot: 'readonly',
+  TakeoffLaborBookSearch: 'readonly',
   TakeoffDeviceView: 'readonly',
   TakeoffConduitView: 'readonly',
   TakeoffWireView: 'readonly',
@@ -62,7 +68,7 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
     },
