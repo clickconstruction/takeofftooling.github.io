@@ -237,10 +237,10 @@ header .header-redo-btn {
 .manifest-view .qty-down-btn:active {
   transform: scale(0.95);
 }
-.manifest-view col.col-labor { width: 90px; }
+.manifest-view col.col-labor { width: 90px; } /* floor set by the "(hrs/unit)" header word */
 .manifest-view col.col-plan { width: 135px; }
 .manifest-view col.col-type { width: 185px; } /* fits "Special Systems" badge + × */
-.manifest-view col.col-price { width: 110px; }
+.manifest-view col.col-price { width: 84px; } /* 5-digit field + cell padding */
 
 .manifest-view th,
 .manifest-view td {
@@ -336,7 +336,7 @@ header .header-redo-btn {
 
 .manifest-view .labor-cell input,
 .manifest-view .price-cell input {
-  width: 5.5rem;
+  width: 4.25rem; /* sized for 5-digit values (999.99) — they're rarely longer */
   min-width: 0;
   box-sizing: border-box;
   -moz-appearance: textfield;
