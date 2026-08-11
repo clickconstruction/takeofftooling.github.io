@@ -1,0 +1,330 @@
+/**
+ * TakeoffCloud — optional Supabase-backed sync for the workspace + assemblies.
+ *
+ * The app stays local-first: TakeoffStorage (localStorage) remains the
+ * synchronous source the app boots from. When signed in, this module
+ *   - pulls on sign-in: workspace conflicts resolve by newest savedAt
+ *     (last write wins); assemblies merge as a union by id,
+ *   - pushes on every save (TakeoffStorage notifies via onWorkspaceSaved /
+ *     onAssembliesSaved), debounced; pending pushes flush when the tab hides.
+ *
+ * Signed out (or with the CDN blocked) the app behaves exactly as before.
+ * Auth is Supabase email OTP: a 6-digit code, no passwords and no redirect
+ * URLs, so the same flow works on localhost and GitHub Pages.
+ *
+ * Cloud rows live in public.takeoff_store (user_id, key, value jsonb) with
+ * row-level security scoping every operation to auth.uid() = user_id.
+ * Keys mirror localStorage: 'workspace' and 'assemblies'.
+ */
+const TakeoffCloud = (function () {
+  const SUPABASE_URL = 'https://awjcdxqhvgnqsrlnoyxr.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_vMFyQ4I0LqZD6yhfoF_Zbw_9MsPoC9G'; // publishable key — safe to ship; RLS enforces access
+  const TABLE = 'takeoff_store';
+  const PUSH_DEBOUNCE_MS = 1200;
+
+  let client = null;
+  let session = null;
+  let syncedThisLoad = false;
+  let suppressPush = false; // true while adopting remote data locally
+  let lastSyncedAt = null;
+  let status = 'signedOut'; // disabled | signedOut | syncing | synced | error
+  let statusDetail = '';
+  let pendingEmail = ''; // email a code was sent to (modal state)
+  const pushTimers = {};
+  const pendingValues = {};
+
+  const escapeHtml = (s) => (typeof TakeoffUtils !== 'undefined' ? TakeoffUtils.escapeHtml(s) : String(s));
+
+  try {
+    if (typeof supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_KEY.startsWith('__')) {
+      client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  } catch (err) {
+    console.warn('Takeoff: cloud sync unavailable', err);
+  }
+  if (!client) status = 'disabled';
+
+  function isSignedIn() {
+    return !!session;
+  }
+
+  function getEmail() {
+    return session?.user?.email || null;
+  }
+
+  function setStatus(next, detail) {
+    status = next;
+    statusDetail = detail || '';
+    updateUi();
+  }
+
+  // --- Sync ---
+
+  async function syncDown() {
+    if (!client || !session) return;
+    setStatus('syncing');
+    const { data, error } = await client.from(TABLE).select('key,value').in('key', ['workspace', 'assemblies']);
+    if (error) {
+      setStatus('error', error.message);
+      return;
+    }
+    const remote = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
+
+    // Workspace: newest savedAt wins.
+    const localWs = TakeoffStorage.loadWorkspace();
+    const remoteWs = remote.workspace && remote.workspace.v === 1 ? remote.workspace : null;
+    const localT = localWs ? Date.parse(localWs.savedAt) || 0 : 0;
+    const remoteT = remoteWs ? Date.parse(remoteWs.savedAt) || 0 : 0;
+    if (remoteWs && remoteT > localT) {
+      suppressPush = true;
+      try {
+        TakeoffStorage.saveWorkspace(remoteWs);
+        TakeoffState.adoptWorkspace(remoteWs);
+      } finally {
+        suppressPush = false;
+      }
+    } else if (localWs && localT > 0 && localT > remoteT) {
+      queuePush('workspace', localWs, { immediate: true });
+    }
+
+    // Assemblies: union by id (local entries win on id collision).
+    const localAsm = TakeoffStorage.loadAssemblies();
+    const remoteAsm = Array.isArray(remote.assemblies) ? remote.assemblies : [];
+    const byId = new Map();
+    for (const a of remoteAsm) if (a && a.id) byId.set(a.id, a);
+    for (const a of localAsm) if (a && a.id) byId.set(a.id, a);
+    const merged = Array.from(byId.values());
+    const changedLocally = merged.length !== localAsm.length;
+    const changedRemotely = merged.length !== remoteAsm.length;
+    if (changedLocally) {
+      suppressPush = !changedRemotely;
+      try {
+        TakeoffState.setAssemblies(merged); // persists via TakeoffStorage → pushes if suppressPush is false
+      } finally {
+        suppressPush = false;
+      }
+    } else if (changedRemotely) {
+      queuePush('assemblies', merged, { immediate: true });
+    }
+
+    lastSyncedAt = new Date();
+    setStatus('synced');
+    if (typeof TakeoffApp !== 'undefined') TakeoffApp.render();
+  }
+
+  function queuePush(key, value, opts) {
+    if (!client || !session) return;
+    pendingValues[key] = value;
+    clearTimeout(pushTimers[key]);
+    if (opts && opts.immediate) {
+      pushNow(key);
+    } else {
+      pushTimers[key] = setTimeout(() => pushNow(key), PUSH_DEBOUNCE_MS);
+    }
+  }
+
+  async function pushNow(key) {
+    if (!client || !session || !(key in pendingValues)) return;
+    const value = pendingValues[key];
+    delete pendingValues[key];
+    const { error } = await client.from(TABLE).upsert({ user_id: session.user.id, key, value });
+    if (error) {
+      pendingValues[key] = value; // retry on the next save or flush
+      setStatus('error', error.message);
+    } else {
+      lastSyncedAt = new Date();
+      setStatus('synced');
+    }
+  }
+
+  function flushPending() {
+    for (const key of Object.keys(pendingValues)) pushNow(key);
+  }
+
+  // Called by TakeoffStorage after each local save.
+  function onWorkspaceSaved(data) {
+    if (suppressPush) return;
+    queuePush('workspace', data);
+  }
+
+  function onAssembliesSaved(list) {
+    if (suppressPush) return;
+    queuePush('assemblies', list);
+  }
+
+  // --- Auth ---
+
+  async function sendCode(email) {
+    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    if (!error) pendingEmail = email;
+    return error ? error.message : null;
+  }
+
+  async function verifyCode(email, token) {
+    const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
+    return error ? error.message : null;
+  }
+
+  async function signInWithPassword(email, password) {
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    return error ? error.message : null;
+  }
+
+  async function signOut() {
+    // Local data stays on this device; only the cloud link is removed.
+    for (const key of Object.keys(pushTimers)) clearTimeout(pushTimers[key]);
+    await client.auth.signOut();
+    pendingEmail = '';
+    syncedThisLoad = false;
+    setStatus('signedOut');
+  }
+
+  if (client) {
+    client.auth.onAuthStateChange((event, s) => {
+      session = s;
+      if (session && !syncedThisLoad) {
+        syncedThisLoad = true;
+        renderModal();
+        syncDown();
+      } else if (!session) {
+        updateUi();
+      } else {
+        updateUi();
+      }
+    });
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushPending();
+    });
+  }
+
+  // --- UI (header button + #cloud-modal; one-time listeners) ---
+
+  function buttonLabel() {
+    if (status === 'disabled') return 'Cloud';
+    if (!session) return 'Sign In';
+    if (status === 'syncing') return 'Syncing…';
+    if (status === 'error') return '⚠ Cloud';
+    return '✓ Cloud';
+  }
+
+  function updateUi() {
+    const btn = document.getElementById('cloud-btn');
+    if (btn) {
+      btn.textContent = buttonLabel();
+      btn.title = session ? `Signed in as ${getEmail()}` + (lastSyncedAt ? ` — last synced ${lastSyncedAt.toLocaleTimeString()}` : '') : 'Sync this takeoff across devices';
+      btn.classList.toggle('cloud-btn-error', status === 'error');
+    }
+    const modal = document.getElementById('cloud-modal');
+    if (modal && modal.getAttribute('aria-hidden') === 'false') renderModal();
+  }
+
+  function renderModal() {
+    const body = document.getElementById('cloud-modal-body');
+    if (!body) return;
+    if (status === 'disabled') {
+      body.innerHTML = '<p class="cloud-hint">Cloud sync is not available (the sync library failed to load). The app keeps saving to this browser.</p>';
+      return;
+    }
+    if (session) {
+      body.innerHTML = [
+        `<p>Signed in as <strong>${escapeHtml(getEmail() || '')}</strong></p>`,
+        `<p class="cloud-hint">${status === 'error' ? 'Sync error: ' + escapeHtml(statusDetail) : lastSyncedAt ? 'Last synced ' + escapeHtml(lastSyncedAt.toLocaleTimeString()) : 'Waiting for first sync…'}</p>`,
+        '<div class="cloud-form-row"><button type="button" id="cloud-sync-now-btn" class="btn btn-secondary">Sync Now</button>',
+        '<button type="button" id="cloud-sign-out-btn" class="btn btn-secondary">Sign Out</button></div>',
+      ].join('');
+      document.getElementById('cloud-sync-now-btn').addEventListener('click', () => {
+        syncedThisLoad = true;
+        syncDown();
+      });
+      document.getElementById('cloud-sign-out-btn').addEventListener('click', signOut);
+      return;
+    }
+    if (pendingEmail) {
+      body.innerHTML = [
+        `<p>Enter the 6-digit code sent to <strong>${escapeHtml(pendingEmail)}</strong>.</p>`,
+        '<div class="cloud-form-row"><input type="text" id="cloud-code-input" class="cloud-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />',
+        '<button type="button" id="cloud-verify-btn" class="btn btn-success">Verify</button></div>',
+        '<p class="cloud-hint" id="cloud-modal-msg"></p>',
+        '<button type="button" id="cloud-restart-btn" class="btn btn-link">Use a different email</button>',
+      ].join('');
+      const verify = async () => {
+        const token = document.getElementById('cloud-code-input').value.trim();
+        if (token.length < 6) return;
+        const msg = document.getElementById('cloud-modal-msg');
+        msg.textContent = 'Verifying…';
+        const err = await verifyCode(pendingEmail, token);
+        if (err) msg.textContent = err;
+        else pendingEmail = ''; // onAuthStateChange re-renders
+      };
+      document.getElementById('cloud-verify-btn').addEventListener('click', verify);
+      document.getElementById('cloud-code-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') verify();
+      });
+      document.getElementById('cloud-restart-btn').addEventListener('click', () => {
+        pendingEmail = '';
+        renderModal();
+      });
+      document.getElementById('cloud-code-input').focus();
+      return;
+    }
+    body.innerHTML = [
+      '<p>Sign in to sync this takeoff across devices.</p>',
+      '<div class="cloud-form-row"><input type="email" id="cloud-email-input" class="cloud-email-input" placeholder="you@example.com" autocomplete="email" /></div>',
+      '<div class="cloud-form-row"><input type="password" id="cloud-password-input" class="cloud-email-input" placeholder="Password" autocomplete="current-password" />',
+      '<button type="button" id="cloud-password-btn" class="btn btn-success">Sign In</button></div>',
+      '<p class="cloud-hint" id="cloud-modal-msg"></p>',
+      '<button type="button" id="cloud-send-code-btn" class="btn btn-link">No password? Email me a 6-digit code instead</button>',
+    ].join('');
+    const getEmailValue = () => document.getElementById('cloud-email-input').value.trim();
+    const msgEl = () => document.getElementById('cloud-modal-msg');
+    const signIn = async () => {
+      const email = getEmailValue();
+      const password = document.getElementById('cloud-password-input').value;
+      if (!email || !email.includes('@') || !password) return;
+      msgEl().textContent = 'Signing in…';
+      const err = await signInWithPassword(email, password);
+      if (err) msgEl().textContent = err; // onAuthStateChange re-renders on success
+    };
+    const send = async () => {
+      const email = getEmailValue();
+      if (!email || !email.includes('@')) {
+        msgEl().textContent = 'Enter your email first.';
+        return;
+      }
+      msgEl().textContent = 'Sending code…';
+      const err = await sendCode(email);
+      if (err) msgEl().textContent = err;
+      else renderModal();
+    };
+    document.getElementById('cloud-password-btn').addEventListener('click', signIn);
+    document.getElementById('cloud-password-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') signIn();
+    });
+    document.getElementById('cloud-send-code-btn').addEventListener('click', send);
+    document.getElementById('cloud-email-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('cloud-password-input').focus();
+    });
+    document.getElementById('cloud-email-input').focus();
+  }
+
+  function openModal() {
+    const modal = document.getElementById('cloud-modal');
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'false');
+    renderModal();
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('cloud-modal');
+    if (modal) modal.setAttribute('aria-hidden', 'true');
+  }
+
+  document.getElementById('cloud-btn')?.addEventListener('click', openModal);
+  document.getElementById('cloud-modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('cloud-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+  updateUi();
+
+  return { isSignedIn, getEmail, onWorkspaceSaved, onAssembliesSaved, flushPending, openModal };
+})();

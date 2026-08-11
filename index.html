@@ -16,6 +16,7 @@
       <button type="button" id="new-takeoff-btn" class="btn btn-secondary header-import-btn" title="Clear the manifest and start fresh">New Takeoff</button>
       <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
       <button type="button" id="labor-book-open-btn" class="btn btn-secondary header-import-btn">Labor &amp; Price Book</button>
+      <button type="button" id="cloud-btn" class="btn btn-secondary header-import-btn" title="Sync this takeoff across devices">Sign In</button>
       <div class="header-right-controls">
         <div class="header-undo-redo">
           <button type="button" id="undo-btn" class="btn btn-secondary header-undo-btn" title="Undo" disabled>Undo</button>
@@ -171,6 +172,17 @@
     </div>
   </div>
 
+  <!-- Cloud sync modal (sign in / account; body rendered by js/cloud.js) -->
+  <div id="cloud-modal" class="modal" aria-hidden="true">
+    <div class="modal-content cloud-modal-content">
+      <h2>Cloud Sync</h2>
+      <div id="cloud-modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" id="cloud-modal-close" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Form modal for Print with Form (Address, Permit NO, etc.) -->
   <div id="form-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
@@ -189,6 +201,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/data/fittings.js"></script>
   <script src="js/data/laborBookDefaults.js"></script>
@@ -213,6 +226,7 @@
   <script src="js/views/device.js"></script>
   <script src="js/views/conduit.js"></script>
   <script src="js/views/wire.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

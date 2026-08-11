@@ -77,6 +77,10 @@ Two sides, toggled at the top of the modal:
 - **Abbreviation Key** — Reference for labor codes
 - **Export Groups & Sections** — Export structure for customization
 
+### Cloud Sync
+
+Optional — the app works fully offline in this browser without it. **Sign In** (header) emails you a 6-digit code; once signed in, the manifest, labor book, labor rate, and saved assemblies sync to Supabase so the same takeoff follows you across devices. Newest save wins for the workspace; assemblies merge. Signing out keeps the local copy.
+
 ### Other
 
 - **Undo / Redo** — History for manifest changes (manifest only)

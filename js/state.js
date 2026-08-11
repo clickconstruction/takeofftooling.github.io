@@ -127,6 +127,20 @@ const TakeoffState = (function () {
     if (typeof data.laborRate === 'number') laborRate = data.laborRate;
   }
 
+  // Replace live state with a workspace pulled from cloud sync (TakeoffCloud).
+  // The caller has already written it to TakeoffStorage; undo history refers
+  // to the replaced manifest, so it is cleared.
+  function adoptWorkspace(data) {
+    if (!data || data.v !== 1) return false;
+    if (Array.isArray(data.manifest)) manifest = data.manifest;
+    if (data.laborBook && typeof data.laborBook === 'object') laborBook = data.laborBook;
+    if (typeof data.laborRate === 'number') laborRate = data.laborRate;
+    undoStack = [];
+    redoStack = [];
+    lastEdit = { id: null, keys: '', time: 0 };
+    return true;
+  }
+
   function pushUndoRaw() {
     undoStack.push(deepCloneManifest());
     if (undoStack.length > UNDO_STACK_SIZE) undoStack.shift();
@@ -257,6 +271,12 @@ const TakeoffState = (function () {
     TakeoffStorage.saveAssemblies(assemblies);
   }
 
+  // Replace the assemblies list (cloud-sync merge result).
+  function setAssemblies(list) {
+    assemblies = Array.isArray(list) ? list : [];
+    TakeoffStorage.saveAssemblies(assemblies);
+  }
+
   // --- Labor rate ---
 
   function getLaborRate() {
@@ -356,6 +376,7 @@ const TakeoffState = (function () {
     ...TakeoffUiState,
     getManifest,
     persistNow,
+    adoptWorkspace,
     loadManifestFromExport,
     getTopLevelItems,
     getItemById,
@@ -374,6 +395,7 @@ const TakeoffState = (function () {
     getAssemblies,
     addAssembly,
     removeAssembly,
+    setAssemblies,
     getTotalLabor,
     getTotalPrice,
     getFlattenedItems,

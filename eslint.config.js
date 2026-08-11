@@ -12,6 +12,7 @@ const globals = require('globals');
 const appGlobals = {
   TakeoffUtils: 'readonly',
   TakeoffStorage: 'readonly',
+  TakeoffCloud: 'readonly',
   TakeoffUiState: 'readonly',
   TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
@@ -37,6 +38,7 @@ const appGlobals = {
   LABOR_BOOK_DEFAULTS: 'readonly',
   LABOR_BOOK_DEFAULT_GROUPS: 'readonly',
   jspdf: 'readonly',
+  supabase: 'readonly', // @supabase/supabase-js UMD (CDN)
 };
 
 module.exports = [

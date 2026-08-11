@@ -8,7 +8,7 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 - **Quality gate**: `npm run check` (eslint `--max-warnings 0` + `node --test` unit tests) and `npx playwright test` (browser smoke specs; starts the dev server itself). Run both before committing. Naming: `*.test.js` = node:test units, `*.spec.js` = Playwright.
 - **Script load order matters**: `utils.js` and `state.js` must load before everything; `app.js` loads last and runs init. Circular-ish references between views and `TakeoffApp` work only because calls happen post-load; some modules use `typeof X !== 'undefined'` guards.
 - **Dev server**: `python3 scripts/dev-server.py 4173` (plain `http.server` with `Cache-Control: no-store`). Also configured in [.claude/launch.json](.claude/launch.json) as `takeoff-tooling`. Needed because the app `fetch()`es JSON from `mc-assemblies/` — opening `index.html` via `file://` breaks those.
-- **Persistence is localStorage only** (see key table in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). No backend.
+- **Persistence is local-first localStorage** (see key table in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), optionally mirrored to Supabase when signed in (email-OTP; `js/cloud.js`, project `awjcdxqhvgnqsrlnoyxr`, table `takeoff_store`, RLS per-user). The app must keep working fully signed out.
 - **Two codebases in one repo**: the runtime app (`js/`, `index.html`, `css/`) and an offline Node/Python data pipeline (`scripts/` → `mc-assemblies/*.json`). They meet at `js/elliotPriceCore.js`, which is dual browser/Node.
 
 ## Where things live

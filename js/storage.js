@@ -1,10 +1,9 @@
 /**
  * TakeoffStorage — the single seam for durable persistence.
  *
- * Everything the app saves goes through this adapter. The current
- * implementation is localStorage; to back the app with a database
- * (IndexedDB, Supabase, the Count Tooling project store), replace these
- * four functions — no other file touches storage directly.
+ * Everything the app saves goes through this adapter. localStorage is the
+ * synchronous cache the app boots from; each save also notifies TakeoffCloud
+ * (js/cloud.js), which mirrors the data to Supabase when signed in.
  *
  * Contract:
  *   loadWorkspace()        -> workspace object ({v:1, savedAt, manifest, laborBook, laborRate}) or null
@@ -32,6 +31,11 @@ const TakeoffStorage = (function () {
     } catch (err) {
       console.warn('Takeoff: could not save workspace', err);
     }
+    try {
+      if (typeof TakeoffCloud !== 'undefined') TakeoffCloud.onWorkspaceSaved(data);
+    } catch (err) {
+      console.warn('Takeoff: cloud push failed', err);
+    }
   }
 
   function loadAssemblies() {
@@ -50,6 +54,11 @@ const TakeoffStorage = (function () {
       localStorage.setItem(ASSEMBLIES_KEY, JSON.stringify(list));
     } catch (err) {
       console.warn('Takeoff: could not save assemblies', err);
+    }
+    try {
+      if (typeof TakeoffCloud !== 'undefined') TakeoffCloud.onAssembliesSaved(list);
+    } catch (err) {
+      console.warn('Takeoff: cloud push failed', err);
     }
   }
 

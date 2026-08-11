@@ -28,6 +28,7 @@ js/views/laborBook.js  → TakeoffLaborBookView (facade; stable public API)
 js/views/device.js     → TakeoffDeviceView
 js/views/conduit.js    → TakeoffConduitView
 js/views/wire.js       → TakeoffWireView
+js/cloud.js            → TakeoffCloud     (Supabase sync + email-OTP auth; CDN: @supabase/supabase-js UMD)
 js/app.js              → window.TakeoffApp  (runs init)
 ```
 
@@ -40,7 +41,8 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | utils.js | `TakeoffUtils` (`escapeHtml` only) | — |
 | data/fittings.js | `FITTINGS_LIST` | — |
 | data/laborBookDefaults.js | `LABOR_BOOK_DEFAULTS`, `LABOR_BOOK_DEFAULT_GROUPS` (pure data) | — |
-| storage.js | `TakeoffStorage` (load/saveWorkspace, load/saveAssemblies) | localStorage |
+| storage.js | `TakeoffStorage` (load/saveWorkspace, load/saveAssemblies) | localStorage; notifies TakeoffCloud after saves (typeof-guarded) |
+| cloud.js | `TakeoffCloud` (email-OTP auth, cloud pull/push, #cloud-modal UI) | `supabase` UMD (CDN), TakeoffStorage, TakeoffState, TakeoffApp, TakeoffUtils |
 | uiState.js | `TakeoffUiState` (view/modal ids, temp buffers, fill targets, toggles) | — |
 | selectors.js | `TakeoffSelectors` (pure fns over a manifest arg; CommonJS export for tests) | — |
 | state.js | `TakeoffState` (facade, ~70 exports; spreads TakeoffUiState) | TakeoffStorage, TakeoffUiState, TakeoffSelectors, LABOR_BOOK_DEFAULTS |
@@ -104,9 +106,13 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 `getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown` (materials + 8.5% `SALES_TAX_RATE` + labor + other charges).
 
+## Cloud sync (js/cloud.js, `TakeoffCloud`)
+
+Optional Supabase mirror of the workspace + assemblies; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2); one table `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) with RLS scoping every operation to `auth.uid() = user_id`; rows mirror the localStorage keys (`workspace`, `assemblies`). Auth is Supabase email OTP (6-digit code, no passwords, no redirect URLs — the "Magic link or OTP" email template was edited to send `{{ .Token }}`). Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
+
 ## localStorage keys
 
-All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) — swap that file's four functions to move persistence to a database; nothing else touches storage directly. The `mc-elliot-*` keys are still written directly by mcElliotState.js.
+All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) — swap that file's four functions to move persistence to a database; nothing else touches storage directly (cloud sync taps the same seam via save-notifications). The `mc-elliot-*` keys are still written directly by mcElliotState.js.
 
 | Key | Owner | Content |
 |---|---|---|

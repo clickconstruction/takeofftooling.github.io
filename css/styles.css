@@ -3827,3 +3827,44 @@ body.lb-modal-open {
   font-family: inherit;
   font-size: 0.85rem;
 }
+
+/* Cloud sync (header button + #cloud-modal, js/cloud.js) */
+.cloud-modal-content {
+  max-width: 420px;
+}
+
+.cloud-form-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.cloud-email-input,
+.cloud-code-input {
+  flex: 1;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.cloud-code-input {
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.cloud-hint {
+  color: var(--text-muted, #999);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
+.cloud-btn-error {
+  border-color: #b3532f;
+  color: #d8703f;
+}
