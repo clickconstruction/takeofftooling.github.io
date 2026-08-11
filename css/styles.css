@@ -391,6 +391,32 @@ header .header-redo-btn {
   background: rgba(232, 197, 71, 0.15);
 }
 
+/* Ghost add-row closing a child block; the colspan cell is nth-child(3), so
+   the child-row indent guide applies to it unchanged */
+.manifest-view tr.add-child-row td.add-child-cell {
+  padding-top: 0.35rem;
+  padding-bottom: 0.45rem;
+}
+
+.manifest-view .add-child-row-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.manifest-view .add-child-row-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(232, 197, 71, 0.08);
+}
+
 .labor-cell .labor-book-icon-btn.icon-btn,
 .manifest-view .labor-book-cell .labor-book-icon-btn.icon-btn {
   display: inline-flex;
@@ -582,6 +608,16 @@ header .header-redo-btn {
   .manifest-table-scroll tr.child-row {
     margin-left: 1.4rem;
     background: rgba(0, 0, 0, 0.25);
+  }
+
+  /* ghost add-row: slim full-width card closing the block */
+  .manifest-table-scroll tr.add-child-row {
+    padding: 0.45rem 0.8rem;
+  }
+
+  .manifest-view .add-child-row-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

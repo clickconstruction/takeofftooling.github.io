@@ -71,8 +71,10 @@ const TakeoffManifestView = (function () {
     const showRemove = TakeoffState.getShowRemoveIcons();
     const removeCell = `<td class="remove-cell ${showRemove ? 'visible' : ''}"><button type="button" class="remove-btn icon-btn" data-id="${item.id}" title="Remove">${TRASH_SVG}</button></td>`;
 
-    // parents also get "+" to append a blank child row (children can't nest)
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${isChild ? '' : `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">+</button>`}</td>`;
+    // childless parents get "+" for their first child; once children exist the
+    // ghost add-row at the bottom of the block takes over (children can't nest)
+    const showRailAdd = !isChild && !(item.children && item.children.length);
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">+</button>` : ''}</td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
@@ -168,13 +170,31 @@ const TakeoffManifestView = (function () {
     }
   }
 
+  // Ghost row closing a child block: adding lands exactly where the row appears
+  function renderAddChildRow(parentId) {
+    return `
+      <tr class="child-row add-child-row">
+        <td class="remove-cell"></td>
+        <td class="labor-book-cell"></td>
+        <td colspan="6" class="add-child-cell"><button type="button" class="add-child-btn add-child-row-btn" data-id="${parentId}">+ Add component</button></td>
+      </tr>
+    `;
+  }
+
   function render() {
     const items = TakeoffState.getFlattenedItems();
 
     let rows = '';
+    let openBlockParentId = null;
     for (const { _depth, ...item } of items) {
-      rows += renderRow(item, _depth > 0);
+      const isChild = _depth > 0;
+      if (!isChild) {
+        if (openBlockParentId) rows += renderAddChildRow(openBlockParentId);
+        openBlockParentId = item.children && item.children.length ? item.id : null;
+      }
+      rows += renderRow(item, isChild);
     }
+    if (openBlockParentId) rows += renderAddChildRow(openBlockParentId);
 
     return `
       <div class="manifest-view">
