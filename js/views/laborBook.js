@@ -72,9 +72,13 @@ const TakeoffLaborBookView = (function () {
     const data = TakeoffState.getLaborBookType(type);
     const sections = Object.keys(data);
     const groups = TakeoffState.getLaborBookGroups(type);
+    const filterHtml = '<input type="text" class="labor-book-tab-filter" placeholder="Filter parts in this tab by name or part number..." autocomplete="off" />';
 
     if (sections.length === 0) {
+      // if the supplier catalog has parts for this tab, injectElliotParts
+      // demotes this block to a footer below the (auto-expanded) catalog
       return `
+        ${filterHtml}
         <div class="labor-book-empty">
           <p>No parts sections yet. Browse Assemblies for priced entries, or start a section from scratch.</p>
           <button type="button" class="btn btn-success labor-book-browse-assemblies-btn">Browse Assemblies</button>
@@ -83,7 +87,7 @@ const TakeoffLaborBookView = (function () {
       `;
     }
 
-    let html = '';
+    let html = filterHtml;
 
     if (groups && type === 'conduit') {
       const expandGroup = TakeoffState.getLaborBookExpandGroup?.() || null;
@@ -175,6 +179,41 @@ const TakeoffLaborBookView = (function () {
 
     return html;
   }
+
+  // Tab-level filter: narrows the curated sections in the DOM (rows are live
+  // inputs) and hands the term to the supplier group's data-driven filter.
+  function applyTabFilter(termRaw) {
+    const partsEl = document.getElementById('labor-book-content');
+    if (!partsEl) return;
+    const term = (termRaw || '').trim().toLowerCase();
+    partsEl.querySelectorAll('.labor-book-section').forEach((sec) => {
+      // row names can be bare sizes ("12", "3/4\"") — the meaning often lives
+      // in the section or group title, so a title match shows the whole block
+      const groupEl = sec.closest('.labor-book-group:not(.elliot-parts-group)');
+      const titleMatch =
+        term &&
+        ((sec.dataset.section || '').toLowerCase().includes(term) ||
+          (groupEl?.dataset.group || '').toLowerCase().includes(term));
+      let any = false;
+      sec.querySelectorAll('.labor-book-row').forEach((row) => {
+        const name = (row.querySelector('.labor-book-name')?.value || '').toLowerCase();
+        const show = !term || titleMatch || name.includes(term);
+        row.style.display = show ? '' : 'none';
+        if (show) any = true;
+      });
+      sec.style.display = !term || any ? '' : 'none';
+      // clearing the term restores the default all-collapsed view
+      sec.classList.toggle('labor-book-section-collapsed', term ? !any : true);
+    });
+    partsEl.querySelectorAll('.labor-book-group:not(.elliot-parts-group)').forEach((g) => {
+      const anyVisible = Array.from(g.querySelectorAll('.labor-book-section')).some((s) => s.style.display !== 'none');
+      g.style.display = !term || anyVisible ? '' : 'none';
+      g.classList.toggle('labor-book-group-collapsed', term ? !anyVisible : true);
+    });
+    partsEl.querySelector('.elliot-parts-group')?._applyTabFilter?.(term);
+  }
+
+  let tabFilterTimer = null;
 
   function renderApplyToSelect() {
     const items = TakeoffState.getTopLevelItems();
@@ -387,6 +426,11 @@ const TakeoffLaborBookView = (function () {
         render();
         attachListeners();
       });
+    });
+
+    document.querySelector('.labor-book-tab-filter')?.addEventListener('input', (e) => {
+      if (tabFilterTimer) clearTimeout(tabFilterTimer);
+      tabFilterTimer = setTimeout(() => applyTabFilter(e.target.value), 200);
     });
 
     function addRowToFixture(row) {

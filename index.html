@@ -13,27 +13,35 @@
   <div id="app">
     <header>
       <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
-      <button type="button" id="new-takeoff-btn" class="btn btn-secondary header-import-btn" title="Clear the manifest and start fresh">New Takeoff</button>
-      <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
-      <button type="button" id="labor-book-open-btn" class="btn btn-secondary header-import-btn">Labor &amp; Price Book</button>
-      <button type="button" id="cloud-btn" class="btn btn-secondary header-import-btn" title="Sync this takeoff across devices">Sign In</button>
+      <div class="header-actions">
+        <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
+        <button type="button" id="labor-book-open-btn" class="btn btn-secondary header-import-btn">Labor &amp; Price Book</button>
+      </div>
       <div class="header-right-controls">
         <div class="header-undo-redo">
           <button type="button" id="undo-btn" class="btn btn-secondary header-undo-btn" title="Undo" disabled>Undo</button>
           <button type="button" id="redo-btn" class="btn btn-secondary header-redo-btn" title="Redo" disabled>Redo</button>
         </div>
-        <button type="button" id="remove-toggle-btn" class="header-trash-toggle" title="Toggle remove icons" aria-pressed="false">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
-        </button>
-        <button type="button" id="cache-clear-reload-btn" class="header-cache-reload-btn" title="Hard reload (empty cache)" aria-label="Hard reload (empty cache)">R</button>
+        <button type="button" id="cloud-btn" class="btn btn-secondary header-import-btn" title="Sync this takeoff across devices">Sign In</button>
+        <div class="header-menu-wrap">
+          <button type="button" id="header-menu-btn" class="header-menu-toggle" title="More actions" aria-label="More actions" aria-haspopup="true" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="header-menu-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </button>
+          <div id="header-menu" class="header-menu" aria-hidden="true">
+            <button type="button" id="new-takeoff-btn" class="header-menu-item" title="Clear the manifest and start fresh">New Takeoff</button>
+            <button type="button" id="export-link-btn" class="header-menu-item">Export via link</button>
+            <button type="button" id="remove-toggle-btn" class="header-menu-item" title="Toggle remove icons" aria-pressed="false">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
+              Remove items
+            </button>
+            <button type="button" id="cache-clear-reload-btn" class="header-menu-item header-menu-item-danger" title="Reload the app with a cleared code cache (keeps your data)">Hard reload</button>
+          </div>
+        </div>
       </div>
     </header>
     <main id="main-content">
       <!-- Views rendered here by app.js -->
     </main>
-    <div class="export-link-footer">
-      <button type="button" class="btn btn-export-link" id="export-link-btn">Export via link</button>
-    </div>
   </div>
 
   <!-- Type selection modal (shown when adding/editing item type) -->

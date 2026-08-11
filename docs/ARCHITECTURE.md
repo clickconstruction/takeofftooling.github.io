@@ -161,7 +161,7 @@ Six modal skeletons live in index.html:
 
 ## Labor & Price Book modal (two sides)
 
-- **Parts** (views/laborBook.js): editable per-tab sections from `TakeoffState.getLaborBook()`, plus a live-injected "Elliot Parts" group per tab from supplier sections.
+- **Parts** (views/laborBook.js): editable per-tab sections from `TakeoffState.getLaborBook()`, plus a live-injected "Supplier Parts · Elliot" group per tab from supplier sections. An always-visible tab-level filter narrows curated sections (matching row names or section/group titles) and supplier parts together (laborBook.js `applyTabFilter` → the group's `_applyTabFilter`). On tabs with no curated sections (lighting/devices/specialSystems) the supplier group starts expanded and the "no sections yet" block is demoted to a footer.
 - **Assemblies** (mcBook.js): fetches `mc-assemblies/mc-labor-book.json`, patches with the local Elliot overlay (`McElliotState.getPatchedBook`), renders a lazy level1→level2→section tree; entries can be added rolled-up or exploded into components (`getComposition` via `mc-price-model.json`). Global search spans both sides.
 - **Update Supplier Prices** (mcElliotUpdate.js): parse vendor CSV → dedupe → match against MC items (saved mappings first, then token-index fuzzy matching in chunks) → build overlay → auto/review/summary tabs → download buttons to commit updated JSON back into `mc-assemblies/`. See [DATA-PIPELINE.md](DATA-PIPELINE.md).
 

@@ -3,7 +3,8 @@
  *
  * Rendered live from the Elliot price data (not copied into the editable
  * Parts store): one collapsible group per tab, a section per Elliot
- * category, entries lazy-loaded, with a filter box and + Add to fixture.
+ * category, entries lazy-loaded, + Add to fixture. Filtering is driven by
+ * the tab-level filter input via group._applyTabFilter (laborBook.js).
  * Loaded before js/views/laborBook.js.
  */
 
@@ -47,6 +48,9 @@ const TakeoffLaborBookElliot = (function () {
       if (partsEl.querySelector('.elliot-parts-group')) return;
       const sections = McBook.elliotSectionsForTab(renderedForTab);
       if (!sections.length) return;
+      // when the tab has no curated sections the catalog IS the tab: start it
+      // open and demote the "no sections yet" block to a footer
+      const hasOwnSections = Object.keys(TakeoffState.getLaborBookType(renderedForTab)).length > 0;
       const total = sections.reduce((n, s) => n + s.entries.length, 0);
       const sectionsHtml = sections
         .map(
@@ -62,14 +66,24 @@ const TakeoffLaborBookElliot = (function () {
         )
         .join('');
       const group = document.createElement('div');
-      group.className = 'labor-book-group labor-book-group-collapsed mc-book-group elliot-parts-group';
+      group.className = `labor-book-group${hasOwnSections ? ' labor-book-group-collapsed' : ''} mc-book-group elliot-parts-group`;
       group.innerHTML = `
-        <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>${escapeHtml((sections[0].level1 || 'Elliot') + ' Parts')} <span class="mc-book-section-count">${total.toLocaleString()}</span></h2>
+        <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>Supplier Parts · ${escapeHtml(sections[0].level1 || 'Elliot')} <span class="mc-book-section-count">${total.toLocaleString()}</span></h2>
         <div class="labor-book-group-body">
-          <input type="text" class="elliot-parts-filter" placeholder="Filter supplier parts in this tab..." autocomplete="off" />
           <div class="elliot-parts-body">${sectionsHtml}</div>
         </div>`;
       partsEl.appendChild(group);
+
+      if (!hasOwnSections) {
+        const emptyEl = partsEl.querySelector('.labor-book-empty');
+        if (emptyEl) {
+          emptyEl.classList.add('labor-book-empty-footer');
+          const msg = emptyEl.querySelector('p');
+          if (msg) msg.textContent = 'These parts come from the supplier catalog above. To curate your own sections:';
+          // move below the catalog — the DOM move keeps the buttons' listeners
+          partsEl.appendChild(emptyEl);
+        }
+      }
 
       const findSection = (key) => sections.find((s) => s.name === key);
       const body = group.querySelector('.elliot-parts-body');
@@ -92,7 +106,6 @@ const TakeoffLaborBookElliot = (function () {
           }
           return;
         }
-        if (e.target.closest('.elliot-parts-filter')) return;
         const sectionHeader = e.target.closest('.mc-book-section-header');
         if (sectionHeader) {
           const sectionEl = sectionHeader.closest('.elliot-part-section');
@@ -114,32 +127,35 @@ const TakeoffLaborBookElliot = (function () {
         }
       });
 
-      let filterTimer = null;
-      group.querySelector('.elliot-parts-filter').addEventListener('input', (e) => {
-        if (filterTimer) clearTimeout(filterTimer);
-        filterTimer = setTimeout(() => {
-          const term = e.target.value.trim().toLowerCase();
-          if (!term) {
-            group._filtered = null;
-            body.innerHTML = sectionsHtml;
-            return;
-          }
-          const matched = [];
-          for (const s of sections) {
-            for (const en of s.entries) {
-              if (en.name.toLowerCase().includes(term) || (en.partNumber || '').toLowerCase().includes(term)) {
-                matched.push(en);
-                if (matched.length >= ELLIOT_FILTER_CAP) break;
-              }
+      // driven by the tab-level filter input (laborBook.js applyTabFilter)
+      group._applyTabFilter = (termRaw) => {
+        const term = (termRaw || '').trim().toLowerCase();
+        if (!term) {
+          group._filtered = null;
+          body.innerHTML = sectionsHtml;
+          group.classList.toggle('labor-book-group-collapsed', hasOwnSections);
+          return;
+        }
+        group.classList.remove('labor-book-group-collapsed');
+        const matched = [];
+        for (const s of sections) {
+          for (const en of s.entries) {
+            if (en.name.toLowerCase().includes(term) || (en.partNumber || '').toLowerCase().includes(term)) {
+              matched.push(en);
+              if (matched.length >= ELLIOT_FILTER_CAP) break;
             }
-            if (matched.length >= ELLIOT_FILTER_CAP) break;
           }
-          group._filtered = matched;
-          body.innerHTML =
-            `<div class="mc-book-result-count">${matched.length >= ELLIOT_FILTER_CAP ? `First ${ELLIOT_FILTER_CAP} matches` : `${matched.length} matches`}</div>` +
-            (matched.length ? renderElliotPartRows(matched, '__filtered__') : '<p class="mc-book-empty">No matching Elliot parts in this tab.</p>');
-        }, 200);
-      });
+          if (matched.length >= ELLIOT_FILTER_CAP) break;
+        }
+        group._filtered = matched;
+        body.innerHTML =
+          `<div class="mc-book-result-count">${matched.length >= ELLIOT_FILTER_CAP ? `First ${ELLIOT_FILTER_CAP} matches` : `${matched.length} matches`}</div>` +
+          (matched.length ? renderElliotPartRows(matched, '__filtered__') : '<p class="mc-book-empty">No matching supplier parts in this tab.</p>');
+      };
+
+      // the user may have typed while the book was still loading
+      const pending = document.querySelector('.labor-book-tab-filter')?.value;
+      if (pending && pending.trim()) group._applyTabFilter(pending);
     });
   }
 

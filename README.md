@@ -19,7 +19,7 @@ A static web app for electrical estimators to create manifest-based bids. Enter 
 - **Quantity**: Spinner controls (+, −) and direct input; default 0
 - **Labor and Price Book**: Book icon on each row opens the Labor and Price Book for quick lookup
 - **Edit in flow**: For Devices, Conduit, and Wire types — opens the type-specific flow editor
-- **Remove toggle**: Header trash icon shows/hides remove buttons on rows
+- **Remove toggle**: "Remove items" in the header ☰ menu shows/hides remove buttons on rows
 
 ### Devices Flow
 
@@ -69,7 +69,7 @@ Paste clipboard data (fixture, count, page per line). A **preview modal** shows:
 
 Two sides, toggled at the top of the modal:
 
-- **Parts** — Editable per-tab sections (labor hours + price per item), plus a live "Elliot Parts" supplier group
+- **Parts** — Editable per-tab sections (labor hours + price per item), plus a live "Supplier Parts · Elliot" catalog (open by default on tabs with no sections of their own), with a per-tab filter that searches both together
 - **Assemblies** — The MC assemblies book (24k+ entries) as a browsable category tree; add entries rolled-up or exploded into their component items
 - **Global search** — Searches parts, assemblies, and supplier parts together
 - **Add to fixture / fill mode** — Apply a selected entry to a manifest row, or fill a specific flow row via the per-row "PB" buttons

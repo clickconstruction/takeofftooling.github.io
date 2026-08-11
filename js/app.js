@@ -273,6 +273,32 @@
     TakeoffImport.importFromClipboard();
   });
 
+  // Header overflow menu (New Takeoff / Export via link / Remove items / Hard reload)
+  const headerMenuBtn = document.getElementById('header-menu-btn');
+  const headerMenu = document.getElementById('header-menu');
+  function setHeaderMenuOpen(open) {
+    headerMenu?.setAttribute('aria-hidden', String(!open));
+    headerMenuBtn?.setAttribute('aria-expanded', String(open));
+  }
+  headerMenuBtn?.addEventListener('click', () => {
+    setHeaderMenuOpen(headerMenu?.getAttribute('aria-hidden') !== 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (headerMenu?.getAttribute('aria-hidden') === 'false' && !e.target.closest('.header-menu-wrap')) {
+      setHeaderMenuOpen(false);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setHeaderMenuOpen(false);
+  });
+  // any menu action closes the menu (the item's own listener still runs);
+  // export-link stays open so its "Link copied!" feedback is visible
+  headerMenu?.addEventListener('click', (e) => {
+    if (e.target.closest('.header-menu-item') && !e.target.closest('#export-link-btn')) {
+      setHeaderMenuOpen(false);
+    }
+  });
+
   // Export via link (versioned envelope; import still accepts legacy bare arrays)
   document.getElementById('export-link-btn')?.addEventListener('click', async () => {
     const envelope = {
