@@ -2959,3 +2959,188 @@ body.lb-modal-open {
   border-color: #b3532f;
   color: #d8703f;
 }
+
+/* Shared-book corrections: opt-in section in the cloud modal (js/cloud.js) */
+.cloud-share-section {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.cloud-share-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.cloud-share-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.cloud-share-view-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cloud-share-list {
+  margin-top: 0.5rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+.cloud-share-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cloud-share-row:last-child {
+  border-bottom: none;
+}
+
+.cloud-share-part {
+  flex: 1;
+  min-width: 0;
+}
+
+.cloud-share-where {
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.cloud-share-change {
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+/* Suggested-corrections review panel (admin only; js/suggestionsReview.js) */
+.suggestions-modal-content {
+  width: min(96vw, 900px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestions-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.suggestions-modal-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.suggestions-count-badge {
+  background: rgba(232, 197, 71, 0.18);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.suggestions-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 8rem;
+}
+
+.sugg-empty {
+  color: var(--text2);
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.sugg-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 0.2rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.sugg-part {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.sugg-where {
+  color: var(--text3);
+  font-size: 0.78rem;
+}
+
+.sugg-change {
+  font-size: 0.88rem;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+.sugg-change strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sugg-arrow {
+  color: var(--text3);
+}
+
+.sugg-kind-label {
+  color: var(--text3);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sugg-badge {
+  border-radius: 999px;
+  padding: 0.12rem 0.6rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.sugg-badge-agree {
+  background: rgba(71, 200, 142, 0.18);
+  color: #47c88e;
+}
+
+.sugg-badge-single {
+  background: rgba(232, 184, 74, 0.15);
+  color: #e8b84a;
+}
+
+.sugg-badge-outlier {
+  background: rgba(232, 84, 71, 0.18);
+  color: #e85447;
+}
+
+.sugg-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.suggestions-modal-actions {
+  justify-content: space-between;
+}

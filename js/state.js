@@ -27,6 +27,11 @@ const TakeoffState = (function () {
   const LABOR_BOOK_GROUPS = LABOR_BOOK_DEFAULT_GROUPS;
   let activeLaborBookTab = 'gear';
   let laborBook = JSON.parse(JSON.stringify(LABOR_BOOK_DEFAULTS));
+  // Provenance for the shared-book feedback loop (js/laborBookMerge.js):
+  // which defaults the user deleted, and which defaults version the stored
+  // book was last reconciled against.
+  let laborBookRemoved = {};
+  let laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
 
   function generateId() {
     // UUIDs so ids stay valid as database row keys after the Count Tooling
@@ -111,7 +116,14 @@ const TakeoffState = (function () {
   let persistTimer = null;
 
   function persistNow() {
-    TakeoffStorage.saveWorkspace({ v: 1, savedAt: new Date().toISOString(), manifest, laborBook, laborRate });
+    TakeoffStorage.saveWorkspace({
+      v: 1,
+      savedAt: new Date().toISOString(),
+      manifest,
+      laborBook,
+      laborRate,
+      laborBookMeta: { defaultsVersion: laborBookDefaultsVersion, removed: laborBookRemoved },
+    });
   }
 
   function schedulePersist() {
@@ -119,12 +131,36 @@ const TakeoffState = (function () {
     persistTimer = setTimeout(persistNow, 400);
   }
 
+  // Reconcile a restored/adopted book with the shipped defaults: bootstrap
+  // provenance flags on pre-versioning workspaces, then merge in any newer
+  // defaults (user-touched rows win). Persists when anything changed.
+  function upgradeLaborBook(meta) {
+    laborBookRemoved = meta && meta.removed && typeof meta.removed === 'object' ? meta.removed : {};
+    let storedVersion = meta && typeof meta.defaultsVersion === 'number' ? meta.defaultsVersion : 0;
+    let dirty = false;
+    if (storedVersion === 0) {
+      const inferred = TakeoffLaborBookMerge.bootstrap(laborBook, LABOR_BOOK_DEFAULTS);
+      for (const tab of Object.keys(inferred)) laborBookRemoved[tab] = inferred[tab];
+      storedVersion = LABOR_BOOK_DEFAULTS_VERSION;
+      dirty = true;
+    }
+    if (storedVersion < LABOR_BOOK_DEFAULTS_VERSION) {
+      TakeoffLaborBookMerge.mergeDefaults(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved);
+      dirty = true;
+    }
+    laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
+    if (dirty) schedulePersist();
+  }
+
   function restoreWorkspace() {
     const data = TakeoffStorage.loadWorkspace();
     if (!data || data.v !== 1) return;
     if (Array.isArray(data.manifest)) manifest = data.manifest;
-    if (data.laborBook && typeof data.laborBook === 'object') laborBook = data.laborBook;
     if (typeof data.laborRate === 'number') laborRate = data.laborRate;
+    if (data.laborBook && typeof data.laborBook === 'object') {
+      laborBook = data.laborBook;
+      upgradeLaborBook(data.laborBookMeta);
+    }
   }
 
   // Replace live state with a workspace pulled from cloud sync (TakeoffCloud).
@@ -133,8 +169,11 @@ const TakeoffState = (function () {
   function adoptWorkspace(data) {
     if (!data || data.v !== 1) return false;
     if (Array.isArray(data.manifest)) manifest = data.manifest;
-    if (data.laborBook && typeof data.laborBook === 'object') laborBook = data.laborBook;
     if (typeof data.laborRate === 'number') laborRate = data.laborRate;
+    if (data.laborBook && typeof data.laborBook === 'object') {
+      laborBook = data.laborBook;
+      upgradeLaborBook(data.laborBookMeta);
+    }
     undoStack = [];
     redoStack = [];
     lastEdit = { id: null, keys: '', time: 0 };
@@ -320,15 +359,27 @@ const TakeoffState = (function () {
     schedulePersist();
   }
 
+  // A deleted (or renamed-away) default row is recorded so defaults merges
+  // don't resurrect it, and so the removal can be shared as a correction.
+  function noteRemovedDefault(type, section, name) {
+    const isDefault = LABOR_BOOK_DEFAULTS[type]?.[section]?.some((d) => d.name === name);
+    if (!isDefault) return;
+    if (!laborBookRemoved[type]) laborBookRemoved[type] = {};
+    if (!laborBookRemoved[type][section]) laborBookRemoved[type][section] = [];
+    if (!laborBookRemoved[type][section].includes(name)) laborBookRemoved[type][section].push(name);
+  }
+
   function addLaborBookRow(type, section, row) {
     if (!laborBook[type]) laborBook[type] = {};
     if (!laborBook[type][section]) laborBook[type][section] = [];
-    laborBook[type][section].push(row || { name: '', labor: 0, price: '' });
+    laborBook[type][section].push(Object.assign({ name: '', labor: 0, price: '' }, row, { userAdded: true }));
     schedulePersist();
   }
 
   function removeLaborBookRow(type, section, index) {
     if (!laborBook[type]?.[section]) return;
+    const row = laborBook[type][section][index];
+    if (row) noteRemovedDefault(type, section, row.name);
     laborBook[type][section].splice(index, 1);
     schedulePersist();
   }
@@ -340,9 +391,19 @@ const TakeoffState = (function () {
   }
 
   function updateLaborBookRow(type, section, index, updates) {
-    if (!laborBook[type]?.[section]?.[index]) return;
-    Object.assign(laborBook[type][section][index], updates);
+    const row = laborBook[type]?.[section]?.[index];
+    if (!row) return;
+    if (typeof updates.name === 'string' && updates.name !== row.name && !row.userAdded) {
+      noteRemovedDefault(type, section, row.name);
+    }
+    Object.assign(row, updates);
+    if (!row.userAdded) row.edited = true;
     schedulePersist();
+  }
+
+  // Corrections a consenting user shares through cloud sync (js/cloud.js).
+  function getBookCorrections() {
+    return TakeoffLaborBookMerge.computeCorrections(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved);
   }
 
   // --- Computed views (pure logic lives in TakeoffSelectors) ---
@@ -413,6 +474,7 @@ const TakeoffState = (function () {
     removeLaborBookRow,
     addLaborBookSection,
     updateLaborBookRow,
+    getBookCorrections,
     getActiveLaborBookTab,
     setActiveLaborBookTab,
   };

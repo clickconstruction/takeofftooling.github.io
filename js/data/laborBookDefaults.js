@@ -5,6 +5,11 @@
  * persisted to the workspace and never touch these defaults).
  */
 
+// Bump when the defaults below change: state.js merges the new values into
+// existing workspaces on load (user-edited rows always win — see
+// js/laborBookMerge.js). Version 1 is the implicit pre-versioning book.
+const LABOR_BOOK_DEFAULTS_VERSION = 2;
+
 const LABOR_BOOK_DEFAULT_GROUPS = {
   conduit: [
     {

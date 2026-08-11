@@ -37,6 +37,9 @@ const appGlobals = {
   FITTINGS_LIST: 'readonly',
   LABOR_BOOK_DEFAULTS: 'readonly',
   LABOR_BOOK_DEFAULT_GROUPS: 'readonly',
+  LABOR_BOOK_DEFAULTS_VERSION: 'readonly',
+  TakeoffLaborBookMerge: 'readonly',
+  TakeoffSuggestionsReview: 'readonly',
   jspdf: 'readonly',
   supabase: 'readonly', // @supabase/supabase-js UMD (CDN)
 };
@@ -70,7 +73,7 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
     },

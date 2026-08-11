@@ -6,7 +6,8 @@ Vanilla JS, no build step. Every file is an IIFE assigned to a top-level `const`
 jspdf (CDN 2.5.1)
 js/utils.js            → TakeoffUtils
 js/data/fittings.js    → FITTINGS_LIST
-js/data/laborBookDefaults.js → LABOR_BOOK_DEFAULTS, LABOR_BOOK_DEFAULT_GROUPS
+js/data/laborBookDefaults.js → LABOR_BOOK_DEFAULTS, LABOR_BOOK_DEFAULT_GROUPS, LABOR_BOOK_DEFAULTS_VERSION
+js/laborBookMerge.js   → TakeoffLaborBookMerge (defaults merge + corrections diff; dual browser/Node)
 js/storage.js          → TakeoffStorage  (persistence adapter)
 js/uiState.js          → TakeoffUiState  (ephemeral UI state; re-exported by TakeoffState)
 js/selectors.js        → TakeoffSelectors (pure manifest selectors; dual browser/Node)
@@ -29,6 +30,7 @@ js/views/device.js     → TakeoffDeviceView
 js/views/conduit.js    → TakeoffConduitView
 js/views/wire.js       → TakeoffWireView
 js/cloud.js            → TakeoffCloud     (Supabase sync + password/email-code auth; CDN: @supabase/supabase-js UMD)
+js/suggestionsReview.js → TakeoffSuggestionsReview (admin review of shared corrections)
 js/app.js              → window.TakeoffApp  (runs init)
 ```
 
@@ -41,8 +43,10 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | utils.js | `TakeoffUtils` (`escapeHtml` only) | — |
 | data/fittings.js | `FITTINGS_LIST` | — |
 | data/laborBookDefaults.js | `LABOR_BOOK_DEFAULTS`, `LABOR_BOOK_DEFAULT_GROUPS` (pure data) | — |
+| laborBookMerge.js | `TakeoffLaborBookMerge` (bootstrap/mergeDefaults/computeCorrections; pure, CommonJS export for tests) | — |
 | storage.js | `TakeoffStorage` (load/saveWorkspace, load/saveAssemblies) | localStorage; notifies TakeoffCloud after saves (typeof-guarded) |
-| cloud.js | `TakeoffCloud` (password + email-code auth, cloud pull/push, #cloud-modal UI) | `supabase` UMD (CDN), TakeoffStorage, TakeoffState, TakeoffApp, TakeoffUtils |
+| cloud.js | `TakeoffCloud` (password + email-code auth, cloud pull/push, corrections sharing, #cloud-modal UI) | `supabase` UMD (CDN), TakeoffStorage, TakeoffState, TakeoffApp, TakeoffUtils |
+| suggestionsReview.js | `TakeoffSuggestionsReview` (#suggestions-modal; admin-only) | TakeoffCloud, TakeoffUtils |
 | uiState.js | `TakeoffUiState` (view/modal ids, temp buffers, fill targets, toggles) | — |
 | selectors.js | `TakeoffSelectors` (pure fns over a manifest arg; CommonJS export for tests) | — |
 | state.js | `TakeoffState` (facade, ~70 exports; spreads TakeoffUiState) | TakeoffStorage, TakeoffUiState, TakeoffSelectors, LABOR_BOOK_DEFAULTS |
@@ -96,7 +100,9 @@ Child `type` values by flow:
 
 ### Labor Book (editable "Parts" side)
 
-`laborBook[type][sectionName] = [{name, labor, price}]`. Defaults live in `js/data/laborBookDefaults.js` (pure data); state.js deep-clones `LABOR_BOOK_DEFAULTS` at load so user edits never mutate the defaults. Conduit tab has extra grouping config (`LABOR_BOOK_DEFAULT_GROUPS`).
+`laborBook[type][sectionName] = [{name, labor, price, edited?, userAdded?}]`. Defaults live in `js/data/laborBookDefaults.js` (pure data); state.js deep-clones `LABOR_BOOK_DEFAULTS` at load so user edits never mutate the defaults. Conduit tab has extra grouping config (`LABOR_BOOK_DEFAULT_GROUPS`).
+
+**Provenance + defaults versioning** (js/laborBookMerge.js): `updateLaborBookRow` stamps `edited`, `addLaborBookRow` stamps `userAdded`, and deleting/renaming a default row records its name in a `removed` map. The workspace stores `laborBookMeta: {defaultsVersion, removed}`; on restore/adopt, a workspace older than `LABOR_BOOK_DEFAULTS_VERSION` gets `mergeDefaults` (untouched rows upgrade to new defaults, user-touched rows win, removed defaults stay removed) — bump the version constant whenever the defaults data changes. Pre-versioning workspaces are bootstrapped by diffing against the current defaults. The same flags drive `TakeoffState.getBookCorrections()` — the edit/new/remove diff a consenting user shares (see Cloud sync).
 
 ### Undo/redo
 
@@ -108,7 +114,9 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 ## Cloud sync (js/cloud.js, `TakeoffCloud`)
 
-Optional Supabase mirror of the workspace + assemblies; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2); one table `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) with RLS scoping every operation to `auth.uid() = user_id`; rows mirror the localStorage keys (`workspace`, `assemblies`). Auth is Supabase email/password (accounts are provisioned in the project's auth tables) with an email OTP fallback (6-digit code — the "Magic link or OTP" email template was edited to send `{{ .Token }}`); neither path uses redirect URLs, so localhost and GitHub Pages behave identically. Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
+Optional Supabase mirror of the workspace + assemblies; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2); table `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) with RLS scoping every operation to `auth.uid() = user_id`; rows mirror the localStorage keys (`workspace`, `assemblies`).
+
+**Shared-book corrections** (opt-in, `takeoff-share-corrections` localStorage flag, toggle in the cloud modal): after each workspace push, `TakeoffState.getBookCorrections()` is upserted into `public.takeoff_suggestions` (`user_id, email, tab, section, part_name, kind edit|new|remove, old_value, new_value, status pending|accepted|dismissed`; unique per user+part; RLS: users see only their own rows, `is_takeoff_admin()` — email match — sees all). Reverted edits are pruned on the next push; opting out deletes the user's rows. The admin account gets a "Review suggestions" ☰ menu item (js/suggestionsReview.js): pending rows aggregated per part (distinct users, median, ≥20× price-outlier flag), Accept/Dismiss updates status, and "Download accepted as defaults patch" emits JSON to apply to `js/data/laborBookDefaults.js` + version bump — the shared book only changes through a commit, like the supplier-price flow. A `takeoff_suggestion_summary` view exists for reviewing straight from the Supabase dashboard. Auth is Supabase email/password (accounts are provisioned in the project's auth tables) with an email OTP fallback (6-digit code — the "Magic link or OTP" email template was edited to send `{{ .Token }}`); neither path uses redirect URLs, so localhost and GitHub Pages behave identically. Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
 
 ## localStorage keys
 
@@ -116,8 +124,9 @@ All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) �
 
 | Key | Owner | Content |
 |---|---|---|
-| `takeoff-workspace` | storage.js (via state.js) | `{v:1, savedAt, manifest, laborBook, laborRate}` — 400 ms debounced write, flushed on `beforeunload`; restore hard-requires `v===1` |
+| `takeoff-workspace` | storage.js (via state.js) | `{v:1, savedAt, manifest, laborBook, laborRate, laborBookMeta}` — 400 ms debounced write, flushed on `beforeunload`; restore hard-requires `v===1` |
 | `takeoff-assemblies` | storage.js (via state.js) | assemblies array — written immediately |
+| `takeoff-share-corrections` | cloud.js | `'1'` when the user opted into sharing book corrections |
 | `mc-elliot-overlay` | mcElliotState.js | supplier price overlay (max ~2.5 MB, `newItems` dropped if over) |
 | `mc-elliot-mappings` | mcElliotState.js | `{version:2, vendors:{vendor:{partNumber: itemNum}}}` (v1 migration exists) |
 | `mc-elliot-review-queue` | mcElliotState.js | fuzzy-match review queue (truncated to 2,000) |

@@ -15,11 +15,19 @@
  * Cloud rows live in public.takeoff_store (user_id, key, value jsonb) with
  * row-level security scoping every operation to auth.uid() = user_id.
  * Keys mirror localStorage: 'workspace' and 'assemblies'.
+ *
+ * Shared-book corrections (opt-in): after each workspace push, a consenting
+ * user's Parts-book diff (TakeoffState.getBookCorrections) is upserted into
+ * public.takeoff_suggestions; the admin account reviews it via
+ * js/suggestionsReview.js. Opting out deletes the user's shared rows.
  */
 const TakeoffCloud = (function () {
   const SUPABASE_URL = 'https://awjcdxqhvgnqsrlnoyxr.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_vMFyQ4I0LqZD6yhfoF_Zbw_9MsPoC9G'; // publishable key — safe to ship; RLS enforces access
   const TABLE = 'takeoff_store';
+  const SUGGESTIONS_TABLE = 'takeoff_suggestions';
+  const ADMIN_EMAIL = 'stephen@pipetexas.com'; // review-panel visibility; RLS enforces the real access
+  const SHARE_KEY = 'takeoff-share-corrections'; // '1' when the user opted into sharing book corrections
   const PUSH_DEBOUNCE_MS = 1200;
 
   let client = null;
@@ -109,6 +117,7 @@ const TakeoffCloud = (function () {
 
     lastSyncedAt = new Date();
     setStatus('synced');
+    pushSuggestions();
     if (typeof TakeoffApp !== 'undefined') TakeoffApp.render();
   }
 
@@ -134,11 +143,94 @@ const TakeoffCloud = (function () {
     } else {
       lastSyncedAt = new Date();
       setStatus('synced');
+      if (key === 'workspace') pushSuggestions();
     }
   }
 
   function flushPending() {
     for (const key of Object.keys(pendingValues)) pushNow(key);
+  }
+
+  // --- Shared-book corrections (opt-in; see docs/ARCHITECTURE.md) ---
+
+  function isAdmin() {
+    return (getEmail() || '').toLowerCase() === ADMIN_EMAIL;
+  }
+
+  function isSharing() {
+    try {
+      return localStorage.getItem(SHARE_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function setSharing(on) {
+    try {
+      if (on) localStorage.setItem(SHARE_KEY, '1');
+      else localStorage.removeItem(SHARE_KEY);
+    } catch (_) { /* private mode: sharing just won't persist */ }
+    if (on) {
+      await pushSuggestions();
+    } else if (client && session) {
+      // stop sharing = withdraw what was shared
+      await client.from(SUGGESTIONS_TABLE).delete().eq('user_id', session.user.id);
+    }
+    updateUi();
+  }
+
+  // Upsert the user's current correction list; prune rows they've reverted.
+  // Fire-and-forget from the sync path — a failure here never blocks the
+  // workspace sync itself.
+  async function pushSuggestions() {
+    if (!client || !session || !isSharing()) return;
+    if (typeof TakeoffState === 'undefined' || !TakeoffState.getBookCorrections) return;
+    try {
+      const list = TakeoffState.getBookCorrections();
+      const keyOf = (t, s, n) => [t, s, n].join('\u0001');
+      if (list.length) {
+        const rows = list.map((c) => ({
+          user_id: session.user.id,
+          email: getEmail(),
+          tab: c.tab,
+          section: c.section,
+          part_name: c.name,
+          kind: c.kind,
+          old_value: c.old,
+          new_value: c.new,
+          updated_at: new Date().toISOString(),
+        }));
+        const { error } = await client.from(SUGGESTIONS_TABLE).upsert(rows, { onConflict: 'user_id,tab,section,part_name' });
+        if (error) {
+          console.warn('Takeoff: sharing corrections failed', error.message);
+          return;
+        }
+      }
+      const current = new Set(list.map((c) => keyOf(c.tab, c.section, c.name)));
+      const { data } = await client.from(SUGGESTIONS_TABLE).select('id,tab,section,part_name').eq('user_id', session.user.id);
+      const stale = (data || []).filter((r) => !current.has(keyOf(r.tab, r.section, r.part_name))).map((r) => r.id);
+      if (stale.length) await client.from(SUGGESTIONS_TABLE).delete().in('id', stale);
+    } catch (err) {
+      console.warn('Takeoff: sharing corrections failed', err);
+    }
+  }
+
+  // Review-panel IO (RLS: only the admin sees rows beyond their own).
+  async function fetchSuggestions(status) {
+    if (!client || !session) return { data: [], error: 'Not signed in' };
+    const { data, error } = await client
+      .from(SUGGESTIONS_TABLE)
+      .select('id,user_id,email,tab,section,part_name,kind,old_value,new_value,status,updated_at')
+      .eq('status', status)
+      .order('updated_at', { ascending: false })
+      .limit(2000);
+    return { data: data || [], error: error ? error.message : null };
+  }
+
+  async function setSuggestionStatus(ids, status) {
+    if (!client || !session || !ids.length) return null;
+    const { error } = await client.from(SUGGESTIONS_TABLE).update({ status }).in('id', ids);
+    return error ? error.message : null;
   }
 
   // Called by TakeoffStorage after each local save.
@@ -214,8 +306,49 @@ const TakeoffCloud = (function () {
       btn.title = session ? `Signed in as ${getEmail()}` + (lastSyncedAt ? ` — last synced ${lastSyncedAt.toLocaleTimeString()}` : '') : 'Sync this takeoff across devices';
       btn.classList.toggle('cloud-btn-error', status === 'error');
     }
+    // the review panel is admin-only chrome
+    document.getElementById('review-suggestions-btn')?.toggleAttribute('hidden', !(session && isAdmin()));
     const modal = document.getElementById('cloud-modal');
     if (modal && modal.getAttribute('aria-hidden') === 'false') renderModal();
+  }
+
+  function renderSharingSection() {
+    const sharing = isSharing();
+    const corrections = typeof TakeoffState !== 'undefined' && TakeoffState.getBookCorrections ? TakeoffState.getBookCorrections() : [];
+    const n = corrections.length;
+    return [
+      '<div class="cloud-share-section">',
+      '<div class="cloud-share-head"><strong>Improve the shared book</strong>',
+      `<label class="cloud-share-toggle"><input type="checkbox" id="cloud-share-toggle" ${sharing ? 'checked' : ''} /> <span>${sharing ? 'On' : 'Off'}</span></label></div>`,
+      '<p class="cloud-hint">Share your price and labor corrections so the shared parts book gets more accurate for everyone. Only book edits are shared — never your takeoffs or job data.</p>',
+      sharing
+        ? `<p class="cloud-hint cloud-share-status">${n} correction${n === 1 ? '' : 's'} shared${n ? ' · <button type="button" id="cloud-share-view-btn" class="btn-link cloud-share-view-btn">see what’s shared</button>' : ''}</p><div id="cloud-share-list" class="cloud-share-list" hidden></div>`
+        : '',
+      '</div>',
+    ].join('');
+  }
+
+  function attachSharingListeners() {
+    document.getElementById('cloud-share-toggle')?.addEventListener('change', (e) => {
+      setSharing(e.target.checked).then(renderModal);
+    });
+    document.getElementById('cloud-share-view-btn')?.addEventListener('click', () => {
+      const listEl = document.getElementById('cloud-share-list');
+      if (!listEl) return;
+      if (!listEl.hidden) {
+        listEl.hidden = true;
+        return;
+      }
+      const corrections = TakeoffState.getBookCorrections();
+      const fmt = (v) => (v ? `${v.labor} hrs · $${v.price || '—'}` : '');
+      listEl.innerHTML = corrections
+        .map((c) => {
+          const change = c.kind === 'edit' ? `${fmt(c.old)} → ${fmt(c.new)}` : c.kind === 'new' ? fmt(c.new) : 'removed';
+          return `<div class="cloud-share-row"><span class="cloud-share-part">${escapeHtml(c.name)}</span><span class="cloud-share-where">${escapeHtml(c.tab)} · ${escapeHtml(c.section)}</span><span class="cloud-share-change">${escapeHtml(change)}</span></div>`;
+        })
+        .join('') || '<p class="cloud-hint">Nothing shared yet.</p>';
+      listEl.hidden = false;
+    });
   }
 
   function renderModal() {
@@ -231,12 +364,14 @@ const TakeoffCloud = (function () {
         `<p class="cloud-hint">${status === 'error' ? 'Sync error: ' + escapeHtml(statusDetail) : lastSyncedAt ? 'Last synced ' + escapeHtml(lastSyncedAt.toLocaleTimeString()) : 'Waiting for first sync…'}</p>`,
         '<div class="cloud-form-row"><button type="button" id="cloud-sync-now-btn" class="btn btn-secondary">Sync Now</button>',
         '<button type="button" id="cloud-sign-out-btn" class="btn btn-secondary">Sign Out</button></div>',
+        renderSharingSection(),
       ].join('');
       document.getElementById('cloud-sync-now-btn').addEventListener('click', () => {
         syncedThisLoad = true;
         syncDown();
       });
       document.getElementById('cloud-sign-out-btn').addEventListener('click', signOut);
+      attachSharingListeners();
       return;
     }
     if (pendingEmail) {
@@ -326,5 +461,5 @@ const TakeoffCloud = (function () {
   });
   updateUi();
 
-  return { isSignedIn, getEmail, onWorkspaceSaved, onAssembliesSaved, flushPending, openModal };
+  return { isSignedIn, getEmail, isAdmin, onWorkspaceSaved, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
 })();

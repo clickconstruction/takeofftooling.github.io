@@ -81,6 +81,8 @@ Two sides, toggled at the top of the modal:
 
 Optional — the app works fully offline in this browser without it. **Sign In** (header) takes your email and password (or can email you a 6-digit code instead); once signed in, the manifest, labor book, labor rate, and saved assemblies sync to Supabase so the same takeoff follows you across devices. Each account sees only its own data. Newest save wins for the workspace; assemblies merge. Signing out keeps the local copy.
 
+**Improve the shared book** (opt-in, in the Cloud Sync dialog): share your price and labor corrections so the shared parts book gets more accurate for everyone. Only Labor & Price Book edits are shared — never your takeoffs or job data — and you can see exactly what's shared or turn it off (which withdraws it) at any time. Accepted corrections ship to all users in an app update, and updated defaults merge into your book without touching rows you've customized.
+
 ### Other
 
 - **Undo / Redo** — History for manifest changes (manifest only)
@@ -107,6 +109,15 @@ Then open http://localhost:4173. Don't open `index.html` directly via `file://` 
 npm install            # dev-only deps (eslint, Playwright)
 npm run check          # eslint + unit tests
 npx playwright test    # browser smoke tests (starts the dev server itself)
+```
+
+The cloud-sync round trip (`cloud-sync.spec.js`) runs against the real Supabase
+project and needs a dedicated **non-admin** test account in a gitignored
+`.env.local` (it skips when absent):
+
+```
+TAKEOFF_TEST_EMAIL=your-test-account@example.com
+TAKEOFF_TEST_PASSWORD=its-password
 ```
 
 ## Customization
