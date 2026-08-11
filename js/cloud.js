@@ -408,7 +408,8 @@ const TakeoffCloud = (function () {
       '<div class="cloud-form-row"><input type="password" id="cloud-password-input" class="cloud-email-input" placeholder="Password" autocomplete="current-password" />',
       '<button type="button" id="cloud-password-btn" class="btn btn-success">Sign In</button></div>',
       '<p class="cloud-hint" id="cloud-modal-msg"></p>',
-      '<button type="button" id="cloud-send-code-btn" class="btn btn-link">No password? Email me a 6-digit code instead</button>',
+      '<div class="cloud-or-divider"><span></span>or<span></span></div>',
+      '<button type="button" id="cloud-send-code-btn" class="btn btn-secondary cloud-send-code-btn">Email me a 6-digit sign-in code</button>',
     ].join('');
     const getEmailValue = () => document.getElementById('cloud-email-input').value.trim();
     const msgEl = () => document.getElementById('cloud-modal-msg');

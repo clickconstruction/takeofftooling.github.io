@@ -2960,6 +2960,29 @@ body.lb-modal-open {
   color: #d8703f;
 }
 
+/* password-less fallback: quiet "or" divider + full-width secondary button */
+.cloud-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0.7rem;
+  color: var(--text3);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cloud-or-divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.cloud-send-code-btn {
+  display: block;
+  width: 100%;
+}
+
 /* Shared-book corrections: opt-in section in the cloud modal (js/cloud.js) */
 .cloud-share-section {
   margin-top: 1rem;
