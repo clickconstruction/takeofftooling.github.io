@@ -1193,11 +1193,15 @@ header .header-redo-btn {
   margin-bottom: 0;
 }
 
-.labor-book-group-header {
+/* One type scale across both sides of the book (the MC side set the
+   proportions): group 1.05rem > section 1rem > subsection 0.9rem > table
+   text 0.85rem. Keep the levels distinct — don't resize one alone. */
+.labor-book-group-header,
+.modal-content h2.labor-book-group-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   color: var(--accent);
   margin: 0;
   padding: 0.75rem 1rem;
@@ -1247,7 +1251,7 @@ header .header-redo-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: var(--text);
   margin: 0;
   padding: 0.75rem 1rem;
@@ -1290,7 +1294,7 @@ header .header-redo-btn {
 }
 
 .labor-book-subsection {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   color: var(--text2);
   margin: 1.25rem 0 0.5rem 0;
   font-weight: 600;
@@ -1310,11 +1314,21 @@ header .header-redo-btn {
   border-bottom: 1px solid var(--border);
 }
 
+.labor-book-section th {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.labor-book-section-body input {
+  font-size: 0.85rem;
+}
+
 .labor-book-add-btn {
   min-width: 44px;
   min-height: 44px;
   padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
