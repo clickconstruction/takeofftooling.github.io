@@ -43,7 +43,7 @@ Elliot CSV
        whose Summary tab downloads updated JSON to commit back into mc-assemblies/
 ```
 
-Auxiliary: `scripts/extract-section-heads.js` dumps section heads to `mc-section-heads.csv` for review. `scripts/merge-hierarchy.js` is an earlier hierarchy-merge path (reads the 6-row `mc-hierarchy-mapping.csv`) — superseded by align/propagate.
+Auxiliary: `scripts/extract-section-heads.js` dumps section heads to `mc-section-heads.csv` for review.
 
 ## Artifact schemas
 
@@ -56,7 +56,6 @@ Auxiliary: `scripts/extract-section-heads.js` dumps section heads to `mc-section
 - **elliot-item-mappings.json**: `{version:1, mappings:{partNumber: itemNum}}` — repo-committed confirmed matches (currently 173 auto matches from the `--match` run; grows as review-queue items are confirmed in-app and re-committed).
 - **vendor-profiles.json**: per-vendor CSV column indices, header validation strings, unit divisors, `bundledFile`.
 - **elliot-price-overlay.json** (committed; built by the app or apply-elliot-prices.js): `{version:1, vendor, sourceFile, importedAt, enabledCategories, itemPrices:{itemNum: perEach}, newItems:[[category,name,partNumber,price]]}`.
-- **source-data/mcPriceBook.json** (8.8 MB, 43,049 records): **dead data** — zero references in js/, index.html, or scripts/. Per-item MC price book from an earlier approach (formerly at `js/data/`), superseded by mc-price-model.json. Candidate for deletion.
 
 ## Runtime Elliot flow (browser)
 

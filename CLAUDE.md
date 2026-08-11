@@ -29,7 +29,7 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 | `source-data/` | Build-only inputs & intermediates (MC CSVs, 40 MB mc-assemblies.json, hierarchy artifacts) — removable; see its README |
 | `scripts/` | Offline pipeline that builds `mc-assemblies/*.json` — see docs/DATA-PIPELINE.md |
 | `import-files/` | Sample supplier CSV, hierarchy screenshots (pipeline inputs) |
-| `css/styles.css` | Single stylesheet, ~3,500 lines, organized by `/* section */` comments |
+| `css/styles.css` | Single stylesheet, ~2,900 lines, organized by `/* section */` comments |
 
 ## Documentation index
 
@@ -46,5 +46,4 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 - **Persistence**: all durable writes go through `TakeoffStorage` (js/storage.js). Manifest/laborBook/laborRate share one debounced (400 ms) workspace write (`{v:1,...}` — `restoreWorkspace` hard-requires `v===1`); assemblies write immediately. The share-link export envelope is `v:2` but is ignored on import.
 - **Flow editors** (device/conduit/wire) edit a temp buffer in TakeoffState, then on save strip the relevant child types from `parent.children` and re-add. The conduit wizard commits children at **each step transition**, not just at the end.
 - **escapeHtml everything** user-visible; every view aliases `TakeoffUtils.escapeHtml`.
-- `source-data/mcPriceBook.json` (8.8 MB) is **dead data** — nothing references it. Don't wire it up without checking docs/DATA-PIPELINE.md first.
 - Generated JSON in `mc-assemblies/` and `source-data/` should not be hand-edited — regenerate via scripts. `scripts/hierarchy/align.py` was a one-time tool whose inputs (`merged.jsonl`, `overrides.json`) are not committed.

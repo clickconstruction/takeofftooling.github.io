@@ -1,6 +1,6 @@
 # Refactor Plan — making the codebase manageable
 
-Status: **steps 1–5 done** (2026-07-18). Landed: labor-book defaults extraction, the `TakeoffStorage` adapter, the full state.js split (`js/uiState.js` + `js/selectors.js`; state.js 1,388 → ~400 lines), the laborBook.js split (1,030 → ~540 + 3 modules), the shared-view module (`js/views/shared.js`: icons + overage helpers), dead-code removal, and the quality gate (`npm run check` + Playwright). Remaining: item 6 dead-weight candidates and the optional/later items below.
+Status: **steps 1–6 done** (item 6 on 2026-08-11; steps 1–5 on 2026-07-18). Landed: labor-book defaults extraction, the `TakeoffStorage` adapter, the full state.js split (`js/uiState.js` + `js/selectors.js`; state.js 1,388 → ~400 lines), the laborBook.js split (1,030 → ~540 + 3 modules), the shared-view module (`js/views/shared.js`: icons + overage helpers), dead-code removal, the quality gate (`npm run check` + Playwright), and the item 6 dead-weight removal. Remaining: the optional/later items below.
 
 ## Constraints every split must respect
 
@@ -26,10 +26,8 @@ Still splits cleanly by wizard step if it grows further; the shared overage logi
 ### 5. ~~Deduplicate shared view code~~ ✅ DONE (the valuable parts)
 `js/views/shared.js` (`TakeoffViewShared`): `TRASH_SVG`/`BOOK_SVG` (now aliased in manifest/device/conduit/laborBook), `computeOverage`, and `renderOverageSection` (used by conduit step 3 and wire). Deliberately not done: the blank-row-reseed idiom (shapes differ per flow; low value) and merging `TYPE_LABELS`/`CHILD_TYPE_LABELS` with `LABOR_BOOK_TYPE_LABELS` (different label sets).
 
-### 6. Dead weight removal
-- `source-data/mcPriceBook.json` — 8.8 MB, referenced nowhere (moved out of `js/data/` with the rest of the build-only data). Delete whenever, or let it leave with `source-data/`.
-- Retired "Part Book" CSS sections in styles.css (~L807–1700 region markers: Labor Book Import, Part Book Elliot Import/Matching/Set Section/Search) — verify selectors are unused, then prune.
-- `scripts/merge-hierarchy.js` — superseded by align/propagate; delete or mark legacy.
+### 6. ~~Dead weight removal~~ ✅ DONE (2026-08-11)
+Deleted: `source-data/mcPriceBook.json` (8.8 MB, referenced nowhere), `scripts/merge-hierarchy.js` + its only input `source-data/mc-hierarchy-mapping.csv` (superseded by align/propagate), and the retired CSS sections in styles.css (Labor Book Import, Part Book Elliot Import/Matching/Set Section/Search, MC Prince Book modal — every selector verified unused in js/ and index.html; ~750 lines, 3,541 → ~2,870). The live `.labor-book-modal-content` sizing rule that was stranded inside the Labor Book Import section was moved to the "Labor Book modal" section.
 
 ### 7. Optional / later
 - Split css/styles.css by feature area (only worthwhile if we accept more `<link>` tags or a concat step).

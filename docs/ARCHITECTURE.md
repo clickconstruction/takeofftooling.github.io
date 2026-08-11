@@ -170,4 +170,4 @@ Six modal skeletons live in index.html:
 - Export envelope is `v:2`, workspace persistence is `v:1`; neither has real migration logic (`restoreWorkspace` silently drops anything not `v===1`).
 - `getItemById` reaches depth 2 only; `sanitizeImportedItem` recurses arbitrarily deep — grandchildren would import but be unreachable.
 - `TRASH_SVG`/`BOOK_SVG` constants duplicated verbatim in manifest.js, device.js, conduit.js; overage render/save logic near-duplicated between conduit step 3 and wire.js; blank-row-reseed idiom repeats across flows.
-- css/styles.css is one 3,541-line file organized by `/* section */` comments (several sections belong to retired "Part Book" features).
+- css/styles.css is one ~2,870-line file organized by `/* section */` comments.

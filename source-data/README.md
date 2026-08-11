@@ -8,10 +8,9 @@ Everything in this folder feeds the offline pipeline in `scripts/` that generate
 | `mc-assemblies.json` | 40 MB intermediate: the CSVs parsed + hierarchy propagated. Input to `build-mc-price-model.js` and `build-mc-labor-book.js` |
 | `hierarchy-images/` | ~809 screenshots of the MC category picker (one-time hierarchy recovery input) |
 | `hierarchy-staging.jsonl`, `hierarchy-extracted.jsonl`, `extraction-log.txt` | LLM image-extraction outputs/logs |
-| `mc-hierarchy.csv`, `mc-hierarchy-mapping.csv`, `mc-section-heads.csv` | Hierarchy review/mapping artifacts |
+| `mc-hierarchy.csv`, `mc-section-heads.csv` | Hierarchy review artifacts |
 | `review/` | align.py outputs: `heads-assigned.csv`, unmatched reports, `stats.txt` |
 | `file1_final.csv`, `file1_improved.csv` | Old per-item price exports (superseded; kept for reference) |
-| `mcPriceBook.json` | 8.8 MB per-item MC price book from an earlier approach (formerly `js/data/`) — dead data, referenced nowhere |
 
 What stays behind (still required):
 - `mc-assemblies/` — the five JSONs the app fetches at runtime + `tab-mapping.json` (build config)
