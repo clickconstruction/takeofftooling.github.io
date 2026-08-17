@@ -34,7 +34,8 @@ const TakeoffLaborBookView = (function () {
       .join('');
   }
 
-  const ROWS_THEAD = '<thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr></thead>';
+  const ROWS_THEAD_ROW = '<tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr>';
+  const ROWS_THEAD = `<thead>${ROWS_THEAD_ROW}</thead>`;
 
   function renderSectionRows(type, section, data) {
     const rows = data[section] || [];
@@ -150,9 +151,8 @@ const TakeoffLaborBookView = (function () {
         const subLabel = section.replace('Panels.', '');
         const rowHtml = renderSectionRows(type, section, data);
         panelsHtml += `
-          <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
-            ${ROWS_THEAD}
+            <thead><tr class="labor-book-subsection-row"><th></th><th colspan="6">${escapeHtml(subLabel)}</th></tr>${ROWS_THEAD_ROW}</thead>
             <tbody>${rowHtml}</tbody>
           </table>
           <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>
@@ -168,9 +168,8 @@ const TakeoffLaborBookView = (function () {
         const subLabel = section.replace('Transformers.', '');
         const rowHtml = renderSectionRows(type, section, data);
         transformersHtml += `
-          <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
-            ${ROWS_THEAD}
+            <thead><tr class="labor-book-subsection-row"><th></th><th colspan="6">${escapeHtml(subLabel)}</th></tr>${ROWS_THEAD_ROW}</thead>
             <tbody>${rowHtml}</tbody>
           </table>
           <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>

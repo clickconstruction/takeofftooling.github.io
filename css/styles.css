@@ -1309,12 +1309,15 @@ header .header-redo-btn {
   text-align: left;
 }
 
-.labor-book-subsection {
+/* Sub-table label row (1PH / 3PH etc.): sits directly above the Name column */
+.labor-book-subsection-row th {
   font-size: 0.9rem;
-  color: var(--text2);
-  margin: 1.25rem 0 0.5rem 0;
-  font-weight: 600;
-  text-align: center;
+  color: var(--accent);
+  font-weight: 700;
+  text-align: left;
+  padding-top: 1.1rem;
+  padding-bottom: 0.2rem;
+  border-bottom: none;
 }
 
 .labor-book-section table {
