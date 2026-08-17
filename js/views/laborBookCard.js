@@ -159,28 +159,13 @@ const TakeoffLaborBookCard = (function () {
     });
   }
 
-  // Catalog parts join the editable book on first edit: same universal
-  // section (created if the tab doesn't have it yet), carrying the part #
-  // and the supplier's offer as the first history entry.
+  // Catalog parts join the editable book on first edit (promote-on-edit —
+  // shared with the inline catalog inputs via TakeoffState.promoteCatalogPart).
   function ensureBookTarget() {
     if (current.mode === 'book') return current;
     const { tab, sectionName, vendor, entry } = current;
-    if (!TakeoffState.getLaborBookType(tab)[sectionName]) {
-      TakeoffState.addLaborBookSection(tab, sectionName);
-    }
-    const at = entry.pricedAt || null;
-    TakeoffState.addLaborBookRow(tab, sectionName, {
-      name: entry.name,
-      labor: 0,
-      price: entry.price != null && entry.price !== '' ? String(entry.price) : '',
-      partNumber: entry.partNumber || '',
-      priceSource: entry.price ? vendor : undefined,
-      pricedAt: entry.price ? at : undefined,
-      offers: entry.price ? [{ supplier: vendor, price: Number(entry.price), at, by: 'import' }] : [],
-      history: entry.price ? [{ at, kind: 'price', supplier: vendor, value: Number(entry.price), by: 'import' }] : [],
-    });
-    const index = TakeoffState.getLaborBookType(tab)[sectionName].length - 1;
-    current = { mode: 'book', type: tab, section: sectionName, index };
+    const { section, index } = TakeoffState.promoteCatalogPart(tab, sectionName, vendor, entry);
+    current = { mode: 'book', type: tab, section, index };
     return current;
   }
 

@@ -9,8 +9,9 @@
  * group; anything else renders as a standalone section — styled at group
  * level on tabs whose top-level list is groups, so the list stays visually
  * uniform. Supplier attribution lives on the per-part provenance badge,
- * never on the section. Entries stay lazy-loaded and read-only (rendered
- * from the catalog, not copied into the editable Parts store). Filtering
+ * never on the section. Entries stay lazy-loaded and render as live
+ * inputs; the first change to one PROMOTES the part into the editable
+ * book (TakeoffState.promoteCatalogPart) with the edit applied. Filtering
  * is driven by the tab-level filter input via partsEl._elliotFilter
  * (laborBook.js applyTabFilter). Loaded before js/views/laborBook.js.
  */
@@ -28,17 +29,18 @@ const TakeoffLaborBookElliot = (function () {
         (e, ei) => `
         <tr data-entry="${ei}">
           <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary elliot-part-add-btn" data-key="${escapeHtml(sectionKey)}" data-entry="${ei}" title="Add as child to fixture">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button></td>
-          <td class="mc-book-entry-name lb-card-open" title="Open part card">${escapeHtml(e.name)}</td>
-          <td class="mc-book-entry-labor lb-card-open lb-labor-unset" title="Set labor on the part card">—</td>
-          <td class="mc-book-entry-price">${e.price ? '$' + Number(e.price).toFixed(2) : ''}</td>
-          <td class="mc-book-entry-partnum">${escapeHtml(e.partNumber || '')}</td>
-          <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(vendor, e.pricedAt || importDate)}</td>
+          <td><input type="text" class="elliot-part-field" data-field="name" value="${escapeHtml(e.name)}" placeholder="Name" /></td>
+          <td><input type="number" class="elliot-part-field elliot-part-labor" data-field="labor" value="" min="0" step="0.05" placeholder="hrs" /></td>
+          <td><input type="text" class="elliot-part-field elliot-part-price" data-field="price" value="${e.price != null && e.price !== '' ? escapeHtml(String(e.price)) : ''}" placeholder="Price" /></td>
+          <td><input type="text" class="elliot-part-field elliot-part-partnum" data-field="partNumber" value="${escapeHtml(e.partNumber || '')}" placeholder="Part #" /></td>
+          <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(vendor, e.pricedAt || importDate, { button: true })}</td>
+          <td></td>
         </tr>`
       )
       .join('');
     return `
-      <table class="mc-book-entries">
-        <thead><tr><th></th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th></tr></thead>
+      <table class="mc-book-entries elliot-entries-editable">
+        <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }
@@ -149,9 +151,39 @@ const TakeoffLaborBookElliot = (function () {
         const bodyEl = el.querySelector('.lb-offers-body');
         const block = { el, bodyEl, section: s, visible, vendor, collapsedClass, sectionHost };
         blocks.push(block);
+        const rowEntries = () => (block._filtered ? block._filtered : block.visible);
+
+        // catalog rows are editable in place: the first change PROMOTES the
+        // part into the book (TakeoffState.promoteCatalogPart), then the
+        // edited field applies to the promoted row and the book re-renders —
+        // the row moves into its curated section, already holding the edit
+        el.addEventListener('change', (e) => {
+          const input = e.target.closest('.elliot-part-field');
+          if (!input) return;
+          const tr = input.closest('tr[data-entry]');
+          const entry = tr && rowEntries()[Number(tr.dataset.entry)];
+          if (!entry) return;
+          const { section: secName, index } = TakeoffState.promoteCatalogPart(renderedForTab, s.name, vendor, {
+            name: entry.name,
+            partNumber: entry.partNumber || '',
+            price: entry.price,
+            pricedAt: entry.pricedAt || importDate,
+          });
+          const field = input.dataset.field;
+          if (field === 'labor') {
+            TakeoffState.recordPartLabor(renderedForTab, secName, index, parseFloat(input.value) || 0);
+          } else if (field === 'price') {
+            TakeoffState.updateLaborBookRow(renderedForTab, secName, index, { price: input.value.trim() });
+          } else if (field === 'partNumber') {
+            TakeoffState.updateLaborBookRow(renderedForTab, secName, index, { partNumber: input.value.trim() });
+          } else {
+            TakeoffState.updateLaborBookRow(renderedForTab, secName, index, { name: input.value });
+          }
+          TakeoffLaborBookView.render();
+          TakeoffLaborBookView.attachListeners();
+        });
 
         el.addEventListener('click', (e) => {
-          const rowEntries = () => (block._filtered ? block._filtered : block.visible);
           const addBtn = e.target.closest('.elliot-part-add-btn');
           if (addBtn) {
             const entry = rowEntries()[Number(addBtn.dataset.entry)];
@@ -164,7 +196,7 @@ const TakeoffLaborBookElliot = (function () {
             }
             return;
           }
-          const cardCell = e.target.closest('.lb-card-open, .lb-prov-cell');
+          const cardCell = e.target.closest('.lb-prov-cell');
           if (cardCell) {
             const tr = cardCell.closest('tr[data-entry]');
             const entry = tr && rowEntries()[Number(tr.dataset.entry)];

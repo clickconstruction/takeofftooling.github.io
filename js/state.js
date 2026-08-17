@@ -665,6 +665,32 @@ const TakeoffState = (function () {
     return changed;
   }
 
+  /**
+   * Copy a supplier catalog part into the editable book (its universal
+   * section, created if needed), carrying part #, the vendor's offer, and
+   * the first history entry. Returns {section, index} of the new row.
+   * Rendering dedupes catalog rows by part #, so the row simply becomes
+   * editable in place.
+   */
+  function promoteCatalogPart(type, sectionName, vendor, entry) {
+    if (!laborBook[type] || !laborBook[type][sectionName]) {
+      addLaborBookSection(type, sectionName);
+    }
+    const at = entry.pricedAt || null;
+    const hasPrice = entry.price != null && entry.price !== '';
+    addLaborBookRow(type, sectionName, {
+      name: entry.name,
+      labor: 0,
+      price: hasPrice ? String(entry.price) : '',
+      partNumber: entry.partNumber || '',
+      priceSource: hasPrice ? vendor : undefined,
+      pricedAt: hasPrice ? at : undefined,
+      offers: hasPrice ? [{ supplier: vendor, price: Number(entry.price), at, by: 'import' }] : [],
+      history: hasPrice ? [{ at, kind: 'price', supplier: vendor, value: Number(entry.price), by: 'import' }] : [],
+    });
+    return { section: sectionName, index: laborBook[type][sectionName].length - 1 };
+  }
+
   // Corrections a consenting user shares through cloud sync (js/cloud.js).
   function getBookCorrections() {
     return TakeoffLaborBookMerge.computeCorrections(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved);
@@ -743,6 +769,7 @@ const TakeoffState = (function () {
     recordPartPrice,
     usePartOffer,
     recordPartLabor,
+    promoteCatalogPart,
     refreshSupplierOffers,
     getBookCorrections,
     getProjects,

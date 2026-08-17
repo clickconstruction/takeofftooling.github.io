@@ -3762,3 +3762,18 @@ button.lb-prov-badge:hover {
   color: var(--text2);
   white-space: nowrap;
 }
+
+/* Inline-editable catalog rows */
+.elliot-entries-editable .elliot-part-labor {
+  max-width: 90px;
+}
+
+.elliot-entries-editable .elliot-part-price {
+  max-width: 110px;
+}
+
+.elliot-entries-editable .elliot-part-partnum {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  max-width: 140px;
+}
