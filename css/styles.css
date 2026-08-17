@@ -3270,3 +3270,35 @@ button.lb-prov-badge:hover {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Supplier parts woven into universal sections (labor book Parts panel) */
+
+.lb-offers {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.lb-offers-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin: 0;
+  padding: 0.6rem 0.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lb-offers-header:hover {
+  color: var(--text);
+}
+
+.lb-offers.lb-offers-collapsed .lb-offers-body {
+  display: none;
+}
+
+.lb-offers.lb-offers-collapsed .labor-book-section-chevron::before {
+  content: '\25B6';
+}

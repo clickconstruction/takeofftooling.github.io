@@ -189,10 +189,12 @@ const TakeoffLaborBookView = (function () {
     const partsEl = document.getElementById('labor-book-content');
     if (!partsEl) return;
     const term = (termRaw || '').trim().toLowerCase();
-    partsEl.querySelectorAll('.labor-book-section').forEach((sec) => {
+    // supplier-only sections have no curated rows; partsEl._elliotFilter
+    // below owns their visibility
+    partsEl.querySelectorAll('.labor-book-section:not(.lb-supplier-section)').forEach((sec) => {
       // row names can be bare sizes ("12", "3/4\"") — the meaning often lives
       // in the section or group title, so a title match shows the whole block
-      const groupEl = sec.closest('.labor-book-group:not(.elliot-parts-group)');
+      const groupEl = sec.closest('.labor-book-group');
       const titleMatch =
         term &&
         ((sec.dataset.section || '').toLowerCase().includes(term) ||
@@ -208,12 +210,12 @@ const TakeoffLaborBookView = (function () {
       // clearing the term restores the default all-collapsed view
       sec.classList.toggle('labor-book-section-collapsed', term ? !any : true);
     });
-    partsEl.querySelectorAll('.labor-book-group:not(.elliot-parts-group)').forEach((g) => {
+    partsEl.querySelectorAll('.labor-book-group').forEach((g) => {
       const anyVisible = Array.from(g.querySelectorAll('.labor-book-section')).some((s) => s.style.display !== 'none');
       g.style.display = !term || anyVisible ? '' : 'none';
       g.classList.toggle('labor-book-group-collapsed', term ? !anyVisible : true);
     });
-    partsEl.querySelector('.elliot-parts-group')?._applyTabFilter?.(term);
+    partsEl._elliotFilter?.(term);
   }
 
   let tabFilterTimer = null;

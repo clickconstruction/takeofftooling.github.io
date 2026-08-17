@@ -23,7 +23,7 @@ js/views/shared.js     → TakeoffViewShared (icons, overage helpers)
 js/views/manifest.js   → TakeoffManifestView
 js/views/modal.js      → TakeoffModal
 js/views/laborBookTargets.js → TakeoffLaborBookTargets (apply-to-takeoff logic)
-js/views/laborBookElliot.js  → TakeoffLaborBookElliot  (supplier parts group)
+js/views/laborBookElliot.js  → TakeoffLaborBookElliot  (supplier parts in universal sections)
 js/views/laborBookSearch.js  → TakeoffLaborBookSearch  (global search, owns the term)
 js/views/laborBook.js  → TakeoffLaborBookView (facade; stable public API)
 js/views/device.js     → TakeoffDeviceView
@@ -61,7 +61,7 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | views/manifest.js | `TakeoffManifestView` | TakeoffState, TakeoffApp, TakeoffPDF, TakeoffUtils, TakeoffViewShared |
 | views/modal.js | `TakeoffModal` | TakeoffState, TakeoffApp |
 | views/laborBookTargets.js | `TakeoffLaborBookTargets` (describeBookRow, addEntryToTarget, addComponentsToTarget, hasFillTarget) | TakeoffState, TakeoffApp |
-| views/laborBookElliot.js | `TakeoffLaborBookElliot` (injectElliotParts) | McBook, TakeoffState, TakeoffLaborBookTargets, TakeoffUtils |
+| views/laborBookElliot.js | `TakeoffLaborBookElliot` (injectElliotParts — supplier sections/offers) | McBook, TakeoffState, TakeoffLaborBookTargets, TakeoffViewShared, TakeoffUtils |
 | views/laborBookSearch.js | `TakeoffLaborBookSearch` (getTerm/setTerm/renderResults + one-time search listeners) | TakeoffState, McBook, TakeoffLaborBookTargets, TakeoffLaborBookView, TakeoffApp, TakeoffUtils |
 | views/laborBook.js | `TakeoffLaborBookView` (facade — re-exports the Targets API) | TakeoffState (heavily), TakeoffApp, McBook, TakeoffUtils, TakeoffLaborBook{Targets,Elliot,Search}, TakeoffViewShared |
 | views/device.js | `TakeoffDeviceView` | TakeoffState, TakeoffApp, TakeoffUtils |
@@ -100,7 +100,7 @@ Child `type` values by flow:
 
 ### Labor Book (editable "Parts" side)
 
-`laborBook[type][sectionName] = [{name, labor, price, edited?, userAdded?}]`. Defaults live in `js/data/laborBookDefaults.js` (pure data); state.js deep-clones `LABOR_BOOK_DEFAULTS` at load so user edits never mutate the defaults. Conduit tab has extra grouping config (`LABOR_BOOK_DEFAULT_GROUPS`).
+`laborBook[type][sectionName] = [{name, labor, price, edited?, userAdded?, priceSource?, pricedAt?}]`. `priceSource`/`pricedAt` (YYYY-MM-DD) record who supplied a price and when: `updateLaborBookRow` stamps `You`/today whenever the price value changes (callers can pass explicit values), and the badge popover in the view can set them without touching the price — such provenance-only updates deliberately do **not** set `edited`, so the row still upgrades with future defaults merges. Defaults live in `js/data/laborBookDefaults.js` (pure data); state.js deep-clones `LABOR_BOOK_DEFAULTS` at load so user edits never mutate the defaults. Conduit tab has extra grouping config (`LABOR_BOOK_DEFAULT_GROUPS`).
 
 **Provenance + defaults versioning** (js/laborBookMerge.js): `updateLaborBookRow` stamps `edited`, `addLaborBookRow` stamps `userAdded`, and deleting/renaming a default row records its name in a `removed` map. The workspace stores `laborBookMeta: {defaultsVersion, removed}`; on restore/adopt, a workspace older than `LABOR_BOOK_DEFAULTS_VERSION` gets `mergeDefaults` (untouched rows upgrade to new defaults, user-touched rows win, removed defaults stay removed) — bump the version constant whenever the defaults data changes. Pre-versioning workspaces are bootstrapped by diffing against the current defaults. The same flags drive `TakeoffState.getBookCorrections()` — the edit/new/remove diff a consenting user shares (see Cloud sync).
 
@@ -170,7 +170,7 @@ Six modal skeletons live in index.html:
 
 ## Labor & Price Book modal (two sides)
 
-- **Parts** (views/laborBook.js): editable per-tab sections from `TakeoffState.getLaborBook()`, plus a live-injected "Supplier Parts · Elliot" group per tab from supplier sections. An always-visible tab-level filter narrows curated sections (matching row names or section/group titles) and supplier parts together (laborBook.js `applyTabFilter` → the group's `_applyTabFilter`). On tabs with no curated sections (lighting/devices/specialSystems) the supplier group starts expanded and the "no sections yet" block is demoted to a footer.
+- **Parts** (views/laborBook.js): editable per-tab sections from `TakeoffState.getLaborBook()`, woven together with the supplier catalog by views/laborBookElliot.js — sections are universal: each supplier catalog section renders as a first-class section beside the curated ones, or, when a curated section shares its name (case-insensitive), as a collapsed "Supplier parts" block inside that section below the curated rows. Supplier attribution is per part (the provenance badge, `TakeoffViewShared.renderPriceProvenance`: source · age with freshness tiers <30d/30–90d/>90d; supplier entries date from `McBook.elliotImportDate()` until they carry per-part `pricedAt`). An always-visible tab-level filter narrows curated rows and supplier parts together (laborBook.js `applyTabFilter` → `partsEl._elliotFilter`). On tabs with no curated sections (lighting/devices/specialSystems) the "no sections yet" block is demoted to a footer below the catalog sections.
 - **Assemblies** (mcBook.js): fetches `mc-assemblies/mc-labor-book.json`, patches with the local Elliot overlay (`McElliotState.getPatchedBook`), renders a lazy level1→level2→section tree; entries can be added rolled-up or exploded into components (`getComposition` via `mc-price-model.json`). Global search spans both sides.
 - **Update Supplier Prices** (mcElliotUpdate.js): parse vendor CSV → dedupe → match against MC items (saved mappings first, then token-index fuzzy matching in chunks) → build overlay → auto/review/summary tabs → download buttons to commit updated JSON back into `mc-assemblies/`. See [DATA-PIPELINE.md](DATA-PIPELINE.md).
 

@@ -42,6 +42,13 @@ const McBook = (function () {
     return sectionsForTab(tab).filter((s) => s.supplier || s.level1 === 'Elliot');
   }
 
+  // When the supplier import last priced the catalog (YYYY-MM-DD, or null).
+  // Entries without their own pricedAt fall back to this.
+  function elliotImportDate() {
+    const at = book?.meta?.elliot?.importedAt;
+    return at ? String(at).slice(0, 10) : null;
+  }
+
   // MC picker column order for top-level categories
   const LEVEL1_ORDER = [
     'Branch', 'Wire', 'Branch with Constants', 'Feeder', 'Feeder with Constants',
@@ -386,5 +393,5 @@ const McBook = (function () {
     init();
   }
 
-  return { renderAssemblies, sectionCount, invalidate, ensureLoaded, elliotSectionsForTab, searchAssemblies, addAssemblyEntry, getComposition, renderBom };
+  return { renderAssemblies, sectionCount, invalidate, ensureLoaded, elliotSectionsForTab, elliotImportDate, searchAssemblies, addAssemblyEntry, getComposition, renderBom };
 })();
