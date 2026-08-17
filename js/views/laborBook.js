@@ -554,6 +554,17 @@ const TakeoffLaborBookView = (function () {
     const modal = document.getElementById('labor-book-modal');
     if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
     const el = document.activeElement;
+    if (e.key === 'Escape') {
+      const abbrevModal = document.getElementById('abbreviation-key-modal');
+      if (abbrevModal && abbrevModal.getAttribute('aria-hidden') === 'false') {
+        abbrevModal.setAttribute('aria-hidden', 'true');
+        return;
+      }
+      // the search inputs handle Escape themselves (clear the term first)
+      if (el && (el.id === 'labor-book-global-search' || el.id === 'mc-book-search')) return;
+      TakeoffApp.hideLaborBookModal();
+      return;
+    }
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
     const key = (e.key || '').toLowerCase();
     const tab = TAB_HOTKEYS[key];
