@@ -26,6 +26,7 @@ js/views/laborBookTargets.js → TakeoffLaborBookTargets (apply-to-takeoff logic
 js/views/laborBookElliot.js  → TakeoffLaborBookElliot  (supplier parts in universal sections)
 js/views/laborBookSearch.js  → TakeoffLaborBookSearch  (global search, owns the term)
 js/views/laborBookCard.js    → TakeoffLaborBookCard    (part card modal: offers, quotes, history, catalog promotion)
+js/views/projects.js         → TakeoffProjectsView     (project switcher + Manage Projects modal)
 js/views/laborBook.js  → TakeoffLaborBookView (facade; stable public API)
 js/views/device.js     → TakeoffDeviceView
 js/views/conduit.js    → TakeoffConduitView
@@ -65,6 +66,7 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | views/laborBookElliot.js | `TakeoffLaborBookElliot` (injectElliotParts — supplier sections/offers) | McBook, TakeoffState, TakeoffLaborBookTargets, TakeoffViewShared, TakeoffUtils |
 | views/laborBookSearch.js | `TakeoffLaborBookSearch` (getTerm/setTerm/renderResults + one-time search listeners) | TakeoffState, McBook, TakeoffLaborBookTargets, TakeoffLaborBookView, TakeoffApp, TakeoffUtils |
 | views/laborBookCard.js | `TakeoffLaborBookCard` (openForBookRow/openForCatalogPart/close/isOpen) | TakeoffState, TakeoffViewShared, TakeoffLaborBookView, TakeoffUtils |
+| views/projects.js | `TakeoffProjectsView` (updateHeader/openModal) | TakeoffState, TakeoffStorage, TakeoffApp, TakeoffUtils |
 | views/laborBook.js | `TakeoffLaborBookView` (facade — re-exports the Targets API) | TakeoffState (heavily), TakeoffApp, McBook, TakeoffUtils, TakeoffLaborBook{Targets,Elliot,Search}, TakeoffViewShared |
 | views/device.js | `TakeoffDeviceView` | TakeoffState, TakeoffApp, TakeoffUtils |
 | views/conduit.js | `TakeoffConduitView` | TakeoffState, TakeoffApp, TakeoffUtils, FITTINGS_LIST |
@@ -116,7 +118,7 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 ## Cloud sync (js/cloud.js, `TakeoffCloud`)
 
-Optional Supabase mirror of the workspace + assemblies; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2); table `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) with RLS scoping every operation to `auth.uid() = user_id`; rows mirror the localStorage keys (`workspace`, `assemblies`).
+Optional Supabase mirror of the book, assemblies, and projects; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2): `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) holds the `book` and `assemblies` rows (a legacy `workspace` row is read once as a stand-in for a missing `book` row and left as backup), and `public.takeoff_projects` (`id, user_id, name, data jsonb, created_at, updated_at` — schema-aligned with Count Tooling's `projects` table; SQL in `supabase/001_takeoff_projects.sql`) holds one row per project (`data` = `{manifest, laborRate}`, `updated_at` = the client's savedAt). Both under RLS scoping every operation to `auth.uid() = user_id`. Projects sync per-row with last-write-wins by `updated_at` and union-merge on sign-in; a missing `takeoff_projects` table (SQL not yet applied) disables project sync gracefully.
 
 **Shared-book corrections** (opt-in, `takeoff-share-corrections` localStorage flag, toggle in the cloud modal): after each workspace push, `TakeoffState.getBookCorrections()` is upserted into `public.takeoff_suggestions` (`user_id, email, tab, section, part_name, kind edit|new|remove, old_value, new_value, status pending|accepted|dismissed`; unique per user+part; RLS: users see only their own rows, `is_takeoff_admin()` — email match — sees all). Reverted edits are pruned on the next push; opting out deletes the user's rows. The admin account gets a "Review suggestions" ☰ menu item (js/suggestionsReview.js): pending rows aggregated per part (distinct users, median, ≥20× price-outlier flag), Accept/Dismiss updates status, and "Download accepted as defaults patch" emits JSON to apply to `js/data/laborBookDefaults.js` + version bump — the shared book only changes through a commit, like the supplier-price flow. A `takeoff_suggestion_summary` view exists for reviewing straight from the Supabase dashboard. Auth is Supabase email/password (accounts are provisioned in the project's auth tables) with an email OTP fallback (6-digit code — the "Magic link or OTP" email template was edited to send `{{ .Token }}`); neither path uses redirect URLs, so localhost and GitHub Pages behave identically. Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
 
@@ -126,7 +128,10 @@ All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) �
 
 | Key | Owner | Content |
 |---|---|---|
-| `takeoff-workspace` | storage.js (via state.js) | `{v:1, savedAt, manifest, laborBook, laborRate, laborBookMeta}` — 400 ms debounced write, flushed on `beforeunload`; restore hard-requires `v===1` |
+| `takeoff-projects-index` | storage.js (via state.js) | `{v:1, currentId, projects:[{id,name,createdAt,updatedAt}]}` — device-local, never synced (cloud rebuilds the list from `takeoff_projects` rows) |
+| `takeoff-project-<id>` | storage.js (via state.js) | `{v:1, id, savedAt, name, manifest, laborRate}` — 400 ms debounced write, flushed on `beforeunload`/project switch |
+| `takeoff-book` | storage.js (via state.js) | `{v:1, savedAt, laborBook, laborBookMeta}` — account-level, own 400 ms debounce |
+| `takeoff-workspace` | legacy | pre-projects single workspace; migrated into the keys above on first boot (`TakeoffStorage.migrateLegacyWorkspace`), then left untouched as a rollback backup |
 | `takeoff-assemblies` | storage.js (via state.js) | assemblies array — written immediately |
 | `takeoff-share-corrections` | cloud.js | `'1'` when the user opted into sharing book corrections |
 | `mc-elliot-overlay` | mcElliotState.js | supplier price overlay (max ~2.5 MB, `newItems` dropped if over) |
@@ -163,12 +168,13 @@ Six modal skeletons live in index.html:
 | `#import-preview-modal` | import.js | import.js |
 | `#form-modal` | manifest.js opens; app.js wires cancel/print | app.js → `TakeoffPDF.printWithForm` |
 | `#part-card-modal` | views/laborBookCard.js (from row badges/catalog part names) | views/laborBookCard.js (stacks above the labor book; Escape stops propagation) |
+| `#projects-modal` | views/projects.js (header switcher → Manage projects) | views/projects.js |
 
 ## Import / export formats
 
 - **CountTooling clipboard import** (import.js): one line per row, tab-separated `fixture \t count \t page`. Type inferred by regex on description. Preview modal offers Add All vs Add Overages Only (skips existing descriptions; never merges quantities). Single undo frame.
 - **Structured import handoff** (import.js `importFromPayload` + app.js `#import=` hash route): the no-clipboard path for Count Tooling integration. URL: `<app>/#import=<base64 JSON>` with payload `{v:1, source, items:[{description, count|quantity, page?, type?}]}`. Invalid `type` values fall back to regex inference; items flow through the same preview modal. The hash is stripped before the preview shows.
-- **Export via link** (app.js): `#d=` + base64 of `{v:2, app:'takeoff-tooling', exportedAt, manifest}`; on load, hash import sanitizes recursively (`sanitizeImportedItem`), confirms if unsaved work exists, then strips the hash. Import accepts the envelope or a legacy bare array; `v` is ignored.
+- **Export via link** (app.js): `#d=` + base64 of `{v:2, app:'takeoff-tooling', exportedAt, name, manifest}`; on load, hash import sanitizes recursively (`sanitizeImportedItem`) and lands in a NEW project named from the payload (nothing is replaced), then strips the hash. Import accepts the envelope or a legacy bare array; `v` is ignored.
 - **PDF exports** (pdf.js): review (full columns + total labor), purchase order (item+qty), with-form (details block). Manual jsPDF layout, letter format.
 
 ## Labor & Price Book modal (two sides)
