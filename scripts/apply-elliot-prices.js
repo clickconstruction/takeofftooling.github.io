@@ -95,13 +95,19 @@ async function main() {
       newItems.push([r.category, r.description || r.name, r.partNumber, round4(r.perEach)]);
     }
 
+    // parts keep their prior date when the price is unchanged
+    let priorOverlay = null;
+    try {
+      priorOverlay = JSON.parse(fs.readFileSync(p('elliot-price-overlay.json'), 'utf8'));
+    } catch (_) {}
+    const importedAt = new Date().toISOString();
     overlay = {
       version: 1,
       sourceFile: path.basename(csvArg),
-      importedAt: new Date().toISOString(),
+      importedAt,
       enabledCategories: [...new Set(newItems.map((n) => n[0]))],
       itemPrices,
-      newItems,
+      newItems: core.stampNewItemDates(newItems, priorOverlay, importedAt.slice(0, 10)),
     };
     fs.writeFileSync(p('elliot-price-overlay.json'), JSON.stringify(overlay));
     console.log(`Overlay rebuilt: ${Object.keys(itemPrices).length} item prices, ${newItems.length} new items, ${duplicateWarnings.length} duplicate-price warnings.`);

@@ -50,12 +50,12 @@ Auxiliary: `scripts/extract-section-heads.js` dumps section heads to `mc-section
 - **source-data/mc-assemblies.json**: `{meta:{totalAssemblies, byFile,…}, assemblies:[{assmNum, assmName, material, laborHours, unitPrice1, unitPrice2, level1, level2, level3, section, subsection, items:[{itemNum, itemName, bpQty, bpConst, price1, bidLbr, bidLbrUnit}]}]}`. "Section heads" have `items:[]` and zero prices.
 - **mc-price-model.json**: `{meta, items:{itemNum:{n,p,l,u}}  // name, per-each price, per-each labor, unit`
   `, assemblies:{assmNum:{m, u1, c:[[itemNum, qty]], cm, v}}}`. Per-each normalization divides by `{M:1000, C:100, Q:100}`. `v:1` ("verified") iff computed material is within max($0.02, 2%) of reported material — **only v:1 assemblies get automatic price recompute** when supplier prices change. Current: 5,865 items; 24,291 assemblies; 13,055 verified (54%).
-- **mc-labor-book.json**: `{meta:{tabs, skipped…, elliot}, tabs:{tabName:[{level1,level2,level3, section, subsection, name, supplier?, entries:[{name, labor, price, assmNum}]}]}}`. Supplier sections' entries carry `partNumber` instead of `assmNum`. Currently `meta.elliot` is `null` (no supplier data committed).
+- **mc-labor-book.json**: `{meta:{tabs, skipped…, elliot}, tabs:{tabName:[{level1,level2,level3, section, subsection, name, supplier?, entries:[{name, labor, price, assmNum}]}]}}`. Supplier sections' entries carry `partNumber` (plus `pricedAt` when the overlay records per-part dates) instead of `assmNum`. Currently `meta.elliot` is `null` (no supplier data committed).
 - **tab-mapping.json**: 22 MC level1 categories → the 6 app tabs (conduit/wire/devices/lighting/gear/specialSystems).
 - **elliot-category-mapping.json**: 15 Elliot CSV categories → tab key or `null` (skip).
 - **elliot-item-mappings.json**: `{version:1, mappings:{partNumber: itemNum}}` — repo-committed confirmed matches (currently 173 auto matches from the `--match` run; grows as review-queue items are confirmed in-app and re-committed).
 - **vendor-profiles.json**: per-vendor CSV column indices, header validation strings, unit divisors, `bundledFile`.
-- **elliot-price-overlay.json** (committed; built by the app or apply-elliot-prices.js): `{version:1, vendor, sourceFile, importedAt, enabledCategories, itemPrices:{itemNum: perEach}, newItems:[[category,name,partNumber,price]]}`.
+- **elliot-price-overlay.json** (committed; built by the app or apply-elliot-prices.js): `{version:1, vendor, sourceFile, importedAt, enabledCategories, itemPrices:{itemNum: perEach}, newItems:[[category,name,partNumber,price,pricedAt]]}` — `pricedAt` (YYYY-MM-DD, `McElliotCore.stampNewItemDates`) is kept from the prior overlay when a part's price is unchanged, so re-imports only refresh dates where the price moved; 4-tuple overlays from before per-part dates still apply (entries fall back to the import day).
 
 ## Runtime Elliot flow (browser)
 

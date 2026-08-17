@@ -186,3 +186,41 @@ test('patchLaborBook patches prices, appends supplier sections, is idempotent', 
   // original untouched (deep copy)
   assert.strictEqual(book.tabs.conduit[0].entries[0].price, 5);
 });
+
+test('stampNewItemDates keeps prior dates for unchanged prices, restamps moved ones', () => {
+  const prior = {
+    importedAt: '2026-07-18T05:20:54.240Z',
+    newItems: [
+      ['Fuses', 'Old fuse', 'PN1', 1.5],            // 4-tuple: date falls back to import day
+      ['Fuses', 'Dated fuse', 'PN2', 2.0, '2026-06-01'],
+    ],
+  };
+  const fresh = [
+    ['Fuses', 'Old fuse', 'PN1', 1.5],   // unchanged → keeps 2026-07-18
+    ['Fuses', 'Dated fuse', 'PN2', 2.5], // moved → today
+    ['Fuses', 'Brand new', 'PN3', 9.99], // new → today
+  ];
+  const out = core.stampNewItemDates(fresh, prior, '2026-08-17');
+  assert.deepStrictEqual(out.map((r) => r[4]), ['2026-07-18', '2026-08-17', '2026-08-17']);
+  // no prior overlay: everything gets today
+  const out2 = core.stampNewItemDates(fresh, null, '2026-08-17');
+  assert.deepStrictEqual(out2.map((r) => r[4]), ['2026-08-17', '2026-08-17', '2026-08-17']);
+});
+
+test('patchLaborBook carries per-part pricedAt onto supplier entries', () => {
+  const book = { meta: {}, tabs: { conduit: [] } };
+  const overlay = {
+    sourceFile: 'f.csv',
+    importedAt: 'T',
+    enabledCategories: ['Fittings'],
+    itemPrices: {},
+    newItems: [
+      ['Fittings', 'Dated part', 'PN1', 0.5, '2026-07-18'],
+      ['Fittings', 'Undated part', 'PN2', 0.7],
+    ],
+  };
+  const patched = core.patchLaborBook(book, null, overlay, { Fittings: 'conduit' });
+  const entries = patched.tabs.conduit.find((s) => s.supplier).entries;
+  assert.strictEqual(entries[0].pricedAt, '2026-07-18');
+  assert.strictEqual(entries[1].pricedAt, undefined);
+});

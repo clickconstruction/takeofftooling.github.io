@@ -377,6 +377,28 @@ const McElliotCore = (function () {
    * recompute: result of recomputeAssemblies. overlay: full overlay object.
    * categoryMapping: elliot category -> tab (null = skip).
    */
+  /**
+   * Give each new-item row a per-part price date (5th tuple element,
+   * YYYY-MM-DD): a part whose price is unchanged from the prior overlay
+   * keeps its prior date, so re-imports only refresh dates where the price
+   * actually moved. Prior overlays without per-part dates fall back to
+   * their import day.
+   */
+  function stampNewItemDates(newItems, priorOverlay, today) {
+    const prior = {};
+    if (priorOverlay && Array.isArray(priorOverlay.newItems)) {
+      const priorDay = String(priorOverlay.importedAt || '').slice(0, 10) || null;
+      for (const it of priorOverlay.newItems) {
+        prior[it[2]] = { price: it[3], at: it[4] || priorDay };
+      }
+    }
+    return newItems.map(([category, name, partNumber, price]) => {
+      const p = prior[partNumber];
+      const at = p && p.price === price && p.at ? p.at : today;
+      return [category, name, partNumber, price, at];
+    });
+  }
+
   function patchLaborBook(book, recompute, overlay, categoryMapping) {
     const patched = JSON.parse(JSON.stringify(book));
     const prices = recompute ? recompute.assemblyPrices : {};
@@ -394,13 +416,13 @@ const McElliotCore = (function () {
     if (overlay && Array.isArray(overlay.newItems) && overlay.newItems.length) {
       const enabled = new Set(overlay.enabledCategories || []);
       const byTab = {};
-      for (const [category, name, partNumber, price] of overlay.newItems) {
+      for (const [category, name, partNumber, price, pricedAt] of overlay.newItems) {
         if (enabled.size && !enabled.has(category)) continue;
         const tabName = categoryMapping ? categoryMapping[category] : null;
         if (!tabName) continue;
         if (!byTab[tabName]) byTab[tabName] = {};
         if (!byTab[tabName][category]) byTab[tabName][category] = [];
-        byTab[tabName][category].push({ name, labor: 0, price, partNumber });
+        byTab[tabName][category].push({ name, labor: 0, price, partNumber, pricedAt: pricedAt || undefined });
       }
       for (const [tabName, cats] of Object.entries(byTab)) {
         if (!patched.tabs[tabName]) patched.tabs[tabName] = [];
@@ -452,6 +474,7 @@ const McElliotCore = (function () {
     scoreMatch,
     classifyMatches,
     recomputeAssemblies,
+    stampNewItemDates,
     patchLaborBook,
     AUTO_SCORE,
     REVIEW_SCORE,

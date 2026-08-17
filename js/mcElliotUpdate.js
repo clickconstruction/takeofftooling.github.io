@@ -139,16 +139,18 @@ const McElliotUpdate = (function () {
         categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
       }
 
+      const importedAt = new Date().toISOString();
       const overlay = {
         version: 1,
         vendor: McElliotState.getCurrentVendor(),
         vendorLabel: currentProfile().label || 'Elliot Electric',
         sourceFile: sourceFile || 'pasted CSV',
-        importedAt: new Date().toISOString(),
+        importedAt,
         enabledCategories: Object.keys(categoryCounts).filter((c) => categoryMapping[c]),
         allCats: true,
         itemPrices,
-        newItems,
+        // parts keep their prior date when the price is unchanged
+        newItems: McElliotCore.stampNewItemDates(newItems, McElliotState.getOverlay(), importedAt.slice(0, 10)),
       };
       const { truncated } = McElliotState.saveOverlay(overlay);
       McElliotState.saveQueue(result.review);
