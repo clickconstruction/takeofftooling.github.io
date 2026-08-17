@@ -3344,3 +3344,10 @@ button.lb-prov-badge:hover {
   color: var(--accent);
   font-size: 1.05rem;
 }
+
+/* Part # input in curated labor book rows */
+.labor-book-partnum {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  max-width: 140px;
+}

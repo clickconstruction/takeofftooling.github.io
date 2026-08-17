@@ -410,7 +410,8 @@ const TakeoffState = (function () {
     const valueChanged =
       priceChanged ||
       ('name' in updates && updates.name !== row.name) ||
-      ('labor' in updates && (Number(updates.labor) || 0) !== (Number(row.labor) || 0));
+      ('labor' in updates && (Number(updates.labor) || 0) !== (Number(row.labor) || 0)) ||
+      ('partNumber' in updates && (updates.partNumber || '') !== (row.partNumber || ''));
     Object.assign(row, updates);
     // a changed price is stamped with who/when unless the caller supplied it
     if (priceChanged) {
@@ -420,6 +421,69 @@ const TakeoffState = (function () {
     // provenance-only updates must not set `edited` — that would freeze the
     // row out of future defaults upgrades (laborBookMerge skips edited rows)
     if (valueChanged && !row.userAdded) row.edited = true;
+    schedulePersist();
+  }
+
+  // ---------- part offers & history (the "part card") ----------
+
+  const PART_HISTORY_CAP = 50;
+
+  // Who gets credited in part history: the signed-in email's short name
+  // (cloud.js loads after state.js, so resolve at call time), else 'You'.
+  function currentUserName() {
+    const email = typeof TakeoffCloud !== 'undefined' ? TakeoffCloud.getEmail() : null;
+    return email ? String(email).split('@')[0] : 'You';
+  }
+
+  function pushPartHistory(row, entry) {
+    if (!row.history) row.history = [];
+    row.history.unshift(entry);
+    if (row.history.length > PART_HISTORY_CAP) row.history.length = PART_HISTORY_CAP;
+  }
+
+  /**
+   * Record a supply-house quote on a row: updates that supplier's offer,
+   * appends to history, and moves the working price when `use` is set, when
+   * the supplier is already the one in use, or when the row has no offers
+   * yet (first quote wins by default).
+   */
+  function recordPartPrice(type, section, index, { supplier, price, at, by, use }) {
+    const row = laborBook[type]?.[section]?.[index];
+    if (!row || !supplier) return;
+    const when = at || todayISO();
+    const who = by || currentUserName();
+    if (!row.offers) row.offers = [];
+    const existing = row.offers.find((o) => o.supplier.toLowerCase() === supplier.toLowerCase());
+    if (existing) {
+      existing.price = price;
+      existing.at = when;
+      existing.by = who;
+    } else {
+      row.offers.push({ supplier, price, at: when, by: who });
+    }
+    pushPartHistory(row, { at: when, kind: 'price', supplier, value: price, by: who });
+    const inUse = (row.priceSource || '').toLowerCase() === supplier.toLowerCase();
+    if (use || inUse || row.offers.length === 1) {
+      updateLaborBookRow(type, section, index, { price: String(price), priceSource: supplier, pricedAt: when });
+    } else {
+      schedulePersist();
+    }
+  }
+
+  // Pick which supplier's offer is the row's working price.
+  function usePartOffer(type, section, index, supplier) {
+    const row = laborBook[type]?.[section]?.[index];
+    const offer = row?.offers?.find((o) => o.supplier.toLowerCase() === (supplier || '').toLowerCase());
+    if (!offer) return;
+    updateLaborBookRow(type, section, index, { price: String(offer.price), priceSource: offer.supplier, pricedAt: offer.at });
+  }
+
+  // Labor set from the part card: same update as inline editing, plus history.
+  function recordPartLabor(type, section, index, labor) {
+    const row = laborBook[type]?.[section]?.[index];
+    if (!row) return;
+    updateLaborBookRow(type, section, index, { labor: Number(labor) || 0 });
+    pushPartHistory(row, { at: todayISO(), kind: 'labor', value: Number(labor) || 0, by: currentUserName() });
     schedulePersist();
   }
 
@@ -496,6 +560,9 @@ const TakeoffState = (function () {
     removeLaborBookRow,
     addLaborBookSection,
     updateLaborBookRow,
+    recordPartPrice,
+    usePartOffer,
+    recordPartLabor,
     getBookCorrections,
     getActiveLaborBookTab,
     setActiveLaborBookTab,

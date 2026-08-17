@@ -34,7 +34,7 @@ const TakeoffLaborBookView = (function () {
       .join('');
   }
 
-  const ROWS_THEAD = '<thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Price from</th><th></th></tr></thead>';
+  const ROWS_THEAD = '<thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr></thead>';
 
   function renderSectionRows(type, section, data) {
     const rows = data[section] || [];
@@ -46,6 +46,7 @@ const TakeoffLaborBookView = (function () {
           <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
           <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
           <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
+          <td><input type="text" class="labor-book-partnum" value="${escapeHtml(r.partNumber ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Part #" /></td>
           <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(r.priceSource, r.pricedAt, { button: true, data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"` })}</td>
           <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
         </tr>
@@ -548,7 +549,7 @@ const TakeoffLaborBookView = (function () {
 
     document.querySelectorAll('.lb-prov-cell .lb-prov-badge').forEach(attachProvBadge);
 
-    document.querySelectorAll('.labor-book-name, .labor-book-hrs, .labor-book-price').forEach((input) => {
+    document.querySelectorAll('.labor-book-name, .labor-book-hrs, .labor-book-price, .labor-book-partnum').forEach((input) => {
       input.addEventListener('change', (e) => {
         const { type, section, index } = e.target.dataset;
         let field, value;
@@ -558,6 +559,9 @@ const TakeoffLaborBookView = (function () {
         } else if (e.target.classList.contains('labor-book-hrs')) {
           field = 'labor';
           value = parseFloat(e.target.value) || 0;
+        } else if (e.target.classList.contains('labor-book-partnum')) {
+          field = 'partNumber';
+          value = e.target.value.trim();
         } else {
           field = 'price';
           value = e.target.value;
