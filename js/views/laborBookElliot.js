@@ -29,15 +29,16 @@ const TakeoffLaborBookElliot = (function () {
         <tr data-entry="${ei}">
           <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary elliot-part-add-btn" data-key="${escapeHtml(sectionKey)}" data-entry="${ei}" title="Add as child to fixture">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button></td>
           <td class="mc-book-entry-name lb-card-open" title="Open part card">${escapeHtml(e.name)}</td>
-          <td class="mc-book-entry-labor">${escapeHtml(e.partNumber || '')}</td>
+          <td class="mc-book-entry-labor lb-card-open lb-labor-unset" title="Set labor on the part card">—</td>
           <td class="mc-book-entry-price">${e.price ? '$' + Number(e.price).toFixed(2) : ''}</td>
+          <td class="mc-book-entry-partnum">${escapeHtml(e.partNumber || '')}</td>
           <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(vendor, e.pricedAt || importDate)}</td>
         </tr>`
       )
       .join('');
     return `
       <table class="mc-book-entries">
-        <thead><tr><th></th><th>Name</th><th>Part #</th><th>Price</th><th>Price from</th></tr></thead>
+        <thead><tr><th></th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }

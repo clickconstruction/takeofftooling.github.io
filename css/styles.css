@@ -3746,3 +3746,19 @@ button.lb-prov-badge:hover {
   font-size: 0.8rem;
   color: var(--text3);
 }
+
+/* Catalog rows: symmetric columns with curated rows */
+.lb-labor-unset {
+  color: var(--text3);
+}
+
+.lb-labor-unset:hover {
+  color: var(--accent);
+}
+
+.mc-book-entry-partnum {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text2);
+  white-space: nowrap;
+}
