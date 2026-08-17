@@ -3,10 +3,13 @@
  *
  * The app stays local-first: TakeoffStorage (localStorage) remains the
  * synchronous source the app boots from. When signed in, this module
- *   - pulls on sign-in: workspace conflicts resolve by newest savedAt
+ *   - pulls on sign-in: book conflicts resolve by newest savedAt; projects
+ *     (takeoff_projects, schema-aligned with Count Tooling) merge as a
+ *     union by id with per-project last-write-wins
  *     (last write wins); assemblies merge as a union by id,
- *   - pushes on every save (TakeoffStorage notifies via onWorkspaceSaved /
- *     onAssembliesSaved), debounced; pending pushes flush when the tab hides.
+ *   - pushes on every save (TakeoffStorage notifies via onBookSaved /
+ *     onProjectSaved / onAssembliesSaved), debounced; pending pushes flush
+ *     when the tab hides.
  *
  * Signed out (or with the CDN blocked) the app behaves exactly as before.
  * Auth is Supabase email OTP: a 6-digit code, no passwords and no redirect
@@ -25,6 +28,7 @@ const TakeoffCloud = (function () {
   const SUPABASE_URL = 'https://awjcdxqhvgnqsrlnoyxr.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_vMFyQ4I0LqZD6yhfoF_Zbw_9MsPoC9G'; // publishable key — safe to ship; RLS enforces access
   const TABLE = 'takeoff_store';
+  const PROJECTS_TABLE = 'takeoff_projects';
   const SUGGESTIONS_TABLE = 'takeoff_suggestions';
   const ADMIN_EMAIL = 'stephen@pipetexas.com'; // review-panel visibility; RLS enforces the real access
   const SHARE_KEY = 'takeoff-share-corrections'; // '1' when the user opted into sharing book corrections
@@ -71,28 +75,35 @@ const TakeoffCloud = (function () {
   async function syncDown() {
     if (!client || !session) return;
     setStatus('syncing');
-    const { data, error } = await client.from(TABLE).select('key,value').in('key', ['workspace', 'assemblies']);
+    const { data, error } = await client.from(TABLE).select('key,value').in('key', ['book', 'assemblies', 'workspace']);
     if (error) {
       setStatus('error', error.message);
       return;
     }
     const remote = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
 
-    // Workspace: newest savedAt wins.
-    const localWs = TakeoffStorage.loadWorkspace();
-    const remoteWs = remote.workspace && remote.workspace.v === 1 ? remote.workspace : null;
-    const localT = localWs ? Date.parse(localWs.savedAt) || 0 : 0;
-    const remoteT = remoteWs ? Date.parse(remoteWs.savedAt) || 0 : 0;
-    if (remoteWs && remoteT > localT) {
+    // Book: newest savedAt wins. A legacy pre-projects 'workspace' row
+    // stands in for a missing 'book' row (its book half); the row itself is
+    // left untouched as a backup.
+    const legacyWs = !remote.book && remote.workspace && remote.workspace.v === 1 ? remote.workspace : null;
+    const remoteBook = remote.book && remote.book.v === 1
+      ? remote.book
+      : legacyWs && legacyWs.laborBook
+        ? { v: 1, savedAt: legacyWs.savedAt, laborBook: legacyWs.laborBook, laborBookMeta: legacyWs.laborBookMeta || null }
+        : null;
+    const localBook = TakeoffStorage.loadBook();
+    const localT = localBook ? Date.parse(localBook.savedAt) || 0 : 0;
+    const remoteT = remoteBook ? Date.parse(remoteBook.savedAt) || 0 : 0;
+    if (remoteBook && remoteT > localT) {
       suppressPush = true;
       try {
-        TakeoffStorage.saveWorkspace(remoteWs);
-        TakeoffState.adoptWorkspace(remoteWs);
+        TakeoffStorage.saveBook(remoteBook);
+        TakeoffState.adoptBook(remoteBook);
       } finally {
         suppressPush = false;
       }
-    } else if (localWs && localT > 0 && localT > remoteT) {
-      queuePush('workspace', localWs, { immediate: true });
+    } else if (localBook && localT > 0 && localT > remoteT) {
+      queuePush('book', localBook, { immediate: true });
     }
 
     // Assemblies: union by id (local entries win on id collision).
@@ -115,10 +126,153 @@ const TakeoffCloud = (function () {
       queuePush('assemblies', merged, { immediate: true });
     }
 
+    await syncProjects(legacyWs);
+
     lastSyncedAt = new Date();
     setStatus('synced');
     pushSuggestions();
     if (typeof TakeoffApp !== 'undefined') TakeoffApp.render();
+  }
+
+  // --- Projects sync (takeoff_projects; schema mirrors Count Tooling's
+  //     projects table). Per-project last-write-wins by updated_at; sign-in
+  //     merges as a union by id. Missing table (SQL not applied yet on the
+  //     test instance) disables project sync gracefully. ---
+
+  let projectsTableAvailable = true;
+  let projectsTableWarned = false;
+  const pendingProjects = {}; // id -> project payload
+  const projectPushTimers = {};
+
+  function noteProjectsError(error) {
+    const msg = (error && error.message) || '';
+    if ((error && error.code === '42P01') || /does not exist|Could not find the table|schema cache/i.test(msg)) {
+      projectsTableAvailable = false;
+      if (!projectsTableWarned) {
+        projectsTableWarned = true;
+        console.warn('Takeoff: takeoff_projects table not found — project cloud sync is off until the SQL migration is applied (supabase/001_takeoff_projects.sql).');
+      }
+    } else {
+      setStatus('error', msg);
+    }
+  }
+
+  function rowToProject(r) {
+    return {
+      v: 1,
+      id: r.id,
+      savedAt: r.updated_at,
+      name: r.name || 'Untitled project',
+      manifest: r.data && Array.isArray(r.data.manifest) ? r.data.manifest : [],
+      laborRate: r.data && typeof r.data.laborRate === 'number' ? r.data.laborRate : 0,
+    };
+  }
+
+  async function syncProjects(legacyWs) {
+    if (!projectsTableAvailable) return;
+    const { data, error } = await client.from(PROJECTS_TABLE).select('id,name,data,updated_at');
+    if (error) {
+      noteProjectsError(error);
+      return;
+    }
+    const remoteRows = data || [];
+    const remoteById = new Map(remoteRows.map((r) => [r.id, r]));
+    const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: null, projects: [] };
+    let indexChanged = false;
+    const current = TakeoffState.getCurrentProject();
+
+    for (const r of remoteRows) {
+      const localEntry = idx.projects.find((p) => p.id === r.id);
+      const localT = localEntry ? Date.parse(localEntry.updatedAt) || 0 : 0;
+      const remoteT = Date.parse(r.updated_at) || 0;
+      if (!localEntry || remoteT > localT) {
+        const project = rowToProject(r);
+        TakeoffStorage.saveProjectLocalOnly(project);
+        if (localEntry) {
+          localEntry.name = project.name;
+          localEntry.updatedAt = r.updated_at;
+        } else {
+          idx.projects.push({ id: r.id, name: project.name, createdAt: r.updated_at, updatedAt: r.updated_at });
+        }
+        indexChanged = true;
+        if (r.id === current.id) {
+          suppressPush = true;
+          try {
+            TakeoffState.adoptProject(project);
+          } finally {
+            suppressPush = false;
+          }
+        }
+      } else if (localT > remoteT) {
+        const localData = TakeoffStorage.loadProject(r.id);
+        if (localData) queueProjectPush(localData, { immediate: true });
+      }
+    }
+
+    // local-only projects go up
+    for (const p of idx.projects) {
+      if (!remoteById.has(p.id)) {
+        const localData = TakeoffStorage.loadProject(p.id);
+        if (localData) queueProjectPush(localData, { immediate: true });
+      }
+    }
+    if (indexChanged) TakeoffStorage.saveProjectsIndex(idx);
+
+    // A legacy cloud workspace with real content, no remote projects, and
+    // nothing local beyond empty starters: a fresh device signing in before
+    // any migrated device pushed. Surface it as a project once.
+    if (
+      legacyWs && Array.isArray(legacyWs.manifest) && legacyWs.manifest.length && remoteRows.length === 0 &&
+      idx.projects.every((p) => {
+        const d = TakeoffStorage.loadProject(p.id);
+        return !d || !Array.isArray(d.manifest) || d.manifest.length === 0;
+      })
+    ) {
+      const when = new Date(Date.parse(legacyWs.savedAt) || Date.now());
+      const project = {
+        v: 1,
+        id: TakeoffStorage.generateProjectId(),
+        savedAt: legacyWs.savedAt || new Date().toISOString(),
+        name: `Takeoff — ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+        manifest: legacyWs.manifest,
+        laborRate: typeof legacyWs.laborRate === 'number' ? legacyWs.laborRate : 0,
+      };
+      TakeoffStorage.saveProjectLocalOnly(project);
+      idx.projects.push({ id: project.id, name: project.name, createdAt: project.savedAt, updatedAt: project.savedAt });
+      TakeoffStorage.saveProjectsIndex(idx);
+      queueProjectPush(project, { immediate: true });
+    }
+  }
+
+  function queueProjectPush(project, opts) {
+    if (!client || !session || !projectsTableAvailable) return;
+    pendingProjects[project.id] = project;
+    clearTimeout(projectPushTimers[project.id]);
+    if (opts && opts.immediate) {
+      pushProjectNow(project.id);
+    } else {
+      projectPushTimers[project.id] = setTimeout(() => pushProjectNow(project.id), PUSH_DEBOUNCE_MS);
+    }
+  }
+
+  async function pushProjectNow(id) {
+    if (!client || !session || !(id in pendingProjects)) return;
+    const project = pendingProjects[id];
+    delete pendingProjects[id];
+    const { error } = await client.from(PROJECTS_TABLE).upsert({
+      id: project.id,
+      user_id: session.user.id,
+      name: project.name,
+      data: { manifest: project.manifest, laborRate: project.laborRate },
+      updated_at: project.savedAt,
+    });
+    if (error) {
+      pendingProjects[id] = project; // retry on the next save or flush
+      noteProjectsError(error);
+    } else {
+      lastSyncedAt = new Date();
+      setStatus('synced');
+    }
   }
 
   function queuePush(key, value, opts) {
@@ -143,12 +297,13 @@ const TakeoffCloud = (function () {
     } else {
       lastSyncedAt = new Date();
       setStatus('synced');
-      if (key === 'workspace') pushSuggestions();
+      if (key === 'book') pushSuggestions();
     }
   }
 
   function flushPending() {
     for (const key of Object.keys(pendingValues)) pushNow(key);
+    for (const id of Object.keys(pendingProjects)) pushProjectNow(id);
   }
 
   // --- Shared-book corrections (opt-in; see docs/ARCHITECTURE.md) ---
@@ -234,9 +389,22 @@ const TakeoffCloud = (function () {
   }
 
   // Called by TakeoffStorage after each local save.
-  function onWorkspaceSaved(data) {
+  function onBookSaved(data) {
     if (suppressPush) return;
-    queuePush('workspace', data);
+    queuePush('book', data);
+  }
+
+  function onProjectSaved(project) {
+    if (suppressPush) return;
+    queueProjectPush(project);
+  }
+
+  function onProjectDeleted(id) {
+    if (!client || !session || !projectsTableAvailable) return;
+    delete pendingProjects[id];
+    client.from(PROJECTS_TABLE).delete().eq('id', id).then(({ error }) => {
+      if (error) noteProjectsError(error);
+    });
   }
 
   function onAssembliesSaved(list) {
@@ -470,5 +638,5 @@ const TakeoffCloud = (function () {
   });
   updateUi();
 
-  return { isSignedIn, getEmail, isAdmin, onWorkspaceSaved, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
+  return { isSignedIn, getEmail, isAdmin, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
 })();

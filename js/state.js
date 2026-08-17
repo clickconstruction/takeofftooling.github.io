@@ -16,6 +16,10 @@ const TakeoffState = (function () {
   let assemblies = TakeoffStorage.loadAssemblies();
   let laborRate = 0;
 
+  // The open project (manifest + laborRate are its contents)
+  let projectId = null;
+  let projectName = 'Untitled project';
+
   const UNDO_STACK_SIZE = 50;
   let undoStack = [];
   let redoStack = [];
@@ -112,23 +116,57 @@ const TakeoffState = (function () {
     return JSON.parse(JSON.stringify(manifest));
   }
 
-  // --- Workspace persistence (all durable writes go through TakeoffStorage) ---
+  // --- Persistence (all durable writes go through TakeoffStorage) ---
+  // Two documents: the open PROJECT (manifest + laborRate) and the
+  // account-level BOOK (labor book + provenance meta). Each has its own
+  // debounced save.
   let persistTimer = null;
+  let persistBookTimer = null;
+
+  // Keep the device-local index entry (name/updatedAt) in step with a save.
+  function touchIndexEntry(savedAt) {
+    const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
+    let entry = idx.projects.find((p) => p.id === projectId);
+    if (!entry) {
+      entry = { id: projectId, name: projectName, createdAt: savedAt, updatedAt: savedAt };
+      idx.projects.push(entry);
+    }
+    entry.name = projectName;
+    entry.updatedAt = savedAt;
+    idx.currentId = projectId;
+    TakeoffStorage.saveProjectsIndex(idx);
+  }
 
   function persistNow() {
-    TakeoffStorage.saveWorkspace({
-      v: 1,
-      savedAt: new Date().toISOString(),
-      manifest,
-      laborBook,
-      laborRate,
-      laborBookMeta: { defaultsVersion: laborBookDefaultsVersion, removed: laborBookRemoved },
-    });
+    if (!projectId) return;
+    const savedAt = new Date().toISOString();
+    TakeoffStorage.saveProject({ v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate });
+    touchIndexEntry(savedAt);
   }
 
   function schedulePersist() {
     if (persistTimer) clearTimeout(persistTimer);
     persistTimer = setTimeout(persistNow, 400);
+  }
+
+  function persistBookNow() {
+    TakeoffStorage.saveBook({
+      v: 1,
+      savedAt: new Date().toISOString(),
+      laborBook,
+      laborBookMeta: { defaultsVersion: laborBookDefaultsVersion, removed: laborBookRemoved },
+    });
+  }
+
+  function schedulePersistBook() {
+    if (persistBookTimer) clearTimeout(persistBookTimer);
+    persistBookTimer = setTimeout(persistBookNow, 400);
+  }
+
+  // Flush both documents (beforeunload, project switches).
+  function persistAllNow() {
+    persistNow();
+    persistBookNow();
   }
 
   // Reconcile a restored/adopted book with the shipped defaults: bootstrap
@@ -149,34 +187,138 @@ const TakeoffState = (function () {
       dirty = true;
     }
     laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
-    if (dirty) schedulePersist();
+    if (dirty) schedulePersistBook();
   }
 
-  function restoreWorkspace() {
-    const data = TakeoffStorage.loadWorkspace();
-    if (!data || data.v !== 1) return;
-    if (Array.isArray(data.manifest)) manifest = data.manifest;
-    if (typeof data.laborRate === 'number') laborRate = data.laborRate;
-    if (data.laborBook && typeof data.laborBook === 'object') {
-      laborBook = data.laborBook;
-      upgradeLaborBook(data.laborBookMeta);
+  function loadProjectIntoState(data) {
+    projectId = data.id;
+    projectName = data.name || 'Untitled project';
+    manifest = Array.isArray(data.manifest) ? data.manifest : [];
+    laborRate = typeof data.laborRate === 'number' ? data.laborRate : 0;
+  }
+
+  function restoreOnBoot() {
+    TakeoffStorage.migrateLegacyWorkspace();
+    const book = TakeoffStorage.loadBook();
+    if (book && book.laborBook && typeof book.laborBook === 'object') {
+      laborBook = book.laborBook;
+      upgradeLaborBook(book.laborBookMeta);
+    }
+    const idx = TakeoffStorage.loadProjectsIndex();
+    const currentEntry = idx && (idx.projects.find((p) => p.id === idx.currentId) || idx.projects[0]);
+    const data = currentEntry && TakeoffStorage.loadProject(currentEntry.id);
+    if (data) {
+      loadProjectIntoState(data);
+    } else {
+      // fresh install (or a dangling index): start with an empty project
+      projectId = TakeoffStorage.generateProjectId();
+      projectName = 'Untitled project';
+      persistNow();
     }
   }
 
-  // Replace live state with a workspace pulled from cloud sync (TakeoffCloud).
-  // The caller has already written it to TakeoffStorage; undo history refers
-  // to the replaced manifest, so it is cleared.
-  function adoptWorkspace(data) {
-    if (!data || data.v !== 1) return false;
-    if (Array.isArray(data.manifest)) manifest = data.manifest;
-    if (typeof data.laborRate === 'number') laborRate = data.laborRate;
-    if (data.laborBook && typeof data.laborBook === 'object') {
-      laborBook = data.laborBook;
-      upgradeLaborBook(data.laborBookMeta);
-    }
+  // Replace the book with one pulled from cloud sync (TakeoffCloud). The
+  // caller has already written it to TakeoffStorage.
+  function adoptBook(data) {
+    if (!data || data.v !== 1 || !data.laborBook || typeof data.laborBook !== 'object') return false;
+    laborBook = data.laborBook;
+    upgradeLaborBook(data.laborBookMeta);
+    return true;
+  }
+
+  // Replace the OPEN project with a newer copy pulled from cloud sync. Undo
+  // history refers to the replaced manifest, so it is cleared.
+  function adoptProject(data) {
+    if (!data || data.v !== 1 || data.id !== projectId) return false;
+    loadProjectIntoState(data);
     undoStack = [];
     redoStack = [];
     lastEdit = { id: null, keys: '', time: 0 };
+    return true;
+  }
+
+  // --- Project management ---
+
+  function getProjects() {
+    const idx = TakeoffStorage.loadProjectsIndex();
+    const list = idx ? idx.projects.slice() : [];
+    list.sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0));
+    return list;
+  }
+
+  function getCurrentProject() {
+    return { id: projectId, name: projectName };
+  }
+
+  function setProjectName(name) {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    projectName = trimmed;
+    schedulePersist();
+  }
+
+  function clearManifestHistory() {
+    undoStack = [];
+    redoStack = [];
+    lastEdit = { id: null, keys: '', time: 0 };
+  }
+
+  function switchProject(id) {
+    if (id === projectId) return true;
+    const data = TakeoffStorage.loadProject(id);
+    if (!data) return false;
+    persistAllNow();
+    loadProjectIntoState(data);
+    clearManifestHistory();
+    const idx = TakeoffStorage.loadProjectsIndex();
+    if (idx) {
+      idx.currentId = id;
+      TakeoffStorage.saveProjectsIndex(idx);
+    }
+    return true;
+  }
+
+  // New projects start empty; the labor rate carries over as the default.
+  function createProject(name) {
+    persistAllNow();
+    projectId = TakeoffStorage.generateProjectId();
+    projectName = (name || '').trim() || 'Untitled project';
+    manifest = [];
+    clearManifestHistory();
+    persistNow();
+    return projectId;
+  }
+
+  function duplicateProject(id) {
+    const source = id === projectId
+      ? { v: 1, id: projectId, name: projectName, manifest, laborRate }
+      : TakeoffStorage.loadProject(id);
+    if (!source) return null;
+    const savedAt = new Date().toISOString();
+    const copy = {
+      v: 1,
+      id: TakeoffStorage.generateProjectId(),
+      savedAt,
+      name: `${source.name || 'Untitled project'} (copy)`,
+      manifest: JSON.parse(JSON.stringify(source.manifest || [])),
+      laborRate: typeof source.laborRate === 'number' ? source.laborRate : 0,
+    };
+    TakeoffStorage.saveProject(copy);
+    const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
+    idx.projects.push({ id: copy.id, name: copy.name, createdAt: savedAt, updatedAt: savedAt });
+    TakeoffStorage.saveProjectsIndex(idx);
+    return copy.id;
+  }
+
+  // The open project can't be deleted (switch away first).
+  function deleteProject(id) {
+    if (id === projectId) return false;
+    TakeoffStorage.deleteProject(id);
+    const idx = TakeoffStorage.loadProjectsIndex();
+    if (idx) {
+      idx.projects = idx.projects.filter((p) => p.id !== id);
+      TakeoffStorage.saveProjectsIndex(idx);
+    }
     return true;
   }
 
@@ -356,7 +498,7 @@ const TakeoffState = (function () {
   function setLaborBookSection(type, section, entries) {
     if (!laborBook[type]) laborBook[type] = {};
     laborBook[type][section] = entries || [];
-    schedulePersist();
+    schedulePersistBook();
   }
 
   // A deleted (or renamed-away) default row is recorded so defaults merges
@@ -383,7 +525,7 @@ const TakeoffState = (function () {
       if (!r.priceSource) r.priceSource = 'You';
     }
     laborBook[type][section].push(r);
-    schedulePersist();
+    schedulePersistBook();
   }
 
   function removeLaborBookRow(type, section, index) {
@@ -391,13 +533,13 @@ const TakeoffState = (function () {
     const row = laborBook[type][section][index];
     if (row) noteRemovedDefault(type, section, row.name);
     laborBook[type][section].splice(index, 1);
-    schedulePersist();
+    schedulePersistBook();
   }
 
   function addLaborBookSection(type, sectionName) {
     if (!laborBook[type]) laborBook[type] = {};
     laborBook[type][sectionName] = [];
-    schedulePersist();
+    schedulePersistBook();
   }
 
   function updateLaborBookRow(type, section, index, updates) {
@@ -421,7 +563,7 @@ const TakeoffState = (function () {
     // provenance-only updates must not set `edited` — that would freeze the
     // row out of future defaults upgrades (laborBookMerge skips edited rows)
     if (valueChanged && !row.userAdded) row.edited = true;
-    schedulePersist();
+    schedulePersistBook();
   }
 
   // ---------- part offers & history (the "part card") ----------
@@ -466,7 +608,7 @@ const TakeoffState = (function () {
     if (use || inUse || row.offers.length === 1) {
       updateLaborBookRow(type, section, index, { price: String(price), priceSource: supplier, pricedAt: when });
     } else {
-      schedulePersist();
+      schedulePersistBook();
     }
   }
 
@@ -484,7 +626,7 @@ const TakeoffState = (function () {
     if (!row) return;
     updateLaborBookRow(type, section, index, { labor: Number(labor) || 0 });
     pushPartHistory(row, { at: todayISO(), kind: 'labor', value: Number(labor) || 0, by: currentUserName() });
-    schedulePersist();
+    schedulePersistBook();
   }
 
   /**
@@ -519,7 +661,7 @@ const TakeoffState = (function () {
         changed++;
       }
     }
-    if (changed) schedulePersist();
+    if (changed) schedulePersistBook();
     return changed;
   }
 
@@ -550,7 +692,7 @@ const TakeoffState = (function () {
     return TakeoffSelectors.getSummaryBreakdown(manifest);
   }
 
-  restoreWorkspace();
+  restoreOnBoot();
 
   return {
     ITEM_TYPES,
@@ -559,7 +701,9 @@ const TakeoffState = (function () {
     ...TakeoffUiState,
     getManifest,
     persistNow,
-    adoptWorkspace,
+    persistAllNow,
+    adoptBook,
+    adoptProject,
     loadManifestFromExport,
     getTopLevelItems,
     getItemById,
@@ -601,6 +745,13 @@ const TakeoffState = (function () {
     recordPartLabor,
     refreshSupplierOffers,
     getBookCorrections,
+    getProjects,
+    getCurrentProject,
+    setProjectName,
+    switchProject,
+    createProject,
+    duplicateProject,
+    deleteProject,
     getActiveLaborBookTab,
     setActiveLaborBookTab,
   };

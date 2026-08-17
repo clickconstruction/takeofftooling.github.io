@@ -372,9 +372,9 @@
     window.location.replace(window.location.pathname + window.location.search);
   });
 
-  // Flush pending workspace saves before the page goes away
+  // Flush pending project + book saves before the page goes away
   window.addEventListener('beforeunload', () => {
-    TakeoffState.persistNow();
+    TakeoffState.persistAllNow();
   });
 
   // One-time cleanup: retired features (old Import MC triage, standalone Part Book)

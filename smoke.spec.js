@@ -24,8 +24,9 @@ test('app boots without console errors and manifest edits persist', async ({ pag
   // note: app globals are top-level consts (global lexical scope), not window.*
   const persisted = await page.evaluate(() => {
     TakeoffState.persistNow();
-    const ws = JSON.parse(localStorage.getItem('takeoff-workspace'));
-    return ws && ws.v === 1 && ws.manifest.some((m) => m.description === '2x4 Troffer');
+    const idx = JSON.parse(localStorage.getItem('takeoff-projects-index'));
+    const project = JSON.parse(localStorage.getItem('takeoff-project-' + idx.currentId));
+    return project && project.v === 1 && project.manifest.some((m) => m.description === '2x4 Troffer');
   });
   expect(persisted).toBe(true);
 

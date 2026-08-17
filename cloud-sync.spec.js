@@ -28,7 +28,7 @@ function fetchOwnSuggestions(page) {
 function setBookPrice(page, price) {
   return page.evaluate((p) => {
     TakeoffState.updateLaborBookRow('wire', 'THHN CU', 0, { price: p });
-    TakeoffState.persistNow();
+    TakeoffState.persistAllNow();
   }, price);
 }
 
