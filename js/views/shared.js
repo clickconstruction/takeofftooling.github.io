@@ -36,5 +36,43 @@ const TakeoffViewShared = (function () {
         </div>`;
   }
 
-  return { TRASH_SVG, BOOK_SVG, computeOverage, renderOverageSection };
+  // ---------- price provenance (who priced it, when, how stale) ----------
+
+  function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // Whole days since a YYYY-MM-DD date; null when absent/unparsable.
+  function priceAgeDays(pricedAt) {
+    if (!pricedAt) return null;
+    const t = new Date(pricedAt + 'T00:00:00').getTime();
+    if (Number.isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  }
+
+  /**
+   * The provenance badge: "Elliot · 30d" with a freshness dot (fresh < 30d,
+   * aging 30–90d, stale > 90d, none when no date recorded). opts.button
+   * renders a <button> (curated rows open the edit popover); opts.data is a
+   * pre-escaped data-attribute string carried onto the element.
+   */
+  function renderPriceProvenance(source, pricedAt, opts = {}) {
+    const esc = TakeoffUtils.escapeHtml;
+    const days = priceAgeDays(pricedAt);
+    let cls = 'none';
+    let label = source ? esc(source) : 'no date';
+    if (days !== null) {
+      cls = days < 30 ? 'fresh' : days <= 90 ? 'aging' : 'stale';
+      const age = days === 0 ? 'today' : `${days}d`;
+      label = source ? `${esc(source)} · ${age}` : age;
+    }
+    const title = pricedAt ? `Price recorded ${esc(pricedAt)}${source ? ' from ' + esc(source) : ''}` : 'No price date recorded';
+    const attrs = `class="lb-prov-badge lb-prov-${cls}" title="${title}"${opts.data || ''}`;
+    return opts.button
+      ? `<button type="button" ${attrs}><i></i>${label}</button>`
+      : `<span ${attrs}><i></i>${label}</span>`;
+  }
+
+  return { TRASH_SVG, BOOK_SVG, computeOverage, renderOverageSection, todayISO, priceAgeDays, renderPriceProvenance };
 })();

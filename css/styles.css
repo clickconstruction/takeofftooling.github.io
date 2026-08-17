@@ -3181,3 +3181,92 @@ body.lb-modal-open {
 .suggestions-modal-actions {
   justify-content: space-between;
 }
+
+/* Price provenance (labor book badges + edit popover) */
+
+.lb-prov-cell {
+  white-space: nowrap;
+}
+
+.lb-prov-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: default;
+  white-space: nowrap;
+}
+
+button.lb-prov-badge {
+  cursor: pointer;
+}
+
+button.lb-prov-badge:hover {
+  border-color: var(--accent2);
+  color: var(--text);
+}
+
+.lb-prov-badge i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text3);
+}
+
+.lb-prov-fresh i { background: var(--green); }
+.lb-prov-aging i { background: #e8a447; }
+.lb-prov-stale i { background: var(--red); }
+.lb-prov-stale { color: var(--red); border-color: rgba(232, 84, 71, 0.45); }
+
+.lb-prov-popover {
+  position: fixed;
+  z-index: 1200;
+  width: 250px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lb-prov-popover label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  font-weight: 700;
+}
+
+.lb-prov-popover input {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.lb-prov-popover input:focus {
+  outline: none;
+  border-color: var(--accent2);
+}
+
+.lb-prov-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

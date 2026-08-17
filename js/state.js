@@ -369,10 +369,20 @@ const TakeoffState = (function () {
     if (!laborBookRemoved[type][section].includes(name)) laborBookRemoved[type][section].push(name);
   }
 
+  function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   function addLaborBookRow(type, section, row) {
     if (!laborBook[type]) laborBook[type] = {};
     if (!laborBook[type][section]) laborBook[type][section] = [];
-    laborBook[type][section].push(Object.assign({ name: '', labor: 0, price: '' }, row, { userAdded: true }));
+    const r = Object.assign({ name: '', labor: 0, price: '' }, row, { userAdded: true });
+    if (String(r.price ?? '') !== '' && !r.pricedAt) {
+      r.pricedAt = todayISO();
+      if (!r.priceSource) r.priceSource = 'You';
+    }
+    laborBook[type][section].push(r);
     schedulePersist();
   }
 
@@ -396,8 +406,20 @@ const TakeoffState = (function () {
     if (typeof updates.name === 'string' && updates.name !== row.name && !row.userAdded) {
       noteRemovedDefault(type, section, row.name);
     }
+    const priceChanged = 'price' in updates && String(updates.price ?? '') !== String(row.price ?? '');
+    const valueChanged =
+      priceChanged ||
+      ('name' in updates && updates.name !== row.name) ||
+      ('labor' in updates && (Number(updates.labor) || 0) !== (Number(row.labor) || 0));
     Object.assign(row, updates);
-    if (!row.userAdded) row.edited = true;
+    // a changed price is stamped with who/when unless the caller supplied it
+    if (priceChanged) {
+      if (!('priceSource' in updates)) row.priceSource = 'You';
+      if (!('pricedAt' in updates)) row.pricedAt = todayISO();
+    }
+    // provenance-only updates must not set `edited` — that would freeze the
+    // row out of future defaults upgrades (laborBookMerge skips edited rows)
+    if (valueChanged && !row.userAdded) row.edited = true;
     schedulePersist();
   }
 

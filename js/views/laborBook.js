@@ -34,6 +34,8 @@ const TakeoffLaborBookView = (function () {
       .join('');
   }
 
+  const ROWS_THEAD = '<thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Price from</th><th></th></tr></thead>';
+
   function renderSectionRows(type, section, data) {
     const rows = data[section] || [];
     return rows
@@ -44,6 +46,7 @@ const TakeoffLaborBookView = (function () {
           <td><input type="text" class="labor-book-name" value="${escapeHtml(r.name || '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Name" /></td>
           <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
           <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
+          <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(r.priceSource, r.pricedAt, { button: true, data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"` })}</td>
           <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
         </tr>
       `
@@ -58,7 +61,7 @@ const TakeoffLaborBookView = (function () {
           <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(section)}</h3>
           <div class="labor-book-section-body">
             <table>
-              <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th></th></tr></thead>
+              ${ROWS_THEAD}
               <tbody>${rowHtml}</tbody>
             </table>
             <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>
@@ -148,7 +151,7 @@ const TakeoffLaborBookView = (function () {
         panelsHtml += `
           <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
-            <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th></th></tr></thead>
+            ${ROWS_THEAD}
             <tbody>${rowHtml}</tbody>
           </table>
           <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>
@@ -166,7 +169,7 @@ const TakeoffLaborBookView = (function () {
         transformersHtml += `
           <h4 class="labor-book-subsection">${escapeHtml(subLabel)}</h4>
           <table>
-            <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th></th></tr></thead>
+            ${ROWS_THEAD}
             <tbody>${rowHtml}</tbody>
           </table>
           <button type="button" class="btn add-row-btn" data-type="${type}" data-section="${escapeHtml(section)}">Add Row</button>
@@ -262,6 +265,7 @@ const TakeoffLaborBookView = (function () {
   }
 
   function render() {
+    closeProvPopover();
     syncSectionToggle();
     const partsEl = document.getElementById('labor-book-content');
     const asmEl = document.getElementById('labor-book-assemblies');
@@ -411,6 +415,88 @@ const TakeoffLaborBookView = (function () {
       });
   }
 
+  // ---------- price provenance popover (edit source + date on a badge) ----------
+
+  let provPopover = null;
+
+  function closeProvPopover() {
+    if (!provPopover) return;
+    provPopover.remove();
+    provPopover = null;
+    document.removeEventListener('mousedown', onProvOutsideClick, true);
+  }
+
+  function onProvOutsideClick(e) {
+    if (provPopover && !provPopover.contains(e.target) && !e.target.closest('.lb-prov-badge')) {
+      closeProvPopover();
+    }
+  }
+
+  // every supplier name already recorded in the book, for the datalist
+  function collectSupplierNames() {
+    const names = new Set(['You', 'Elliot']);
+    const book = TakeoffState.getLaborBook();
+    for (const tab of Object.keys(book)) {
+      for (const section of Object.keys(book[tab] || {})) {
+        for (const row of book[tab][section]) {
+          if (row.priceSource) names.add(row.priceSource);
+        }
+      }
+    }
+    return Array.from(names);
+  }
+
+  function openProvPopover(badgeBtn) {
+    closeProvPopover();
+    const { type, section, index } = badgeBtn.dataset;
+    const i = parseInt(index, 10);
+    const row = TakeoffState.getLaborBookType(type)?.[section]?.[i];
+    if (!row) return;
+    provPopover = document.createElement('div');
+    provPopover.className = 'lb-prov-popover';
+    provPopover.innerHTML = `
+      <label>Price from
+        <input type="text" id="lb-prov-source" list="lb-prov-suppliers" value="${escapeHtml(row.priceSource || '')}" placeholder="You, Elliot, ..." autocomplete="off" />
+      </label>
+      <datalist id="lb-prov-suppliers">${collectSupplierNames().map((s) => `<option value="${escapeHtml(s)}"></option>`).join('')}</datalist>
+      <label>On
+        <input type="date" id="lb-prov-date" value="${escapeHtml(row.pricedAt || TakeoffViewShared.todayISO())}" />
+      </label>
+      <div class="lb-prov-actions">
+        <button type="button" class="btn" id="lb-prov-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="lb-prov-save">Save</button>
+      </div>`;
+    document.body.appendChild(provPopover);
+    const br = badgeBtn.getBoundingClientRect();
+    const pw = provPopover.offsetWidth;
+    provPopover.style.top = `${Math.min(br.bottom + 6, window.innerHeight - provPopover.offsetHeight - 8)}px`;
+    provPopover.style.left = `${Math.max(8, Math.min(br.left, window.innerWidth - pw - 8))}px`;
+    provPopover.querySelector('#lb-prov-save').addEventListener('click', () => {
+      const source = provPopover.querySelector('#lb-prov-source').value.trim();
+      const date = provPopover.querySelector('#lb-prov-date').value;
+      TakeoffState.updateLaborBookRow(type, section, i, { priceSource: source, pricedAt: date || null });
+      closeProvPopover();
+      const cell = badgeBtn.closest('.lb-prov-cell');
+      if (cell) {
+        cell.innerHTML = TakeoffViewShared.renderPriceProvenance(source, date, {
+          button: true,
+          data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"`,
+        });
+        attachProvBadge(cell.querySelector('.lb-prov-badge'));
+      }
+    });
+    provPopover.querySelector('#lb-prov-cancel').addEventListener('click', closeProvPopover);
+    document.addEventListener('mousedown', onProvOutsideClick, true);
+    provPopover.querySelector('#lb-prov-source').focus();
+  }
+
+  function attachProvBadge(btn) {
+    btn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openProvPopover(btn);
+    });
+  }
+
   function attachListeners() {
     document.getElementById('labor-book-close-btn')?.addEventListener('click', () => {
       TakeoffApp.hideLaborBookModal();
@@ -451,10 +537,12 @@ const TakeoffLaborBookView = (function () {
 
     document.querySelectorAll('.labor-book-row').forEach((row) => {
       row.addEventListener('click', (e) => {
-        if (e.target.closest('.labor-book-remove-row') || e.target.closest('.labor-book-add-btn') || e.target.closest('input') || e.target.closest('.labor-book-price')) return;
+        if (e.target.closest('.labor-book-remove-row') || e.target.closest('.labor-book-add-btn') || e.target.closest('input') || e.target.closest('.labor-book-price') || e.target.closest('.lb-prov-cell')) return;
         addRowToFixture(row);
       });
     });
+
+    document.querySelectorAll('.lb-prov-cell .lb-prov-badge').forEach(attachProvBadge);
 
     document.querySelectorAll('.labor-book-name, .labor-book-hrs, .labor-book-price').forEach((input) => {
       input.addEventListener('change', (e) => {
@@ -473,6 +561,18 @@ const TakeoffLaborBookView = (function () {
         TakeoffState.updateLaborBookRow(type, section, parseInt(index, 10), { [field]: value });
         const row = e.target.closest('.labor-book-row');
         if (row && field === 'labor') row.dataset.labor = value;
+        if (row && field === 'price') {
+          // reflect the freshly stamped provenance without a full re-render
+          const updated = TakeoffState.getLaborBookType(type)?.[section]?.[parseInt(index, 10)];
+          const cell = row.querySelector('.lb-prov-cell');
+          if (updated && cell) {
+            cell.innerHTML = TakeoffViewShared.renderPriceProvenance(updated.priceSource, updated.pricedAt, {
+              button: true,
+              data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${index}"`,
+            });
+            attachProvBadge(cell.querySelector('.lb-prov-badge'));
+          }
+        }
       });
     });
 
@@ -555,6 +655,10 @@ const TakeoffLaborBookView = (function () {
     if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
     const el = document.activeElement;
     if (e.key === 'Escape') {
+      if (provPopover) {
+        closeProvPopover();
+        return;
+      }
       // the supplier-prices modal sits on top of the labor book; its own
       // handler closes it
       const elliotModal = document.getElementById('mc-elliot-modal');
