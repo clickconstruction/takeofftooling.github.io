@@ -270,7 +270,6 @@ const TakeoffLaborBookView = (function () {
   }
 
   function render() {
-    closeProvPopover();
     syncSectionToggle();
     const partsEl = document.getElementById('labor-book-content');
     const asmEl = document.getElementById('labor-book-assemblies');
@@ -420,85 +419,12 @@ const TakeoffLaborBookView = (function () {
       });
   }
 
-  // ---------- price provenance popover (edit source + date on a badge) ----------
-
-  let provPopover = null;
-
-  function closeProvPopover() {
-    if (!provPopover) return;
-    provPopover.remove();
-    provPopover = null;
-    document.removeEventListener('mousedown', onProvOutsideClick, true);
-  }
-
-  function onProvOutsideClick(e) {
-    if (provPopover && !provPopover.contains(e.target) && !e.target.closest('.lb-prov-badge')) {
-      closeProvPopover();
-    }
-  }
-
-  // every supplier name already recorded in the book, for the datalist
-  function collectSupplierNames() {
-    const names = new Set(['You', 'Elliot']);
-    const book = TakeoffState.getLaborBook();
-    for (const tab of Object.keys(book)) {
-      for (const section of Object.keys(book[tab] || {})) {
-        for (const row of book[tab][section]) {
-          if (row.priceSource) names.add(row.priceSource);
-        }
-      }
-    }
-    return Array.from(names);
-  }
-
-  function openProvPopover(badgeBtn) {
-    closeProvPopover();
-    const { type, section, index } = badgeBtn.dataset;
-    const i = parseInt(index, 10);
-    const row = TakeoffState.getLaborBookType(type)?.[section]?.[i];
-    if (!row) return;
-    provPopover = document.createElement('div');
-    provPopover.className = 'lb-prov-popover';
-    provPopover.innerHTML = `
-      <label>Price from
-        <input type="text" id="lb-prov-source" list="lb-prov-suppliers" value="${escapeHtml(row.priceSource || '')}" placeholder="You, Elliot, ..." autocomplete="off" />
-      </label>
-      <datalist id="lb-prov-suppliers">${collectSupplierNames().map((s) => `<option value="${escapeHtml(s)}"></option>`).join('')}</datalist>
-      <label>On
-        <input type="date" id="lb-prov-date" value="${escapeHtml(row.pricedAt || TakeoffViewShared.todayISO())}" />
-      </label>
-      <div class="lb-prov-actions">
-        <button type="button" class="btn" id="lb-prov-cancel">Cancel</button>
-        <button type="button" class="btn btn-primary" id="lb-prov-save">Save</button>
-      </div>`;
-    document.body.appendChild(provPopover);
-    const br = badgeBtn.getBoundingClientRect();
-    const pw = provPopover.offsetWidth;
-    provPopover.style.top = `${Math.min(br.bottom + 6, window.innerHeight - provPopover.offsetHeight - 8)}px`;
-    provPopover.style.left = `${Math.max(8, Math.min(br.left, window.innerWidth - pw - 8))}px`;
-    provPopover.querySelector('#lb-prov-save').addEventListener('click', () => {
-      const source = provPopover.querySelector('#lb-prov-source').value.trim();
-      const date = provPopover.querySelector('#lb-prov-date').value;
-      TakeoffState.updateLaborBookRow(type, section, i, { priceSource: source, pricedAt: date || null });
-      closeProvPopover();
-      const cell = badgeBtn.closest('.lb-prov-cell');
-      if (cell) {
-        cell.innerHTML = TakeoffViewShared.renderPriceProvenance(source, date, {
-          button: true,
-          data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"`,
-        });
-        attachProvBadge(cell.querySelector('.lb-prov-badge'));
-      }
-    });
-    provPopover.querySelector('#lb-prov-cancel').addEventListener('click', closeProvPopover);
-    document.addEventListener('mousedown', onProvOutsideClick, true);
-    provPopover.querySelector('#lb-prov-source').focus();
-  }
-
+  // the provenance badge opens the part card (offers, quotes, history)
   function attachProvBadge(btn) {
     btn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      openProvPopover(btn);
+      const { type, section, index } = btn.dataset;
+      TakeoffLaborBookCard.openForBookRow(type, section, parseInt(index, 10));
     });
   }
 
@@ -663,12 +589,8 @@ const TakeoffLaborBookView = (function () {
     if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
     const el = document.activeElement;
     if (e.key === 'Escape') {
-      if (provPopover) {
-        closeProvPopover();
-        return;
-      }
       // the supplier-prices modal sits on top of the labor book; its own
-      // handler closes it
+      // handler closes it (the part card stops propagation itself)
       const elliotModal = document.getElementById('mc-elliot-modal');
       if (elliotModal && elliotModal.getAttribute('aria-hidden') === 'false') return;
       const abbrevModal = document.getElementById('abbreviation-key-modal');

@@ -3225,24 +3225,43 @@ button.lb-prov-badge:hover {
 .lb-prov-stale i { background: var(--red); }
 .lb-prov-stale { color: var(--red); border-color: rgba(232, 84, 71, 0.45); }
 
-.lb-prov-popover {
-  position: fixed;
-  z-index: 1200;
-  width: 250px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.part-card-content {
+  max-width: 640px;
+  width: 92vw;
+  padding: 0;
+  overflow: hidden;
 }
 
-.lb-prov-popover label {
+.pc-head {
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.6rem;
+}
+
+.pc-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pc-title {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.pc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pc-meta label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3250,25 +3269,138 @@ button.lb-prov-badge:hover {
   font-weight: 700;
 }
 
-.lb-prov-popover input {
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 5px 8px;
+.pc-meta input {
   font-size: 0.85rem;
+}
+
+#part-card-partnum {
+  font-family: 'DM Mono', monospace;
+  max-width: 160px;
+}
+
+#part-card-labor {
+  max-width: 90px;
+}
+
+.pc-body {
+  padding: 1rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow-y: auto;
+}
+
+.pc-body h4 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin: 0;
+  font-weight: 700;
+}
+
+.pc-offers {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pc-offers th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pc-offers td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.pc-offers tr:last-child td {
+  border-bottom: none;
+}
+
+.pc-num {
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-who {
+  color: var(--text2);
+  font-size: 0.8rem;
+}
+
+.pc-use-cell {
+  text-align: right;
+}
+
+.pc-use-btn {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
   font-family: inherit;
 }
 
-.lb-prov-popover input:focus {
-  outline: none;
+.pc-use-btn:hover:not(:disabled) {
   border-color: var(--accent2);
+  color: var(--text);
 }
 
-.lb-prov-actions {
+.pc-use-btn.active {
+  border-color: var(--accent2);
+  color: var(--accent);
+  background: rgba(232, 197, 71, 0.08);
+  font-weight: 600;
+  cursor: default;
+}
+
+.pc-record {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+}
+
+.pc-record input {
+  font-size: 0.85rem;
+}
+
+#part-card-supplier { max-width: 150px; }
+#part-card-price { max-width: 100px; }
+#part-card-date { max-width: 150px; }
+
+.pc-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text2);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.pc-hist-date { color: var(--text3); }
+.pc-hist-by { color: var(--accent); }
+
+.pc-empty {
+  color: var(--text3);
+  font-size: 0.85rem;
 }
 
 /* Supplier parts woven into universal sections (labor book Parts panel) */
