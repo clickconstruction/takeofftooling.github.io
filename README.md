@@ -69,7 +69,7 @@ Paste clipboard data (fixture, count, page per line). A **preview modal** shows:
 
 Two sides, toggled at the top of the modal:
 
-- **Parts** — Editable per-tab sections (labor hours + price per item), plus a live "Supplier Parts · Elliot" catalog (open by default on tabs with no sections of their own), with a per-tab filter that searches both together
+- **Parts** — Editable per-tab sections (labor hours + price per item, each price badged with who supplied it and how old it is), woven together with the live supplier catalog: supplier categories render as regular sections (merging into a curated section or group of the same name), with a per-tab filter that searches both together
 - **Assemblies** — The MC assemblies book (24k+ entries) as a browsable category tree; add entries rolled-up or exploded into their component items
 - **Global search** — Searches parts, assemblies, and supplier parts together
 - **Add to fixture / fill mode** — Apply a selected entry to a manifest row, or fill a specific flow row via the per-row "PB" buttons
