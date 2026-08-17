@@ -22,7 +22,12 @@ const TakeoffPDF = (function () {
 
     doc.setFontSize(18);
     doc.text('Takeoff Tooling - Review', margin, y);
-    y += 30;
+    y += 16;
+    doc.setFontSize(11);
+    doc.setTextColor(110);
+    doc.text(TakeoffState.getCurrentProject().name, margin, y);
+    doc.setTextColor(0);
+    y += 20;
 
     const items = getFlattenedItems();
     const totalLabor = getTotalLabor();
@@ -80,7 +85,12 @@ const TakeoffPDF = (function () {
 
     doc.setFontSize(18);
     doc.text('Takeoff Tooling - Purchase Order', margin, y);
-    y += 30;
+    y += 16;
+    doc.setFontSize(11);
+    doc.setTextColor(110);
+    doc.text(TakeoffState.getCurrentProject().name, margin, y);
+    doc.setTextColor(0);
+    y += 20;
 
     const items = getFlattenedItems();
     doc.setFontSize(10);
@@ -116,7 +126,12 @@ const TakeoffPDF = (function () {
 
     doc.setFontSize(18);
     doc.text('Takeoff Tooling - Form', margin, y);
-    y += 30;
+    y += 16;
+    doc.setFontSize(11);
+    doc.setTextColor(110);
+    doc.text(TakeoffState.getCurrentProject().name, margin, y);
+    doc.setTextColor(0);
+    y += 20;
 
     const items = getFlattenedItems();
     doc.setFontSize(10);

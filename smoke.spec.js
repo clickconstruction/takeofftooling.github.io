@@ -8,7 +8,7 @@ test('app boots without console errors and manifest edits persist', async ({ pag
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
   await page.goto('/');
-  await expect(page).toHaveTitle('Takeoff Tooling');
+  await expect(page).toHaveTitle(/Takeoff Tooling/);
 
   // seed row exists; type a description (auto-sets quantity to 1)
   const desc = page.locator('input[data-field="description"]').first();

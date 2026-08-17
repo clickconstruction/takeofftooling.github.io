@@ -22,8 +22,10 @@ const TakeoffProjectsView = (function () {
   }
 
   function updateHeader() {
+    const name = TakeoffState.getCurrentProject().name;
     const el = document.getElementById('project-switch-name');
-    if (el) el.textContent = TakeoffState.getCurrentProject().name;
+    if (el) el.textContent = name;
+    document.title = `${name} — Takeoff Tooling`;
   }
 
   // ---------- header dropdown ----------

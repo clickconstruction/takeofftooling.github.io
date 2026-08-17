@@ -306,6 +306,7 @@
       v: 2,
       app: 'takeoff-tooling',
       exportedAt: new Date().toISOString(),
+      name: TakeoffState.getCurrentProject().name,
       manifest: TakeoffState.getManifest(),
     };
     const json = JSON.stringify(envelope);
@@ -415,15 +416,14 @@
       const base64 = hash.slice(3);
       const json = decodeURIComponent(escape(atob(base64)));
       const data = JSON.parse(json);
-      const hasWork = TakeoffState.getTopLevelItems().some(
-        (i) => (i.description || '').trim() || (i.children && i.children.length)
-      );
-      const proceed = !hasWork || confirm('Loading this link will replace your current takeoff. Continue?');
-      if (proceed && TakeoffState.loadManifestFromExport(data)) {
-        window.history.replaceState(null, '', window.location.pathname);
-      } else if (!proceed) {
-        window.history.replaceState(null, '', window.location.pathname);
+      const list = Array.isArray(data) ? data : data && Array.isArray(data.manifest) ? data.manifest : null;
+      if (list) {
+        // shared links land in their own project — nothing gets replaced
+        const name = data && typeof data.name === 'string' && data.name.trim() ? data.name.trim() : 'Imported takeoff';
+        TakeoffState.createProject(name);
+        TakeoffState.loadManifestFromExport(data);
       }
+      window.history.replaceState(null, '', window.location.pathname);
     } catch (err) {
       alert('This shared link could not be loaded — it may be truncated or corrupted.');
     }
