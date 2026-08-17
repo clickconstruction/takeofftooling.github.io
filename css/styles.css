@@ -3494,3 +3494,12 @@ button.lb-prov-badge:hover {
 .lb-card-open:hover {
   color: var(--accent);
 }
+
+/* Child rows: the book button follows the description's indent (2.2rem
+   child padding vs the 0.8rem base). Table mode only — the narrow-screen
+   card layout already indents the whole child card */
+@media (min-width: 641px) {
+  .manifest-view tr.child-row .labor-book-cell .labor-book-icon-btn {
+    transform: translateX(1.4rem);
+  }
+}
