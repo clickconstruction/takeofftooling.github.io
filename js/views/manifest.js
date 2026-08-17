@@ -5,6 +5,7 @@
 const TakeoffManifestView = (function () {
   const TRASH_SVG = TakeoffViewShared.TRASH_SVG;
   const BOOK_SVG = TakeoffViewShared.BOOK_SVG;
+  const CHILD_ARROW_SVG = TakeoffViewShared.CHILD_ARROW_SVG;
 
   const TYPE_LABELS = {
     lighting: 'Lighting',
@@ -74,7 +75,7 @@ const TakeoffManifestView = (function () {
     // childless parents get "+" for their first child; once children exist the
     // ghost add-row at the bottom of the block takes over (children can't nest)
     const showRailAdd = !isChild && !(item.children && item.children.length);
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">+</button>` : ''}</td>`;
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}</td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
@@ -176,7 +177,7 @@ const TakeoffManifestView = (function () {
       <tr class="child-row add-child-row">
         <td class="remove-cell"></td>
         <td class="labor-book-cell"></td>
-        <td colspan="6" class="add-child-cell"><button type="button" class="add-child-btn add-child-row-btn" data-id="${parentId}">+ Add component</button></td>
+        <td colspan="6" class="add-child-cell"><button type="button" class="add-child-btn add-child-row-btn" data-id="${parentId}">${CHILD_ARROW_SVG} Add component</button></td>
       </tr>
     `;
   }

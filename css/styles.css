@@ -3302,3 +3302,20 @@ button.lb-prov-badge:hover {
 .lb-offers.lb-offers-collapsed .labor-book-section-chevron::before {
   content: '\25B6';
 }
+
+/* Add-child corner arrow (manifest rail + ghost row) */
+
+.child-arrow-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.manifest-view .add-child-row-btn {
+  gap: 0.4rem;
+}
+
+.manifest-view .add-child-row-btn .child-arrow-icon {
+  width: 13px;
+  height: 13px;
+}
