@@ -1088,6 +1088,8 @@ header .header-redo-btn {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
 }
 
@@ -2824,18 +2826,39 @@ header .header-redo-btn {
   color: var(--muted, #999);
 }
 
-/* Labor & Price Book global search */
+/* Labor & Price Book global search — lives in the modal header */
+.labor-book-search-wrap {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 400px;
+}
+
+.labor-book-search-icon {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text3);
+  pointer-events: none;
+}
+
 .labor-book-global-search {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.6rem 0.9rem;
-  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.75rem 0.45rem 2.1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface2);
   color: var(--text);
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.9rem;
+}
+
+.labor-book-global-search:focus {
+  outline: none;
+  border-color: var(--accent2);
 }
 
 .labor-book-search-results {

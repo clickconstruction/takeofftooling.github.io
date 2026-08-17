@@ -599,7 +599,8 @@ const TakeoffLaborBookView = (function () {
         return;
       }
       // the search inputs handle Escape themselves (clear the term first)
-      if (el && (el.id === 'labor-book-global-search' || el.id === 'mc-book-search')) return;
+      const searchIds = ['labor-book-global-search', 'mc-book-search'];
+      if ((el && searchIds.includes(el.id)) || (e.target && searchIds.includes(e.target.id))) return;
       TakeoffApp.hideLaborBookModal();
       return;
     }
