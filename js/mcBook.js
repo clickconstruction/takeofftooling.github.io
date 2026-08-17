@@ -73,7 +73,7 @@ const McBook = (function () {
       .map(
         (e, ei) => `
         <tr class="mc-book-entry-row" data-assm="${e.assmNum ?? ''}">
-          <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary mc-book-entry-add-btn" data-idx="${sectionIdx}" data-entry="${ei}" title="Add this assembly's components to the fixture">+ Add</button></td>
+          <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary mc-book-entry-add-btn" data-idx="${sectionIdx}" data-entry="${ei}" title="Add this assembly's components to the fixture">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button></td>
           <td class="mc-book-entry-name"><span class="mc-book-bom-toggle" title="Show components">▸</span> ${escapeHtml(e.name)}${e.flag ? ' <span class="mc-book-entry-flag" title="Elliot component prices changed, but this assembly’s price formula can’t be verified — price not auto-updated.">⚠</span>' : ''}</td>
           <td class="mc-book-entry-labor">${e.labor || 0}</td>
           <td class="mc-book-entry-price">${fmtPrice(e.price)}</td>

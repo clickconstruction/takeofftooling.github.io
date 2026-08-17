@@ -59,7 +59,7 @@ const TakeoffLaborBookSearch = (function () {
 
     const row = (kind, i, name, context, labor, price) => `
       <div class="lb-search-row">
-        <button type="button" class="btn btn-secondary lb-search-add" data-kind="${kind}" data-i="${i}" title="Add to the selected target">+ Add</button>
+        <button type="button" class="btn btn-secondary lb-search-add" data-kind="${kind}" data-i="${i}" title="Add to the selected target">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button>
         <span class="lb-search-name">${escapeHtml(name)}</span>
         <span class="lb-search-context">${escapeHtml(context)}</span>
         <span class="lb-search-num">${labor !== '' && labor != null ? labor + ' hrs' : ''}</span>
@@ -89,7 +89,7 @@ const TakeoffLaborBookSearch = (function () {
           asmEl.innerHTML = asm.length
             ? asm.map((a, i) => `
       <div class="lb-search-row">
-        <button type="button" class="btn btn-secondary lb-search-add" data-kind="assembly" data-i="${i}" title="Add this assembly's components to the selected target">+ Add</button>
+        <button type="button" class="btn btn-secondary lb-search-add" data-kind="assembly" data-i="${i}" title="Add this assembly's components to the selected target">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button>
         <span class="lb-search-bom-toggle" data-i="${i}" title="Show components">▸</span>
         <span class="lb-search-name">${escapeHtml(a.entry.name)}</span>
         <span class="lb-search-context">${escapeHtml(labelForTab(a.tab) + ' · ' + a.sectionName)}</span>
@@ -179,8 +179,9 @@ const TakeoffLaborBookSearch = (function () {
     if (!btn) return;
     const i = Number(btn.dataset.i);
     const flash = (ok) => {
-      btn.textContent = ok ? '✓ Added' : '+ Add';
-      setTimeout(() => { btn.textContent = '+ Add'; }, 1200);
+      const addLabel = `${TakeoffViewShared.CHILD_ARROW_SVG} Add`;
+      btn.innerHTML = ok ? '✓ Added' : addLabel;
+      setTimeout(() => { btn.innerHTML = addLabel; }, 1200);
     };
     if (btn.dataset.kind === 'assembly') {
       const hit = lastSearch.assemblies[i];

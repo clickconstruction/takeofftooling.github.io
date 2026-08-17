@@ -24,7 +24,7 @@ const TakeoffLaborBookElliot = (function () {
       .map(
         (e, ei) => `
         <tr>
-          <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary elliot-part-add-btn" data-key="${escapeHtml(sectionKey)}" data-entry="${ei}" title="Add as child to fixture">+ Add</button></td>
+          <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary elliot-part-add-btn" data-key="${escapeHtml(sectionKey)}" data-entry="${ei}" title="Add as child to fixture">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button></td>
           <td class="mc-book-entry-name">${escapeHtml(e.name)}</td>
           <td class="mc-book-entry-labor">${escapeHtml(e.partNumber || '')}</td>
           <td class="mc-book-entry-price">${e.price ? '$' + Number(e.price).toFixed(2) : ''}</td>
