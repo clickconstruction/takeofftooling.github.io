@@ -2,13 +2,16 @@
  * Supplier parts inside the Labor & Price Book Parts panel.
  *
  * Sections are universal: no supplier owns one. Each supplier catalog
- * section (today: Elliot) renders as a first-class section beside the
- * curated ones — or, when a curated section of the same name exists, its
- * parts appear inside that section as a "Supplier parts" block below the
- * curated rows. Supplier attribution lives on the per-part provenance
- * badge, not on the section. Entries stay lazy-loaded and read-only
- * (rendered from the catalog, not copied into the editable Parts store).
- * Filtering is driven by the tab-level filter input via partsEl._elliotFilter
+ * section (today: Elliot) merges into the curated structure by name
+ * (case-insensitive): a matching curated *section* gets the parts as a
+ * "Supplier parts" block below its rows; a matching curated *group*
+ * (conduit tab) gets them as a "Supplier parts" section at the end of the
+ * group; anything else renders as a standalone section — styled at group
+ * level on tabs whose top-level list is groups, so the list stays visually
+ * uniform. Supplier attribution lives on the per-part provenance badge,
+ * never on the section. Entries stay lazy-loaded and read-only (rendered
+ * from the catalog, not copied into the editable Parts store). Filtering
+ * is driven by the tab-level filter input via partsEl._elliotFilter
  * (laborBook.js applyTabFilter). Loaded before js/views/laborBook.js.
  */
 
@@ -57,39 +60,59 @@ const TakeoffLaborBookElliot = (function () {
       const hasOwnSections = Object.keys(TakeoffState.getLaborBookType(renderedForTab)).length > 0;
 
       const findSection = (key) => sections.find((s) => s.name === key);
-      const blocks = []; // {el, bodyEl, section, hostSection: curated .labor-book-section|null}
+      const blocks = []; // {el, bodyEl, section, vendor, collapsedClass, sectionHost}
 
-      // curated section blocks by lowercased name — a name match means the
-      // supplier offers parts into that same universal section
+      // curated section/group blocks by lowercased name — a name match means
+      // the supplier offers parts into that same universal section/group
       const curatedByName = {};
       partsEl.querySelectorAll('.labor-book-section:not(.lb-supplier-section)').forEach((el) => {
         const key = (el.dataset.section || '').trim().toLowerCase();
         if (key && !curatedByName[key]) curatedByName[key] = el;
       });
+      const groupsByName = {};
+      partsEl.querySelectorAll('.labor-book-group[data-group]').forEach((el) => {
+        const key = (el.dataset.group || '').trim().toLowerCase();
+        if (key && !groupsByName[key]) groupsByName[key] = el;
+      });
+      const groupedTab = Object.keys(groupsByName).length > 0;
 
       for (const s of sections) {
         const vendor = s.level1 || 'Elliot';
-        const host = curatedByName[s.name.trim().toLowerCase()] || null;
+        const key = s.name.trim().toLowerCase();
+        const sectionHost = curatedByName[key] || null;
+        const groupHost = !sectionHost ? groupsByName[key] || null : null;
         let el;
-        if (host) {
+        let collapsedClass;
+        if (sectionHost) {
           el = document.createElement('div');
           el.className = 'lb-offers lb-offers-collapsed';
           el.dataset.key = s.name;
           el.innerHTML = `
             <h4 class="lb-offers-header"><span class="labor-book-section-chevron"></span>Supplier parts <span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h4>
             <div class="lb-offers-body" data-loaded="0"></div>`;
-          host.querySelector('.labor-book-section-body')?.appendChild(el);
-        } else {
+          sectionHost.querySelector('.labor-book-section-body')?.appendChild(el);
+          collapsedClass = 'lb-offers-collapsed';
+        } else if (groupHost) {
           el = document.createElement('div');
           el.className = 'labor-book-section labor-book-section-collapsed lb-supplier-section';
+          el.dataset.section = s.name;
+          el.innerHTML = `
+            <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Supplier parts<span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h3>
+            <div class="labor-book-section-body lb-offers-body" data-loaded="0"></div>`;
+          groupHost.querySelector('.labor-book-group-body')?.appendChild(el);
+          collapsedClass = 'labor-book-section-collapsed';
+        } else {
+          el = document.createElement('div');
+          el.className = `labor-book-section labor-book-section-collapsed lb-supplier-section${groupedTab ? ' lb-group-level' : ''}`;
           el.dataset.section = s.name;
           el.innerHTML = `
             <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(s.name)}<span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h3>
             <div class="labor-book-section-body lb-offers-body" data-loaded="0"></div>`;
           partsEl.appendChild(el);
+          collapsedClass = 'labor-book-section-collapsed';
         }
         const bodyEl = el.querySelector('.lb-offers-body');
-        const block = { el, bodyEl, section: s, vendor, hostSection: host };
+        const block = { el, bodyEl, section: s, vendor, collapsedClass, sectionHost };
         blocks.push(block);
 
         el.addEventListener('click', (e) => {
@@ -109,9 +132,8 @@ const TakeoffLaborBookElliot = (function () {
           }
           const header = e.target.closest('.labor-book-section-header, .lb-offers-header');
           if (header && el.contains(header)) {
-            e.stopPropagation(); // curated hosts have their own header toggle
-            const collapsedClass = block.hostSection ? 'lb-offers-collapsed' : 'labor-book-section-collapsed';
-            const expanded = !el.classList.toggle(collapsedClass);
+            e.stopPropagation(); // hosts have their own header toggles
+            const expanded = !el.classList.toggle(block.collapsedClass);
             if (expanded && bodyEl.dataset.loaded === '0') {
               bodyEl.innerHTML = renderPartRows(s.entries, s.name, vendor, importDate);
               bodyEl.dataset.loaded = '1';
@@ -132,16 +154,17 @@ const TakeoffLaborBookElliot = (function () {
       }
 
       // driven by the tab-level filter input (laborBook.js applyTabFilter,
-      // which runs its curated-row pass first)
+      // which runs this between its section pass and its group pass so group
+      // visibility can account for supplier matches)
       partsEl._elliotFilter = (termRaw) => {
         const term = (termRaw || '').trim().toLowerCase();
         for (const block of blocks) {
-          const { el, bodyEl, section: s, vendor, hostSection } = block;
+          const { el, bodyEl, section: s, vendor, collapsedClass, sectionHost } = block;
           if (!term) {
             block._filtered = null;
             bodyEl.innerHTML = '';
             bodyEl.dataset.loaded = '0';
-            el.classList.add(hostSection ? 'lb-offers-collapsed' : 'labor-book-section-collapsed');
+            el.classList.add(collapsedClass);
             el.style.display = '';
             continue;
           }
@@ -159,15 +182,15 @@ const TakeoffLaborBookElliot = (function () {
           }
           block._filtered = matched;
           el.style.display = '';
-          el.classList.remove(hostSection ? 'lb-offers-collapsed' : 'labor-book-section-collapsed');
+          el.classList.remove(collapsedClass);
           bodyEl.innerHTML =
             `<div class="mc-book-result-count">${matched.length >= FILTER_CAP_PER_SECTION ? `First ${FILTER_CAP_PER_SECTION} matches` : `${matched.length} matches`}</div>` +
             renderPartRows(matched, '__filtered__', vendor, importDate);
           bodyEl.dataset.loaded = '1';
-          if (hostSection) {
+          if (sectionHost) {
             // supplier matches keep the shared section visible and open
-            hostSection.style.display = '';
-            hostSection.classList.remove('labor-book-section-collapsed');
+            sectionHost.style.display = '';
+            sectionHost.classList.remove('labor-book-section-collapsed');
           }
         }
       };

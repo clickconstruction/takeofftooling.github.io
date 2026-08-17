@@ -3337,3 +3337,10 @@ button.lb-prov-badge:hover {
   width: 12px;
   height: 12px;
 }
+
+/* Standalone supplier sections on a grouped tab (conduit) sit at group
+   level, so their headers take the gold group-header treatment */
+.lb-supplier-section.lb-group-level > .labor-book-section-header {
+  color: var(--accent);
+  font-size: 1.05rem;
+}

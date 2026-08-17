@@ -210,12 +210,14 @@ const TakeoffLaborBookView = (function () {
       // clearing the term restores the default all-collapsed view
       sec.classList.toggle('labor-book-section-collapsed', term ? !any : true);
     });
+    // supplier filter runs before the group pass so a group whose only
+    // matches are supplier parts stays visible (and one with none hides)
+    partsEl._elliotFilter?.(term);
     partsEl.querySelectorAll('.labor-book-group').forEach((g) => {
       const anyVisible = Array.from(g.querySelectorAll('.labor-book-section')).some((s) => s.style.display !== 'none');
       g.style.display = !term || anyVisible ? '' : 'none';
       g.classList.toggle('labor-book-group-collapsed', term ? !anyVisible : true);
     });
-    partsEl._elliotFilter?.(term);
   }
 
   let tabFilterTimer = null;
