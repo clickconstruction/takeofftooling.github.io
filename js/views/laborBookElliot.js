@@ -57,6 +57,30 @@ const TakeoffLaborBookElliot = (function () {
       const sections = McBook.elliotSectionsForTab(renderedForTab);
       if (!sections.length) return;
       const importDate = McBook.elliotImportDate();
+
+      // sync promoted parts with the catalog (per vendor, by part #);
+      // a change means stale rows are on screen — re-render, which re-runs
+      // this injector against fresh data (second pass finds nothing to sync)
+      const byVendor = {};
+      for (const s of sections) {
+        const vendor = s.level1 || 'Elliot';
+        if (!byVendor[vendor]) byVendor[vendor] = {};
+        for (const e of s.entries) {
+          if (e.partNumber && e.price != null) {
+            byVendor[vendor][e.partNumber.toLowerCase()] = { price: Number(e.price), at: e.pricedAt || importDate };
+          }
+        }
+      }
+      let refreshed = 0;
+      for (const [vendor, map] of Object.entries(byVendor)) {
+        refreshed += TakeoffState.refreshSupplierOffers(renderedForTab, vendor, map);
+      }
+      if (refreshed) {
+        TakeoffLaborBookView.render();
+        TakeoffLaborBookView.attachListeners();
+        return;
+      }
+
       const bookTab = TakeoffState.getLaborBookType(renderedForTab);
       const hasOwnSections = Object.keys(bookTab).length > 0;
 

@@ -487,6 +487,42 @@ const TakeoffState = (function () {
     schedulePersist();
   }
 
+  /**
+   * Sync promoted parts with the supplier catalog: for every row in the tab
+   * whose partNumber the catalog knows, refresh that vendor's offer (added
+   * if missing — typing a part # links a row to the catalog). The working
+   * price follows only when that vendor is the offer in use. Returns the
+   * number of rows changed (0 → caller can skip re-rendering).
+   */
+  function refreshSupplierOffers(type, vendor, byPartNumber) {
+    let changed = 0;
+    for (const section of Object.keys(laborBook[type] || {})) {
+      for (let i = 0; i < laborBook[type][section].length; i++) {
+        const row = laborBook[type][section][i];
+        const cat = row.partNumber && byPartNumber[row.partNumber.toLowerCase()];
+        if (!cat || cat.price == null) continue;
+        const offer = row.offers?.find((o) => o.supplier.toLowerCase() === vendor.toLowerCase());
+        if (offer && Number(offer.price) === Number(cat.price)) continue;
+        if (!row.offers) row.offers = [];
+        if (offer) {
+          offer.price = cat.price;
+          offer.at = cat.at;
+          offer.by = 'import';
+        } else {
+          row.offers.push({ supplier: vendor, price: cat.price, at: cat.at, by: 'import' });
+        }
+        pushPartHistory(row, { at: cat.at, kind: 'price', supplier: vendor, value: cat.price, by: 'import' });
+        if ((row.priceSource || '').toLowerCase() === vendor.toLowerCase()) {
+          row.price = String(cat.price);
+          row.pricedAt = cat.at;
+        }
+        changed++;
+      }
+    }
+    if (changed) schedulePersist();
+    return changed;
+  }
+
   // Corrections a consenting user shares through cloud sync (js/cloud.js).
   function getBookCorrections() {
     return TakeoffLaborBookMerge.computeCorrections(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved);
@@ -563,6 +599,7 @@ const TakeoffState = (function () {
     recordPartPrice,
     usePartOffer,
     recordPartLabor,
+    refreshSupplierOffers,
     getBookCorrections,
     getActiveLaborBookTab,
     setActiveLaborBookTab,
