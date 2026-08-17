@@ -10,4 +10,4 @@ Run. Apply files in filename order.
 
 | File | What |
 |---|---|
-| `001_takeoff_projects.sql` | Per-user project rows (schema-aligned with Count Tooling's `projects` table for the future merge). Until applied, project cloud sync is dormant — the app detects the missing table, keeps projects local-only, and logs a console note. Book/assemblies sync via `takeoff_store` is unaffected. |
+| `001_takeoff_projects.sql` | **Applied 2026-08-17.** Per-user project rows (schema-aligned with Count Tooling's `projects` table for the future merge). Until applied, project cloud sync is dormant — the app detects the missing table, keeps projects local-only, and logs a console note. Book/assemblies sync via `takeoff_store` is unaffected. |

@@ -25,6 +25,14 @@ function fetchOwnSuggestions(page) {
   }, SB);
 }
 
+function fetchOwnProjects(page) {
+  return page.evaluate(async ({ url, key }) => {
+    const c = supabase.createClient(url, key);
+    const { data, error } = await c.from('takeoff_projects').select('id,name,data,updated_at');
+    return { rows: data || [], error: error ? error.message : null };
+  }, SB);
+}
+
 function setBookPrice(page, price) {
   return page.evaluate((p) => {
     TakeoffState.updateLaborBookRow('wire', 'THHN CU', 0, { price: p });
@@ -92,5 +100,66 @@ test('cloud round trip: sign in, share a correction, revert prunes it, opt-out w
       const c = supabase.createClient(url, key);
       await c.auth.signOut();
     }, SB);
+  }
+});
+
+test('projects round trip: create syncs a row, rename updates it, delete removes it', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/');
+
+  const signInError = await page.evaluate(async ({ url, key, email, password }) => {
+    const c = supabase.createClient(url, key);
+    const { error } = await c.auth.signInWithPassword({ email, password });
+    return error ? error.message : null;
+  }, { ...SB, email: EMAIL, password: PASSWORD });
+  expect(signInError).toBeNull();
+  await page.reload();
+  await expect(page.locator('#cloud-btn')).toHaveText('✓ Cloud', { timeout: 20000 });
+
+  const name = 'SyncTest ' + Date.now();
+  const projectId = await page.evaluate((n) => {
+    const id = TakeoffState.createProject(n);
+    TakeoffState.addItem({ description: 'Sync row', type: 'gear', quantity: 1, labor: 1, price: 10 });
+    TakeoffState.persistNow();
+    TakeoffCloud.flushPending();
+    return id;
+  }, name);
+
+  try {
+    // create lands as a takeoff_projects row carrying the manifest
+    await expect
+      .poll(async () => {
+        const { rows } = await fetchOwnProjects(page);
+        const r = rows.find((x) => x.id === projectId);
+        return !!(r && r.name === name && r.data && Array.isArray(r.data.manifest) && r.data.manifest.some((m) => m.description === 'Sync row'));
+      }, { timeout: 20000 })
+      .toBe(true);
+
+    // rename follows
+    await page.evaluate(() => {
+      TakeoffState.setProjectName('SyncTest renamed');
+      TakeoffState.persistNow();
+      TakeoffCloud.flushPending();
+    });
+    await expect
+      .poll(async () => {
+        const { rows } = await fetchOwnProjects(page);
+        const r = rows.find((x) => x.id === projectId);
+        return r ? r.name : null;
+      }, { timeout: 20000 })
+      .toBe('SyncTest renamed');
+  } finally {
+    // cleanup: switch off the test project and delete it → row disappears
+    await page.evaluate((id) => {
+      const other = TakeoffState.getProjects().find((p) => p.id !== id);
+      if (other) TakeoffState.switchProject(other.id);
+      TakeoffState.deleteProject(id);
+    }, projectId);
+    await expect
+      .poll(async () => {
+        const { rows } = await fetchOwnProjects(page);
+        return rows.some((x) => x.id === projectId);
+      }, { timeout: 20000 })
+      .toBe(false);
   }
 });
