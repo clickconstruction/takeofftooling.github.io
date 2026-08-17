@@ -26,9 +26,9 @@ const TakeoffLaborBookElliot = (function () {
     const rows = entries
       .map(
         (e, ei) => `
-        <tr>
+        <tr data-entry="${ei}">
           <td class="mc-book-entry-add"><button type="button" class="btn btn-secondary elliot-part-add-btn" data-key="${escapeHtml(sectionKey)}" data-entry="${ei}" title="Add as child to fixture">${TakeoffViewShared.CHILD_ARROW_SVG} Add</button></td>
-          <td class="mc-book-entry-name">${escapeHtml(e.name)}</td>
+          <td class="mc-book-entry-name lb-card-open" title="Open part card">${escapeHtml(e.name)}</td>
           <td class="mc-book-entry-labor">${escapeHtml(e.partNumber || '')}</td>
           <td class="mc-book-entry-price">${e.price ? '$' + Number(e.price).toFixed(2) : ''}</td>
           <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(vendor, e.pricedAt || importDate)}</td>
@@ -57,10 +57,18 @@ const TakeoffLaborBookElliot = (function () {
       const sections = McBook.elliotSectionsForTab(renderedForTab);
       if (!sections.length) return;
       const importDate = McBook.elliotImportDate();
-      const hasOwnSections = Object.keys(TakeoffState.getLaborBookType(renderedForTab)).length > 0;
+      const bookTab = TakeoffState.getLaborBookType(renderedForTab);
+      const hasOwnSections = Object.keys(bookTab).length > 0;
 
-      const findSection = (key) => sections.find((s) => s.name === key);
-      const blocks = []; // {el, bodyEl, section, vendor, collapsedClass, sectionHost}
+      // parts promoted into the editable book supersede their catalog row
+      const promoted = new Set();
+      for (const secName of Object.keys(bookTab)) {
+        for (const r of bookTab[secName]) {
+          if (r.partNumber) promoted.add(r.partNumber.toLowerCase());
+        }
+      }
+
+      const blocks = []; // {el, bodyEl, section, visible, vendor, collapsedClass, sectionHost}
 
       // curated section/group blocks by lowercased name — a name match means
       // the supplier offers parts into that same universal section/group
@@ -78,6 +86,8 @@ const TakeoffLaborBookElliot = (function () {
 
       for (const s of sections) {
         const vendor = s.level1 || 'Elliot';
+        const visible = s.entries.filter((e) => !e.partNumber || !promoted.has(e.partNumber.toLowerCase()));
+        if (!visible.length) continue;
         const key = s.name.trim().toLowerCase();
         const sectionHost = curatedByName[key] || null;
         const groupHost = !sectionHost ? groupsByName[key] || null : null;
@@ -88,7 +98,7 @@ const TakeoffLaborBookElliot = (function () {
           el.className = 'lb-offers lb-offers-collapsed';
           el.dataset.key = s.name;
           el.innerHTML = `
-            <h4 class="lb-offers-header"><span class="labor-book-section-chevron"></span>Supplier parts <span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h4>
+            <h4 class="lb-offers-header"><span class="labor-book-section-chevron"></span>Supplier parts <span class="mc-book-section-count">${visible.length.toLocaleString()}</span></h4>
             <div class="lb-offers-body" data-loaded="0"></div>`;
           sectionHost.querySelector('.labor-book-section-body')?.appendChild(el);
           collapsedClass = 'lb-offers-collapsed';
@@ -97,7 +107,7 @@ const TakeoffLaborBookElliot = (function () {
           el.className = 'labor-book-section labor-book-section-collapsed lb-supplier-section';
           el.dataset.section = s.name;
           el.innerHTML = `
-            <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Supplier parts<span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h3>
+            <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Supplier parts<span class="mc-book-section-count">${visible.length.toLocaleString()}</span></h3>
             <div class="labor-book-section-body lb-offers-body" data-loaded="0"></div>`;
           groupHost.querySelector('.labor-book-group-body')?.appendChild(el);
           collapsedClass = 'labor-book-section-collapsed';
@@ -106,21 +116,20 @@ const TakeoffLaborBookElliot = (function () {
           el.className = `labor-book-section labor-book-section-collapsed lb-supplier-section${groupedTab ? ' lb-group-level' : ''}`;
           el.dataset.section = s.name;
           el.innerHTML = `
-            <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(s.name)}<span class="mc-book-section-count">${s.entries.length.toLocaleString()}</span></h3>
+            <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(s.name)}<span class="mc-book-section-count">${visible.length.toLocaleString()}</span></h3>
             <div class="labor-book-section-body lb-offers-body" data-loaded="0"></div>`;
           partsEl.appendChild(el);
           collapsedClass = 'labor-book-section-collapsed';
         }
         const bodyEl = el.querySelector('.lb-offers-body');
-        const block = { el, bodyEl, section: s, vendor, collapsedClass, sectionHost };
+        const block = { el, bodyEl, section: s, visible, vendor, collapsedClass, sectionHost };
         blocks.push(block);
 
         el.addEventListener('click', (e) => {
+          const rowEntries = () => (block._filtered ? block._filtered : block.visible);
           const addBtn = e.target.closest('.elliot-part-add-btn');
           if (addBtn) {
-            const entry = addBtn.dataset.key === '__filtered__'
-              ? block._filtered?.[Number(addBtn.dataset.entry)]
-              : findSection(addBtn.dataset.key)?.entries[Number(addBtn.dataset.entry)];
+            const entry = rowEntries()[Number(addBtn.dataset.entry)];
             if (entry) {
               TakeoffLaborBookTargets.addEntryToTarget({
                 description: entry.name,
@@ -130,12 +139,26 @@ const TakeoffLaborBookElliot = (function () {
             }
             return;
           }
+          const cardCell = e.target.closest('.lb-card-open, .lb-prov-cell');
+          if (cardCell) {
+            const tr = cardCell.closest('tr[data-entry]');
+            const entry = tr && rowEntries()[Number(tr.dataset.entry)];
+            if (entry) {
+              TakeoffLaborBookCard.openForCatalogPart(renderedForTab, s.name, vendor, {
+                name: entry.name,
+                partNumber: entry.partNumber || '',
+                price: entry.price,
+                pricedAt: entry.pricedAt || importDate,
+              });
+            }
+            return;
+          }
           const header = e.target.closest('.labor-book-section-header, .lb-offers-header');
           if (header && el.contains(header)) {
             e.stopPropagation(); // hosts have their own header toggles
             const expanded = !el.classList.toggle(block.collapsedClass);
             if (expanded && bodyEl.dataset.loaded === '0') {
-              bodyEl.innerHTML = renderPartRows(s.entries, s.name, vendor, importDate);
+              bodyEl.innerHTML = renderPartRows(block.visible, s.name, vendor, importDate);
               bodyEl.dataset.loaded = '1';
             }
           }
@@ -159,7 +182,7 @@ const TakeoffLaborBookElliot = (function () {
       partsEl._elliotFilter = (termRaw) => {
         const term = (termRaw || '').trim().toLowerCase();
         for (const block of blocks) {
-          const { el, bodyEl, section: s, vendor, collapsedClass, sectionHost } = block;
+          const { el, bodyEl, section: s, visible, vendor, collapsedClass, sectionHost } = block;
           if (!term) {
             block._filtered = null;
             bodyEl.innerHTML = '';
@@ -170,7 +193,7 @@ const TakeoffLaborBookElliot = (function () {
           }
           const titleMatch = s.name.toLowerCase().includes(term);
           const matched = [];
-          for (const en of s.entries) {
+          for (const en of visible) {
             if (titleMatch || en.name.toLowerCase().includes(term) || (en.partNumber || '').toLowerCase().includes(term)) {
               matched.push(en);
               if (matched.length >= FILTER_CAP_PER_SECTION) break;

@@ -3483,3 +3483,14 @@ button.lb-prov-badge:hover {
   font-size: 0.8rem;
   max-width: 140px;
 }
+
+/* Catalog rows: name/badge open the part card */
+.lb-card-open,
+.lb-offers-body .lb-prov-cell .lb-prov-badge,
+.lb-supplier-section .lb-prov-cell .lb-prov-badge {
+  cursor: pointer;
+}
+
+.lb-card-open:hover {
+  color: var(--accent);
+}
