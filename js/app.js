@@ -23,6 +23,7 @@
       TakeoffWireView.attachListeners(itemId);
     }
     updateUndoRedoButtons();
+    if (typeof TakeoffProjectsView !== 'undefined') TakeoffProjectsView.updateHeader();
   }
 
   function updateUndoRedoButtons() {
@@ -347,18 +348,9 @@
 
   // New Takeoff: clear the manifest, keep the books
   document.getElementById('new-takeoff-btn')?.addEventListener('click', () => {
-    const hasWork = TakeoffState.getTopLevelItems().some(
-      (i) => (i.description || '').trim() || (i.children && i.children.length)
-    );
-    if (
-      hasWork &&
-      !confirm('Start a new takeoff? This clears the current manifest. Your Labor Book, assemblies, and labor rate are kept.')
-    ) {
-      return;
-    }
-    TakeoffState.loadManifestFromExport([]);
-    TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
-    TakeoffState.persistNow();
+    const name = prompt('New project name:', '');
+    if (name === null) return;
+    TakeoffState.createProject(name);
     navigateToManifest();
   });
 
