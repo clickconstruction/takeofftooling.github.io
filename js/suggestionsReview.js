@@ -187,6 +187,14 @@ const TakeoffSuggestionsReview = (function () {
   // one-time listeners (delegated for the per-row buttons)
   document.getElementById('review-suggestions-btn')?.addEventListener('click', openModal);
   document.getElementById('suggestions-modal-close')?.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function suggestionsModalKeyHandler(e) {
+    const modal = document.getElementById('suggestions-modal');
+    if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal();
+    }
+  });
   document.getElementById('suggestions-refresh-btn')?.addEventListener('click', load);
   document.getElementById('suggestions-download-btn')?.addEventListener('click', downloadAcceptedPatch);
   document.getElementById('suggestions-modal')?.addEventListener('click', (e) => {

@@ -460,6 +460,14 @@ const TakeoffCloud = (function () {
   document.getElementById('cloud-modal')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
+  document.addEventListener('keydown', function cloudModalKeyHandler(e) {
+    const modal = document.getElementById('cloud-modal');
+    if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal();
+    }
+  });
   updateUi();
 
   return { isSignedIn, getEmail, isAdmin, onWorkspaceSaved, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };

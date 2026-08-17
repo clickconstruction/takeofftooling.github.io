@@ -324,6 +324,14 @@ const McElliotUpdate = (function () {
     document.getElementById('mc-elliot-modal')?.addEventListener('click', (e) => {
       if (e.target.id === 'mc-elliot-modal') hide();
     });
+    document.addEventListener('keydown', function mcElliotKeyHandler(e) {
+      const modal = document.getElementById('mc-elliot-modal');
+      if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        hide();
+      }
+    });
     document.getElementById('mc-elliot-tabs')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-eltab]');
       if (!btn) return;

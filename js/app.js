@@ -392,6 +392,16 @@
     formModal?.setAttribute('aria-hidden', 'true');
   });
 
+  document.addEventListener('keydown', function formModalKeyHandler(e) {
+    const formModal = document.getElementById('form-modal');
+    if (!formModal || formModal.getAttribute('aria-hidden') !== 'false') return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (formModal.contains(document.activeElement)) document.activeElement?.blur();
+      formModal.setAttribute('aria-hidden', 'true');
+    }
+  });
+
   document.getElementById('form-modal-print')?.addEventListener('click', () => {
     const form = document.getElementById('form-details');
     const data = {

@@ -555,6 +555,10 @@ const TakeoffLaborBookView = (function () {
     if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
     const el = document.activeElement;
     if (e.key === 'Escape') {
+      // the supplier-prices modal sits on top of the labor book; its own
+      // handler closes it
+      const elliotModal = document.getElementById('mc-elliot-modal');
+      if (elliotModal && elliotModal.getAttribute('aria-hidden') === 'false') return;
       const abbrevModal = document.getElementById('abbreviation-key-modal');
       if (abbrevModal && abbrevModal.getAttribute('aria-hidden') === 'false') {
         abbrevModal.setAttribute('aria-hidden', 'true');
