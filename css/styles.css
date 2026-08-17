@@ -3499,7 +3499,8 @@ button.lb-prov-badge:hover {
    child padding vs the 0.8rem base). Table mode only — the narrow-screen
    card layout already indents the whole child card */
 @media (min-width: 641px) {
-  .manifest-view tr.child-row .labor-book-cell .labor-book-icon-btn {
+  .manifest-view tr.child-row .labor-book-cell .labor-book-icon-btn,
+  .manifest-view tr.child-row .remove-cell .remove-btn {
     transform: translateX(1.4rem);
   }
 }
