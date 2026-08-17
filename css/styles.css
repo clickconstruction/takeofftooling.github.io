@@ -504,9 +504,23 @@ header .header-redo-btn {
 }
 
 .labor-book-preselected {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.9rem;
   color: var(--text2);
   padding: 0.4rem 0;
+}
+
+.labor-book-preselected .child-arrow-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--accent);
+}
+
+.labor-book-preselected strong {
+  color: var(--text);
 }
 
 /* Child rows sit recessed so the parent reads as the block's header */

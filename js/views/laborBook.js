@@ -331,7 +331,8 @@ const TakeoffLaborBookView = (function () {
       const fixtureId = TakeoffState.getTopLevelParentId(preselectedId);
       const fixture = TakeoffState.getItemById(fixtureId);
       const desc = (fixture?.description || '').slice(0, 50) + ((fixture?.description || '').length > 50 ? '...' : '');
-      applyToEl.innerHTML = `<div class="labor-book-preselected">Add to: <strong>${escapeHtml(desc)}</strong> (Quantity: ${fixture?.quantity || 0})</div>`;
+      const qty = Number(fixture?.quantity) || 0;
+      applyToEl.innerHTML = `<div class="labor-book-preselected">${TakeoffViewShared.CHILD_ARROW_SVG} Adding parts under: <strong>${desc ? escapeHtml(desc) : 'this unnamed row'}</strong>${qty ? ` · ×${qty} on the bid` : ''}</div>`;
       applyToEl.dataset.targetFixtureId = fixtureId;
       applyToEl.removeAttribute('data-target-device-row');
     } else {
