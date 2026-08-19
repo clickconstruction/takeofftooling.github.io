@@ -30,12 +30,13 @@ const TakeoffCloud = (function () {
   const TABLE = 'takeoff_store';
   const PROJECTS_TABLE = 'takeoff_projects';
   const SUGGESTIONS_TABLE = 'takeoff_suggestions';
-  const ADMIN_EMAIL = 'stephen@pipetexas.com'; // review-panel visibility; RLS enforces the real access
+  const ADMIN_EMAIL = 'stephen@pipetexas.com'; // legacy fallback while takeoff_profiles is unapplied; RLS enforces the real access
   const SHARE_KEY = 'takeoff-share-corrections'; // '1' when the user opted into sharing book corrections
   const PUSH_DEBOUNCE_MS = 1200;
 
   let client = null;
   let session = null;
+  let profileRole = null; // 'user' | 'admin' | 'dev' — from takeoff_profiles
   let syncedThisLoad = false;
   let suppressPush = false; // true while adopting remote data locally
   let lastSyncedAt = null;
@@ -308,8 +309,81 @@ const TakeoffCloud = (function () {
 
   // --- Shared-book corrections (opt-in; see docs/ARCHITECTURE.md) ---
 
+  // Roles come from takeoff_profiles (002 migration): admin reviews shared
+  // corrections; dev additionally manages users. The email check is a
+  // fallback so the review panel keeps working until 002 is applied.
+  async function fetchProfileRole() {
+    if (!client || !session) {
+      profileRole = null;
+      return;
+    }
+    try {
+      const { data } = await client.from('takeoff_profiles').select('role').eq('user_id', session.user.id).maybeSingle();
+      profileRole = data ? data.role : null;
+    } catch (_) {
+      profileRole = null;
+    }
+    updateUi();
+  }
+
+  function getRole() {
+    return session ? profileRole || 'user' : null;
+  }
+
   function isAdmin() {
+    if (profileRole) return profileRole === 'admin' || profileRole === 'dev';
     return (getEmail() || '').toLowerCase() === ADMIN_EMAIL;
+  }
+
+  function isDev() {
+    return profileRole === 'dev';
+  }
+
+  // --- Dev-only user management (RPCs + the takeoff-admin Edge Function) ---
+
+  async function listUsers() {
+    if (!client || !session) return { rows: [], error: 'Not signed in' };
+    const { data, error } = await client.rpc('takeoff_list_users');
+    return { rows: data || [], error: error ? error.message : null };
+  }
+
+  async function setUserRole(userId, role) {
+    if (!client || !session) return 'Not signed in';
+    const { error } = await client.rpc('takeoff_set_user_role', { target: userId, new_role: role });
+    return error ? error.message : null;
+  }
+
+  async function adminCreateUser(email, password) {
+    if (!client || !session) return { error: 'Not signed in' };
+    const { data, error } = await client.functions.invoke('takeoff-admin', {
+      body: { action: 'create-user', email, password },
+    });
+    if (error) {
+      // supabase-js wraps non-2xx responses; surface the function's message
+      try {
+        const body = await error.context.json();
+        return { error: body.error || error.message };
+      } catch (_) {
+        return { error: error.message };
+      }
+    }
+    return data && data.ok ? { userId: data.userId } : { error: (data && data.error) || 'Unknown error' };
+  }
+
+  async function adminDeleteUser(userId) {
+    if (!client || !session) return 'Not signed in';
+    const { data, error } = await client.functions.invoke('takeoff-admin', {
+      body: { action: 'delete-user', userId },
+    });
+    if (error) {
+      try {
+        const body = await error.context.json();
+        return body.error || error.message;
+      } catch (_) {
+        return error.message;
+      }
+    }
+    return data && data.ok ? null : (data && data.error) || 'Unknown error';
   }
 
   function isSharing() {
@@ -442,12 +516,12 @@ const TakeoffCloud = (function () {
   if (client) {
     client.auth.onAuthStateChange((event, s) => {
       session = s;
+      if (session) fetchProfileRole();
+      else profileRole = null;
       if (session && !syncedThisLoad) {
         syncedThisLoad = true;
         renderModal();
         syncDown();
-      } else if (!session) {
-        updateUi();
       } else {
         updateUi();
       }
@@ -476,6 +550,7 @@ const TakeoffCloud = (function () {
     }
     // the review panel is admin-only chrome
     document.getElementById('review-suggestions-btn')?.toggleAttribute('hidden', !(session && isAdmin()));
+    document.getElementById('manage-users-btn')?.toggleAttribute('hidden', !(session && isDev()));
     const modal = document.getElementById('cloud-modal');
     if (modal && modal.getAttribute('aria-hidden') === 'false') renderModal();
   }
@@ -638,5 +713,5 @@ const TakeoffCloud = (function () {
   });
   updateUi();
 
-  return { isSignedIn, getEmail, isAdmin, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
+  return { isSignedIn, getEmail, isAdmin, isDev, getRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
 })();

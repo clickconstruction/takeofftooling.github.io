@@ -39,6 +39,7 @@
               Remove items
             </button>
             <button type="button" id="review-suggestions-btn" class="header-menu-item" hidden>Review suggestions</button>
+            <button type="button" id="manage-users-btn" class="header-menu-item" hidden>Manage users</button>
             <button type="button" id="cache-clear-reload-btn" class="header-menu-item header-menu-item-danger" title="Reload the app with a cleared code cache (keeps your data)">Hard reload</button>
           </div>
         </div>
@@ -146,6 +147,25 @@
   </div>
 
   <!-- Abbreviation Key modal (Labor and Price Book) -->
+  <div id="users-modal" class="modal" aria-hidden="true">
+    <div class="modal-content users-modal-content">
+      <div class="users-modal-header">
+        <h2>Manage Users</h2>
+        <div class="users-modal-header-actions">
+          <button type="button" id="users-refresh-btn" class="btn btn-secondary">Refresh</button>
+          <button type="button" id="users-modal-close" class="btn btn-secondary">Close</button>
+        </div>
+      </div>
+      <div id="users-list"></div>
+      <div class="users-add-row">
+        <input type="email" id="users-add-email" placeholder="email@company.com" autocomplete="off" />
+        <input type="text" id="users-add-password" placeholder="Temporary password (6+ chars)" autocomplete="off" />
+        <button type="button" id="users-add-btn" class="btn btn-primary">Add user</button>
+      </div>
+      <div id="users-status" class="users-status"></div>
+    </div>
+  </div>
+
   <div id="projects-modal" class="modal" aria-hidden="true">
     <div class="modal-content projects-modal-content">
       <div class="projects-modal-header">
@@ -277,6 +297,7 @@
   <script src="js/views/laborBookSearch.js"></script>
   <script src="js/views/laborBookCard.js"></script>
   <script src="js/views/projects.js"></script>
+  <script src="js/views/users.js"></script>
   <script src="js/views/laborBook.js"></script>
   <script src="js/views/device.js"></script>
   <script src="js/views/conduit.js"></script>

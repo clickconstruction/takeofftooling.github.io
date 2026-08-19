@@ -3780,3 +3780,108 @@ button.lb-prov-badge:hover {
   font-size: 0.8rem;
   max-width: 140px;
 }
+
+/* Manage Users modal (dev role) */
+
+.users-modal-content {
+  max-width: 760px;
+  width: 94vw;
+}
+
+.users-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.users-modal-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.users-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.users-email {
+  font-weight: 600;
+}
+
+.users-you-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  border: 1px solid var(--accent2);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 8px;
+}
+
+.users-role-select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.users-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+
+.users-delete-btn {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  color: var(--red);
+  border-color: rgba(232, 84, 71, 0.4);
+}
+
+.users-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 0.9rem;
+}
+
+.users-add-row input {
+  flex: 1;
+}
+
+.users-status {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--green);
+  min-height: 1.2em;
+}
+
+.users-status-error {
+  color: var(--red);
+}
+
+.users-loading {
+  color: var(--text3);
+  padding: 0.75rem 0;
+}

@@ -28,6 +28,7 @@ const appGlobals = {
   TakeoffLaborBookSearch: 'readonly',
   TakeoffLaborBookCard: 'readonly',
   TakeoffProjectsView: 'readonly',
+  TakeoffUsersView: 'readonly',
   TakeoffDeviceView: 'readonly',
   TakeoffConduitView: 'readonly',
   TakeoffWireView: 'readonly',
