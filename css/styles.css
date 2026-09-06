@@ -149,6 +149,12 @@ header .header-import-btn {
   white-space: nowrap;
 }
 
+/* role-gated items (cloud.js toggles the hidden attribute) — the display:flex
+   above would otherwise override the UA's [hidden] rule and show them */
+.header-menu-item[hidden] {
+  display: none;
+}
+
 .header-menu-item:hover {
   background: var(--surface3);
 }
@@ -207,6 +213,12 @@ header .header-import-btn {
 
   header h1 {
     font-size: 1.1rem;
+  }
+
+  /* the two action buttons must fit the 375px strip without clipping */
+  .header-actions .header-import-btn {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.82rem;
   }
 }
 
@@ -537,6 +549,24 @@ header .header-redo-btn {
    icon rail on the left. */
 .manifest-table-scroll {
   overflow-x: auto;
+  /* keep the scrollbar visible when columns are cut off (641–900px) —
+     overlay scrollbars otherwise leave no hint that Price/Plan Page scroll
+     into view */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.manifest-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.manifest-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.manifest-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .manifest-table-scroll > table {
@@ -549,7 +579,9 @@ header .header-redo-btn {
   min-width: 140px;
 }
 
-@media (max-width: 640px) {
+/* Card layout below 900px: the table's 900px column grid would otherwise
+   leave Price half-clipped and Plan Page hidden behind a scroll on tablets */
+@media (max-width: 900px) {
   .manifest-table-scroll > table {
     min-width: 0;
     display: block;
@@ -740,6 +772,18 @@ header .header-redo-btn {
 .manifest-view .type-badge.temporaryPower { background: rgba(128,128,128,0.25); color: #888; }
 .manifest-view .type-badge.default { background: var(--surface3); color: var(--text2); }
 
+.manifest-view .type-badge .type-badge-edit-icon {
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 0.35em;
+  vertical-align: -0.05em;
+  opacity: 0.65;
+}
+
+.manifest-view .type-badge-flow:hover .type-badge-edit-icon {
+  opacity: 1;
+}
+
 .manifest-view .clear-type-btn {
   display: inline-flex;
   align-items: center;
@@ -820,6 +864,10 @@ header .header-redo-btn {
 
 .print-options.expanded .print-options-content {
   display: flex;
+}
+
+.btn[hidden] {
+  display: none !important;
 }
 
 .btn {
@@ -1523,6 +1571,22 @@ header .header-redo-btn {
   padding: 1.5rem;
   border-radius: 8px;
   max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Wide screens: the device flow's eight sections use the width in two
+   columns instead of leaving half the monitor empty */
+@media (min-width: 1200px) {
+  .flow-page.device-flow {
+    max-width: 1240px;
+  }
+
+  .device-flow .device-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 2.5rem;
+    align-items: start;
+  }
 }
 
 .flow-page h2 {
@@ -1756,6 +1820,34 @@ header .header-redo-btn {
   border-collapse: collapse;
 }
 
+/* Row tables scroll inside their own strip on narrow screens instead of
+   overflowing the page (which crushed the quantity input and pushed Price
+   off-screen at phone widths). Same affordance as .manifest-table-scroll. */
+.flow-table-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.flow-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.flow-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.flow-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .flow-table-scroll > table {
+    min-width: 560px;
+  }
+}
+
 .flow-section th,
 .flow-section td {
   padding: 0.4rem 0.5rem;
@@ -1807,6 +1899,7 @@ header .header-redo-btn {
   color: var(--red);
 }
 
+.flow-section .remove-mac-btn.icon-btn,
 .flow-section .remove-fitting-btn.icon-btn {
   display: inline-flex;
   align-items: center;
@@ -1818,6 +1911,7 @@ header .header-redo-btn {
   color: var(--text2);
 }
 
+.flow-section .remove-mac-btn.icon-btn:hover,
 .flow-section .remove-fitting-btn.icon-btn:hover {
   background: rgba(232, 84, 71, 0.2);
   color: var(--red);
@@ -1840,6 +1934,7 @@ header .header-redo-btn {
 }
 
 .flow-section .remove-child-btn .trash-icon,
+.flow-section .remove-mac-btn .trash-icon,
 .flow-section .remove-fitting-btn .trash-icon,
 .flow-section .remove-addon-btn .trash-icon {
   width: 16px;
@@ -2508,6 +2603,10 @@ header .header-redo-btn {
 }
 
 /* Update Elliot Prices modal */
+.mc-elliot-body progress {
+  accent-color: var(--accent);
+}
+
 .mc-elliot-body {
   flex: 1;
   overflow: auto;
@@ -3243,6 +3342,18 @@ body.lb-modal-open {
   white-space: nowrap;
 }
 
+/* unpriced rows: a quiet invitation instead of a noisy "no date" */
+.lb-prov-badge.lb-prov-empty {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text3);
+}
+
+button.lb-prov-badge.lb-prov-empty:hover {
+  color: var(--text2);
+  border-color: var(--text3);
+}
+
 button.lb-prov-badge {
   cursor: pointer;
 }
@@ -3278,6 +3389,14 @@ button.lb-prov-badge:hover {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+
+.pc-context {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin-bottom: 0.25rem;
 }
 
 .pc-title-row {
@@ -3538,11 +3657,28 @@ button.lb-prov-badge:hover {
 /* Child rows: the book button follows the description's indent (2.2rem
    child padding vs the 0.8rem base). Table mode only — the narrow-screen
    card layout already indents the whole child card */
-@media (min-width: 641px) {
+@media (min-width: 901px) {
   .manifest-view tr.child-row .labor-book-cell .labor-book-icon-btn,
   .manifest-view tr.child-row .remove-cell .remove-btn {
     transform: translateX(1.4rem);
   }
+}
+
+.projects-new-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.projects-new-row input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  min-width: 220px;
 }
 
 /* Project switcher (header) */
@@ -3884,6 +4020,28 @@ button.lb-prov-badge:hover {
 .users-loading {
   color: var(--text3);
   padding: 0.75rem 0;
+}
+
+/* import preview: the qty delta for items already on the manifest */
+.import-preview-delta {
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
+/* labor book on narrow screens: the fixture picker stays inside the modal */
+@media (max-width: 640px) {
+  .labor-book-apply-to label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .labor-book-apply-to select {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 /* Organize Categories view (preview) */

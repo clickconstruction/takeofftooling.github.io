@@ -45,13 +45,19 @@ const TakeoffImport = (function () {
     return TakeoffUtils.escapeHtml(str);
   }
 
-  function getManifestDescriptions() {
-    const items = TakeoffState.getTopLevelItems();
-    return new Set(items.map((i) => (i.description || '').trim().toLowerCase()).filter(Boolean));
+  // Real (described) manifest rows by normalized description — blank starter
+  // rows are noise in the preview and can't be merge targets.
+  function getManifestItemsByDesc() {
+    const map = new Map();
+    for (const i of TakeoffState.getTopLevelItems()) {
+      const key = (i.description || '').trim().toLowerCase();
+      if (key && !map.has(key)) map.set(key, i);
+    }
+    return map;
   }
 
   function renderManifestList(container) {
-    const items = TakeoffState.getTopLevelItems();
+    const items = TakeoffState.getTopLevelItems().filter((i) => (i.description || '').trim());
     if (items.length === 0) {
       container.innerHTML = '<p class="import-preview-empty">Manifest is empty.</p>';
       return;
@@ -64,7 +70,7 @@ const TakeoffImport = (function () {
       .join('');
   }
 
-  function renderImportList(container, importItems, manifestDescs) {
+  function renderImportList(container, importItems, manifestByDesc) {
     if (importItems.length === 0) {
       container.innerHTML = '<p class="import-preview-empty">No import items.</p>';
       return;
@@ -72,20 +78,46 @@ const TakeoffImport = (function () {
     container.innerHTML = importItems
       .map((item) => {
         const descNorm = (item.description || '').trim().toLowerCase();
-        const isNew = !manifestDescs.has(descNorm);
-        const badge = isNew ? '<span class="import-preview-badge import-preview-badge-new">new</span>' : '';
-        return `<div class="import-preview-item ${isNew ? 'import-preview-item-new' : ''}">${badge}<span class="import-preview-desc">${escapeHtml(item.description || '-')}</span> <span class="import-preview-meta">× ${item.quantity ?? 0} ${item.planPage ? '| ' + escapeHtml(item.planPage) : ''}</span></div>`;
+        const existing = manifestByDesc.get(descNorm);
+        const badge = existing ? '' : '<span class="import-preview-badge import-preview-badge-new">new</span>';
+        // for an existing item, the decision is the delta — show it
+        let delta = '';
+        if (existing) {
+          const have = Number(existing.quantity) || 0;
+          const want = Number(item.quantity) || 0;
+          delta = want > have
+            ? ` <span class="import-preview-delta">now ${have}, +${want - have}</span>`
+            : ` <span class="import-preview-delta">already ${have} — no change</span>`;
+        }
+        return `<div class="import-preview-item ${existing ? '' : 'import-preview-item-new'}">${badge}<span class="import-preview-desc">${escapeHtml(item.description || '-')}</span> <span class="import-preview-meta">× ${item.quantity ?? 0}${delta} ${item.planPage ? '| ' + escapeHtml(item.planPage) : ''}</span></div>`;
       })
       .join('');
   }
 
+  // overagesOnly: new items are added; an item that already exists (matched
+  // by description) is raised to the import's count when that count is
+  // higher, and left alone otherwise — the import's counts are totals, not
+  // additions, so quantities never double up.
   function performImport(items, overagesOnly) {
-    const manifestDescs = overagesOnly ? getManifestDescriptions() : null;
+    const existingByDesc = new Map();
+    if (overagesOnly) {
+      for (const it of TakeoffState.getTopLevelItems()) {
+        const key = (it.description || '').trim().toLowerCase();
+        if (key && !existingByDesc.has(key)) existingByDesc.set(key, it);
+      }
+    }
     TakeoffState.beginBatch(); // whole import = one undo frame
     for (const item of items) {
       if (overagesOnly) {
         const descNorm = (item.description || '').trim().toLowerCase();
-        if (manifestDescs.has(descNorm)) continue;
+        const existing = existingByDesc.get(descNorm);
+        if (existing) {
+          const incoming = Number(item.quantity) || 0;
+          if (incoming > (Number(existing.quantity) || 0)) {
+            TakeoffState.updateItem(existing.id, { quantity: incoming });
+          }
+          continue;
+        }
       }
       TakeoffState.addItem({
         type: item.type,
@@ -108,9 +140,8 @@ const TakeoffImport = (function () {
     const importList = document.getElementById('import-preview-import-list');
     if (!modal || !manifestList || !importList) return;
 
-    const manifestDescs = getManifestDescriptions();
     renderManifestList(manifestList);
-    renderImportList(importList, items, manifestDescs);
+    renderImportList(importList, items, getManifestItemsByDesc());
 
     modal.setAttribute('aria-hidden', 'false');
   }

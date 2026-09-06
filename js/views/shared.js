@@ -57,10 +57,17 @@ const TakeoffViewShared = (function () {
    * The provenance badge: "Elliot · 30d" with a freshness dot (fresh < 30d,
    * aging 30–90d, stale > 90d, none when no date recorded). opts.button
    * renders a <button> (curated rows open the edit popover); opts.data is a
-   * pre-escaped data-attribute string carried onto the element.
+   * pre-escaped data-attribute string carried onto the element. Pass
+   * opts.hasPrice: false for a row with no price at all — instead of a noisy
+   * "no date" badge it renders a quiet "+ price" affordance (still the part
+   * card's click target).
    */
   function renderPriceProvenance(source, pricedAt, opts = {}) {
     const esc = TakeoffUtils.escapeHtml;
+    if (opts.hasPrice === false && !source && !pricedAt) {
+      const attrs = `class="lb-prov-badge lb-prov-empty" title="No price yet — record a quote"${opts.data || ''}`;
+      return opts.button ? `<button type="button" ${attrs}>+ price</button>` : `<span ${attrs}>+ price</span>`;
+    }
     const days = priceAgeDays(pricedAt);
     let cls = 'none';
     let label = source ? esc(source) : 'no date';

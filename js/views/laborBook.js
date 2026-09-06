@@ -18,6 +18,14 @@ const TakeoffLaborBookView = (function () {
   // 'parts' | 'assemblies' — remembered across modal opens (in-memory only)
   let activeSection = 'parts';
 
+  // Open/closed state survives the wholesale re-renders (recording a quote
+  // used to collapse the section the user was pricing in). Keys: `tab::name`.
+  const openSections = new Set();
+  const openGroups = new Set();
+  function sectionStateKey(name) {
+    return `${TakeoffState.getActiveLaborBookTab()}::${name}`;
+  }
+
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
   }
@@ -48,7 +56,7 @@ const TakeoffLaborBookView = (function () {
           <td><input type="number" class="labor-book-hrs" value="${r.labor ?? ''}" min="0" step="0.1" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="hrs" /></td>
           <td><input type="text" class="labor-book-price" value="${escapeHtml(r.price ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Price" /></td>
           <td><input type="text" class="labor-book-partnum" value="${escapeHtml(r.partNumber ?? '')}" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" placeholder="Part #" /></td>
-          <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(r.priceSource, r.pricedAt, { button: true, data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"` })}</td>
+          <td class="lb-prov-cell">${TakeoffViewShared.renderPriceProvenance(r.priceSource, r.pricedAt, { button: true, hasPrice: r.price !== '' && r.price != null, data: ` data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}"` })}</td>
           <td><button type="button" class="btn-link labor-book-remove-row icon-btn" data-type="${type}" data-section="${escapeHtml(section)}" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
         </tr>
       `
@@ -58,8 +66,9 @@ const TakeoffLaborBookView = (function () {
 
   function renderSectionBlock(type, section, data) {
     const rowHtml = renderSectionRows(type, section, data);
+    const collapsed = openSections.has(sectionStateKey(section)) ? '' : ' labor-book-section-collapsed';
     return `
-        <div class="labor-book-section labor-book-section-collapsed" data-section="${escapeHtml(section)}">
+        <div class="labor-book-section${collapsed}" data-section="${escapeHtml(section)}">
           <h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>${escapeHtml(section)}</h3>
           <div class="labor-book-section-body">
             <table>
@@ -107,7 +116,7 @@ const TakeoffLaborBookView = (function () {
           groupSectionsHtml += renderSectionBlock(type, section, data);
         }
         if (groupSectionsHtml) {
-          const collapsedClass = expandGroup === group.name ? '' : ' labor-book-group-collapsed';
+          const collapsedClass = expandGroup === group.name || openGroups.has(sectionStateKey(group.name)) ? '' : ' labor-book-group-collapsed';
           html += `
         <div class="labor-book-group${collapsedClass}" data-group="${escapeHtml(group.name)}">
           <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>${escapeHtml(group.name)}</h2>
@@ -124,7 +133,7 @@ const TakeoffLaborBookView = (function () {
         importedSectionsHtml += renderSectionBlock(type, section, data);
       }
       if (importedSectionsHtml) {
-        const collapsedClass = expandGroup === 'Imported' ? '' : ' labor-book-group-collapsed';
+        const collapsedClass = expandGroup === 'Imported' || openGroups.has(sectionStateKey('Imported')) ? '' : ' labor-book-group-collapsed';
         html += `
         <div class="labor-book-group${collapsedClass}" data-group="Imported">
           <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>Imported</h2>
@@ -146,7 +155,7 @@ const TakeoffLaborBookView = (function () {
       }
 
     if (panelsSections.length > 0 && type === 'gear') {
-      let panelsHtml = '<div class="labor-book-section labor-book-section-collapsed" data-section="Panels"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Panels</h3><div class="labor-book-section-body">';
+      let panelsHtml = '<div class="labor-book-section' + (openSections.has(sectionStateKey('Panels')) ? '' : ' labor-book-section-collapsed') + '" data-section="Panels"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Panels</h3><div class="labor-book-section-body">';
       for (const section of panelsSections) {
         const subLabel = section.replace('Panels.', '');
         const rowHtml = renderSectionRows(type, section, data);
@@ -163,7 +172,7 @@ const TakeoffLaborBookView = (function () {
     }
 
     if (transformersSections.length > 0 && type === 'gear') {
-      let transformersHtml = '<div class="labor-book-section labor-book-section-collapsed" data-section="Transformers"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Transformers</h3><div class="labor-book-section-body">';
+      let transformersHtml = '<div class="labor-book-section' + (openSections.has(sectionStateKey('Transformers')) ? '' : ' labor-book-section-collapsed') + '" data-section="Transformers"><h3 class="labor-book-section-header"><span class="labor-book-section-chevron"></span>Transformers</h3><div class="labor-book-section-body">';
       for (const section of transformersSections) {
         const subLabel = section.replace('Transformers.', '');
         const rowHtml = renderSectionRows(type, section, data);
@@ -188,21 +197,22 @@ const TakeoffLaborBookView = (function () {
   function applyTabFilter(termRaw) {
     const partsEl = document.getElementById('labor-book-content');
     if (!partsEl) return;
-    const term = (termRaw || '').trim().toLowerCase();
+    const term = (termRaw || '').trim();
+    // every query token must match, in any order ('panels 6', '3/4 emt')
+    const matches = TakeoffUtils.makeTokenMatcher(term);
     // supplier-only sections have no curated rows; partsEl._elliotFilter
     // below owns their visibility
     partsEl.querySelectorAll('.labor-book-section:not(.lb-supplier-section)').forEach((sec) => {
       // row names can be bare sizes ("12", "3/4\"") — the meaning often lives
-      // in the section or group title, so a title match shows the whole block
+      // in the section or group title, so titles join the haystack and a
+      // full title match shows the whole block
       const groupEl = sec.closest('.labor-book-group');
-      const titleMatch =
-        term &&
-        ((sec.dataset.section || '').toLowerCase().includes(term) ||
-          (groupEl?.dataset.group || '').toLowerCase().includes(term));
+      const titles = `${sec.dataset.section || ''} ${groupEl?.dataset.group || ''}`;
+      const titleMatch = term && matches(titles);
       let any = false;
       sec.querySelectorAll('.labor-book-row').forEach((row) => {
-        const name = (row.querySelector('.labor-book-name')?.value || '').toLowerCase();
-        const show = !term || titleMatch || name.includes(term);
+        const name = row.querySelector('.labor-book-name')?.value || '';
+        const show = !term || titleMatch || matches(`${name} ${titles}`);
         row.style.display = show ? '' : 'none';
         if (show) any = true;
       });
@@ -223,7 +233,8 @@ const TakeoffLaborBookView = (function () {
   let tabFilterTimer = null;
 
   function renderApplyToSelect() {
-    const items = TakeoffState.getTopLevelItems();
+    // blank starter rows aren't real fixtures — keep them out of the picker
+    const items = TakeoffState.getTopLevelItems().filter((i) => (i.description || '').trim());
     return items
       .map((item) => {
         const desc = (item.description || '').slice(0, 40) + ((item.description || '').length > 40 ? '...' : '');
@@ -550,14 +561,22 @@ const TakeoffLaborBookView = (function () {
     document.querySelectorAll('.labor-book-section-header').forEach((header) => {
       header.addEventListener('click', () => {
         const section = header.closest('.labor-book-section');
-        if (section) section.classList.toggle('labor-book-section-collapsed');
+        if (!section) return;
+        const collapsed = section.classList.toggle('labor-book-section-collapsed');
+        const key = sectionStateKey(section.dataset.section || '');
+        if (collapsed) openSections.delete(key);
+        else openSections.add(key);
       });
     });
 
     document.querySelectorAll('.labor-book-group-header').forEach((header) => {
       header.addEventListener('click', () => {
         const group = header.closest('.labor-book-group');
-        if (group) group.classList.toggle('labor-book-group-collapsed');
+        if (!group) return;
+        const collapsed = group.classList.toggle('labor-book-group-collapsed');
+        const key = sectionStateKey(group.dataset.group || '');
+        if (collapsed) openGroups.delete(key);
+        else openGroups.add(key);
       });
     });
   }

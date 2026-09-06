@@ -104,7 +104,13 @@
     document.body.classList.remove('lb-modal-open');
   }
 
+  // Leaving a flow drops its temp buffer, so uncommitted edits need a nod
+  // first (flow saves clear the flag before navigating; Cancel asks too).
   function navigateToManifest() {
+    if (TakeoffState.getFlowDirty() && TakeoffState.getCurrentView() !== 'manifest') {
+      if (!confirm('Discard unsaved changes in this editor?')) return;
+    }
+    TakeoffState.setFlowDirty(false);
     TakeoffState.setCurrentView('manifest', null);
     TakeoffState.clearConduitTempData();
     TakeoffState.clearDeviceTempData();
@@ -114,6 +120,7 @@
   }
 
   function navigateToDevice(itemId) {
+    TakeoffState.setFlowDirty(false);
     TakeoffState.setCurrentView('device', itemId);
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
@@ -150,6 +157,7 @@
   }
 
   function navigateToConduit(itemId) {
+    TakeoffState.setFlowDirty(false);
     TakeoffState.setCurrentView('conduit', itemId);
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
@@ -209,6 +217,7 @@
   }
 
   function navigateToWire(itemId) {
+    TakeoffState.setFlowDirty(false);
     TakeoffState.setCurrentView('wire', itemId);
     const item = TakeoffState.getItemById(itemId);
     const children = item?.children || [];
@@ -358,13 +367,13 @@
     }
   });
 
-  // New Takeoff: clear the manifest, keep the books
+  // New Project: hand off to the Manage Projects modal's inline create row
   document.getElementById('new-takeoff-btn')?.addEventListener('click', () => {
-    const name = prompt('New project name:', '');
-    if (name === null) return;
-    TakeoffState.createProject(name);
-    navigateToManifest();
+    TakeoffProjectsView.openModal({ create: true });
   });
+
+  // Type modal Cancel (Escape and click-outside also work)
+  document.getElementById('type-modal-cancel')?.addEventListener('click', hideTypeModal);
 
   // Cache clear and hard reload (code caches only — never user data)
   document.getElementById('cache-clear-reload-btn')?.addEventListener('click', async () => {

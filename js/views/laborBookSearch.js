@@ -30,23 +30,20 @@ const TakeoffLaborBookSearch = (function () {
     return (TakeoffState.LABOR_BOOK_TYPE_LABELS || {})[tab] || tab;
   }
 
-  // inch-marks are punctuation noise when searching ('1/2 emt' should hit '1/2" EMT')
-  function searchNorm(s) {
-    return (s || '').toLowerCase().replace(/["“”]/g, '');
-  }
-
   function renderResults() {
     const resultsEl = document.getElementById('labor-book-search-results');
     if (!resultsEl) return;
-    const normTerm = searchNorm(term);
+    // every query token must match, in any order ('3/4 EMT coupling')
+    const matches = TakeoffUtils.makeTokenMatcher(term);
 
-    // Parts (your editable book) — synchronous
+    // Parts (your editable book) — synchronous. Section names carry meaning
+    // for bare-size rows ('6' in Panels), so they join the haystack.
     const parts = [];
     for (const tab of TakeoffState.getLaborBookTabOrder()) {
       const data = TakeoffState.getLaborBookType(tab);
       for (const [section, rows] of Object.entries(data)) {
         for (const row of rows) {
-          if (searchNorm(row.name).includes(normTerm)) {
+          if (matches(`${row.name} ${row.partNumber || ''} ${section}`)) {
             parts.push({ tab, section, row });
             if (parts.length >= SEARCH_CAP) break;
           }
@@ -104,7 +101,7 @@ const TakeoffLaborBookSearch = (function () {
         for (const tab of TakeoffState.getLaborBookTabOrder()) {
           for (const s of McBook.elliotSectionsForTab(tab)) {
             for (const e of s.entries) {
-              if (searchNorm(e.name).includes(normTerm) || searchNorm(e.partNumber).includes(normTerm)) {
+              if (matches(`${e.name} ${e.partNumber || ''}`)) {
                 elliot.push({ tab, category: s.name, entry: e });
                 if (elliot.length >= SEARCH_CAP) break;
               }

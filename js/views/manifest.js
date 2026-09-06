@@ -53,11 +53,12 @@ const TakeoffManifestView = (function () {
     const showEditFlow = (hasFlow && !isChild) || (isChild && parentHasFlow);
     const editFlowTargetId = isChild && parentHasFlow ? parentId : item.id;
     // Flow types (devices/conduit/wire): the badge itself is the flow-editor
-    // button — no separate "Edit in flow" control. Child badges target the
+    // button — the pencil makes that discoverable. Child badges target the
     // parent's flow.
+    const PENCIL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="type-badge-edit-icon" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
     const badge = (extraClass) =>
       showEditFlow
-        ? `<button type="button" class="type-badge ${extraClass} type-badge-flow" data-id="${editFlowTargetId}" title="Edit in flow">${escapeHtml(typeLabelDisplay)}</button>`
+        ? `<button type="button" class="type-badge ${extraClass} type-badge-flow" data-id="${editFlowTargetId}" title="Edit in flow">${escapeHtml(typeLabelDisplay)}${PENCIL_SVG}</button>`
         : `<span class="type-badge ${extraClass}">${escapeHtml(typeLabelDisplay)}</span>`;
     let typeCell;
     if (isChild) {

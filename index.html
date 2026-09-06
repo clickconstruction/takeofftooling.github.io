@@ -91,6 +91,9 @@
           </div>
         </div>
       </div>
+      <div class="modal-actions">
+        <button type="button" id="type-modal-cancel" class="btn btn-secondary">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -176,6 +179,10 @@
       <div id="projects-list"></div>
       <div class="projects-modal-footer">
         <button type="button" id="projects-new-btn" class="btn btn-primary">+ New project</button>
+        <div id="projects-new-row" class="projects-new-row" hidden>
+          <input type="text" id="projects-new-name" placeholder="Project name" autocomplete="off" />
+          <button type="button" id="projects-new-create" class="btn btn-success">Create</button>
+        </div>
         <span id="projects-count" class="projects-count"></span>
       </div>
     </div>

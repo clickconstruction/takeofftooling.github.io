@@ -551,6 +551,9 @@ const TakeoffCloud = (function () {
     // the review panel is admin-only chrome
     document.getElementById('review-suggestions-btn')?.toggleAttribute('hidden', !(session && isAdmin()));
     document.getElementById('manage-users-btn')?.toggleAttribute('hidden', !(session && isDev()));
+    // supplier price updates are maintainer tooling (CSV matching, JSON
+    // downloads meant to be committed to the repo) — admin/dev only
+    document.getElementById('mc-elliot-update-btn')?.toggleAttribute('hidden', !(session && isAdmin()));
     const modal = document.getElementById('cloud-modal');
     if (modal && modal.getAttribute('aria-hidden') === 'false') renderModal();
   }
@@ -653,6 +656,7 @@ const TakeoffCloud = (function () {
       '<p class="cloud-hint" id="cloud-modal-msg"></p>',
       '<div class="cloud-or-divider"><span></span>or<span></span></div>',
       '<button type="button" id="cloud-send-code-btn" class="btn btn-secondary cloud-send-code-btn">Email me a 6-digit sign-in code</button>',
+      '<p class="cloud-hint">No password, or new here? The emailed code signs you in — and creates your account if you don’t have one yet.</p>',
     ].join('');
     const getEmailValue = () => document.getElementById('cloud-email-input').value.trim();
     const msgEl = () => document.getElementById('cloud-modal-msg');

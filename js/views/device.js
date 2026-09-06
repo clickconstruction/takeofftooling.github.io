@@ -34,16 +34,24 @@ const TakeoffDeviceView = (function () {
       .join('');
   }
 
+  // A row only counts once the user gave it substance — matches the save
+  // filter, so the seeded blank rows never inflate the totals.
+  function isMeaningfulRow(r) {
+    return (r.description || '').trim() !== '' || (parseFloat(r.labor) || 0) > 0 || (parseFloat(r.price) || 0) > 0;
+  }
+
+  // Extended totals (qty × per-unit), the numbers that actually hit the bid.
   function getCumulativeChildTotals(tempData) {
     let qty = 0;
     let labor = 0;
     let price = 0;
     for (const s of DEVICE_SECTIONS) {
-      const rows = tempData[s.key] || [];
-      for (const r of rows) {
-        qty += parseFloat(r.quantity) || 0;
-        labor += parseFloat(r.labor) || 0;
-        price += parseFloat(r.price) || 0;
+      for (const r of tempData[s.key] || []) {
+        if (!isMeaningfulRow(r)) continue;
+        const q = parseFloat(r.quantity) || 0;
+        qty += q;
+        labor += q * (parseFloat(r.labor) || 0);
+        price += q * (parseFloat(r.price) || 0);
       }
     }
     return { qty, labor, price };
@@ -54,16 +62,15 @@ const TakeoffDeviceView = (function () {
     if (!item) return '';
 
     const tempData = TakeoffState.getDeviceTempData();
-    const childTotals = getCumulativeChildTotals(tempData);
 
     const sectionsHtml = DEVICE_SECTIONS.map(
       (s) => `
         <div class="flow-section">
           <h3>${s.label}</h3>
-          <table>
+          <div class="flow-table-scroll"><table>
             <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
             <tbody>${renderSectionRows(s.key, tempData[s.key])}</tbody>
-          </table>
+          </table></div>
           <div class="flow-section-add"><button type="button" class="btn add-device-section-btn" data-section="${s.key}">${s.addLabel}</button></div>
         </div>
       `
@@ -121,14 +128,18 @@ const TakeoffDeviceView = (function () {
             <div class="parent-summary-line">Quantity: ${item.quantity ?? 0}</div>
           </div>
           <div class="child-summary">
-            <div class="parent-summary-line"><strong>Cumulative Child:</strong></div>
-            <div class="parent-summary-line">Quantity: ${childTotals.qty % 1 === 0 ? childTotals.qty : childTotals.qty.toFixed(2)}</div>
-            <div class="parent-summary-line">Labor: ${childTotals.labor.toFixed(1)} hrs</div>
-            <div class="parent-summary-line">Price: ${childTotals.price.toFixed(2)}</div>
+            <div class="parent-summary-line"><strong>Components (extended):</strong></div>
+            <div class="parent-summary-line">Quantity: <span id="device-cum-qty">0</span></div>
+            <div class="parent-summary-line">Labor: <span id="device-cum-labor">0.0</span> hrs</div>
+            <div class="parent-summary-line">Price: $<span id="device-cum-price">0.00</span></div>
+            <div class="parent-summary-line device-labor-rollup" id="device-labor-rollup"></div>
           </div>
         </div>
+        <div class="device-sections">
         ${sectionsHtml}
+        </div>
         <div class="flow-actions">
+          <button type="button" class="btn btn-secondary" id="device-cancel-btn">Cancel</button>
           <button type="button" class="btn btn-success" id="device-save-btn">Save and Back to Manifest</button>
         </div>
       </div>
@@ -143,6 +154,29 @@ const TakeoffDeviceView = (function () {
     const item = TakeoffState.getItemById(itemId);
     if (!item) return;
 
+    // Patch the totals panel in place (runs on every keystroke — no
+    // re-render, so focus is never disturbed). Also shows the labor rollup:
+    // the parent row keeps its own run labor, components add theirs.
+    function updateCumulativePanel() {
+      const t = getCumulativeChildTotals(TakeoffState.getDeviceTempData());
+      const set = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = v;
+      };
+      set('device-cum-qty', t.qty % 1 === 0 ? t.qty : t.qty.toFixed(2));
+      set('device-cum-labor', t.labor.toFixed(1));
+      set('device-cum-price', t.price.toFixed(2));
+      const parentLabor = (Number(item.labor) || 0) * (Number(item.quantity) || 0);
+      set('device-labor-rollup', parentLabor > 0
+        ? `Job labor: parent ${parentLabor.toFixed(1)} + components ${t.labor.toFixed(1)} = ${(parentLabor + t.labor).toFixed(1)} hrs`
+        : '');
+    }
+    updateCumulativePanel();
+
+    document.getElementById('device-cancel-btn')?.addEventListener('click', () => {
+      TakeoffApp.navigateToManifest(); // asks first when there are unsaved edits
+    });
+
     const hasParentDesc = (item.description || '').trim().length > 0;
     const parentQty = hasParentDesc ? 1 : (item.quantity ?? 0);
     document.querySelectorAll('.add-device-section-btn').forEach((btn) => {
@@ -152,6 +186,7 @@ const TakeoffDeviceView = (function () {
         temp[section] = temp[section] || [];
         temp[section].push({ description: '', quantity: parentQty, labor: 0, price: '' });
         TakeoffState.setDeviceTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
     });
@@ -182,6 +217,7 @@ const TakeoffDeviceView = (function () {
         const q = parseFloat(row.quantity) || 0;
         row.quantity = Math.round(q * 2 * 100) / 100;
         TakeoffState.setDeviceTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
     });
@@ -196,6 +232,7 @@ const TakeoffDeviceView = (function () {
         const q = parseFloat(row.quantity) || 0;
         row.quantity = Math.max(0, Math.round((q / 2) * 100) / 100);
         TakeoffState.setDeviceTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
     });
@@ -214,22 +251,32 @@ const TakeoffDeviceView = (function () {
           temp[section].push({ description: '', quantity: qty, labor: 0, price: '' });
         }
         TakeoffState.setDeviceTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
     });
 
+    // Commit to the buffer on every keystroke and live-update the totals
+    // panel; the re-render (which would steal focus) waits for change/blur.
+    function commitFieldToBuffer(e) {
+      const section = e.target.dataset.section;
+      const index = parseInt(e.target.dataset.index, 10);
+      const field = e.target.dataset.field;
+      let value = e.target.value;
+      if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
+      if (field === 'price') value = value === '' ? '' : (parseFloat(value) ?? '');
+      const temp = TakeoffState.getDeviceTempData();
+      if (!temp[section][index]) return;
+      temp[section][index][field] = value;
+      TakeoffState.setDeviceTempData(temp);
+      TakeoffState.setFlowDirty(true);
+      updateCumulativePanel();
+    }
+
     document.querySelectorAll('[data-section][data-index][data-field]').forEach((input) => {
+      input.addEventListener('input', commitFieldToBuffer);
       input.addEventListener('change', (e) => {
-        const section = e.target.dataset.section;
-        const index = parseInt(e.target.dataset.index, 10);
-        const field = e.target.dataset.field;
-        let value = e.target.value;
-        if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
-        if (field === 'price') value = value === '' ? '' : (parseFloat(value) ?? '');
-        const temp = TakeoffState.getDeviceTempData();
-        if (!temp[section][index]) return;
-        temp[section][index][field] = value;
-        TakeoffState.setDeviceTempData(temp);
+        commitFieldToBuffer(e);
         TakeoffApp.render();
       });
     });
@@ -302,6 +349,7 @@ const TakeoffDeviceView = (function () {
         temp[s.key] = rows.length ? rows.map((r) => ({ ...r })) : [{ description: '', quantity: hasDesc ? 1 : (item.quantity ?? 0), labor: 0, price: '' }];
       }
       TakeoffState.setDeviceTempData(temp);
+      TakeoffState.setFlowDirty(true);
       TakeoffApp.render();
     }
 
@@ -339,6 +387,7 @@ const TakeoffDeviceView = (function () {
       }
 
       TakeoffState.endBatch();
+      TakeoffState.setFlowDirty(false);
       TakeoffApp.navigateToManifest();
     });
   }
