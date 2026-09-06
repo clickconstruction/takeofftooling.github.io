@@ -587,6 +587,11 @@ const TakeoffLaborBookView = (function () {
     exportGroupsAndSectionsAsText();
   });
 
+  document.getElementById('labor-book-organize-btn')?.addEventListener('click', () => {
+    TakeoffApp.hideLaborBookModal();
+    TakeoffApp.navigateToOrganize();
+  });
+
   document.getElementById('labor-book-abbreviation-key-btn')?.addEventListener('click', () => {
     const modal = document.getElementById('abbreviation-key-modal');
     if (modal) modal.setAttribute('aria-hidden', 'false');

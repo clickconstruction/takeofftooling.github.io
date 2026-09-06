@@ -32,6 +32,7 @@ js/views/laborBook.js  → TakeoffLaborBookView (facade; stable public API)
 js/views/device.js     → TakeoffDeviceView
 js/views/conduit.js    → TakeoffConduitView
 js/views/wire.js       → TakeoffWireView
+js/views/organize.js   → TakeoffOrganizeView (full-page category organizer, preview)
 js/cloud.js            → TakeoffCloud     (Supabase sync + password/email-code auth; CDN: @supabase/supabase-js UMD)
 js/suggestionsReview.js → TakeoffSuggestionsReview (admin review of shared corrections)
 js/app.js              → window.TakeoffApp  (runs init)
@@ -73,6 +74,7 @@ Only `TakeoffApp` is explicitly on `window`; the rest are top-level `const` (vis
 | views/device.js | `TakeoffDeviceView` | TakeoffState, TakeoffApp, TakeoffUtils |
 | views/conduit.js | `TakeoffConduitView` | TakeoffState, TakeoffApp, TakeoffUtils, FITTINGS_LIST |
 | views/wire.js | `TakeoffWireView` | TakeoffState, TakeoffApp, TakeoffUtils |
+| views/organize.js | `TakeoffOrganizeView` (category organizer board; edits a scratch copy — Apply is a stub) | TakeoffState, TakeoffApp, TakeoffUtils |
 | app.js | `window.TakeoffApp` | everything above |
 
 Circular-ish coupling (views ↔ TakeoffApp, McBook ↔ McElliotState ↔ TakeoffLaborBookView) works because all cross-calls happen after load; several use `typeof X !== 'undefined'` guards.
@@ -145,7 +147,7 @@ app.js also deletes a set of retired `part-book-*` / `labor-book-import-progress
 
 ## View pattern
 
-Every view exports `{ render, attachListeners }`. `TakeoffApp.render()` switches on `TakeoffState.getCurrentView()` (`'manifest'|'device'|'conduit'|'wire'`), sets `#main-content.innerHTML = View.render(...)`, then calls `View.attachListeners(...)`. Nearly every interaction triggers a full re-render; listeners are re-bound wholesale each time (exceptions: laborBook module-init one-time listeners, a few delegated handlers in laborBook/mcBook, and `TakeoffManifestView.updateSummaryOnly()` which patches only the summary).
+Every view exports `{ render, attachListeners }`. `TakeoffApp.render()` switches on `TakeoffState.getCurrentView()` (`'manifest'|'device'|'conduit'|'wire'|'organize'`), sets `#main-content.innerHTML = View.render(...)`, then calls `View.attachListeners(...)`. Nearly every interaction triggers a full re-render; listeners are re-bound wholesale each time (exceptions: laborBook module-init one-time listeners, a few delegated handlers in laborBook/mcBook, and `TakeoffManifestView.updateSummaryOnly()` which patches only the summary).
 
 ## Flow editors (device / conduit / wire)
 
@@ -184,6 +186,7 @@ Six modal skeletons live in index.html:
 
 - **Parts** (views/laborBook.js): editable per-tab sections from `TakeoffState.getLaborBook()`, woven together with the supplier catalog by views/laborBookElliot.js — sections are universal: each supplier catalog section merges by name (case-insensitive) — into a matching curated section as a collapsed "Supplier parts" block below the curated rows, into a matching curated group (conduit tab) as a "Supplier parts" section at the end of the group, and otherwise renders standalone beside the curated ones (styled at group level on grouped tabs so the top-level list stays uniform). Supplier attribution is per part (the provenance badge, `TakeoffViewShared.renderPriceProvenance`: source · age with freshness tiers <30d/30–90d/>90d; supplier entries date from `McBook.elliotImportDate()` until they carry per-part `pricedAt`). Clicking a row's badge (or a catalog part's name) opens the **part card** (views/laborBookCard.js): per-supply-house offers with Use, a record-quote form, and named history; Catalog rows render as live inputs (same columns as curated rows); the first edit — inline or from the card — **promotes** the part into the editable book in its universal section (`TakeoffState.promoteCatalogPart`) with the edit applied, after which its catalog row is superseded (deduped by part #) and its vendor offer refreshes from the catalog on load. An always-visible tab-level filter narrows curated rows and supplier parts together (laborBook.js `applyTabFilter` → `partsEl._elliotFilter`). On tabs with no curated sections (lighting/devices/specialSystems) the "no sections yet" block is demoted to a footer below the catalog sections.
 - **Assemblies** (mcBook.js): fetches `mc-assemblies/mc-labor-book.json`, patches with the local Elliot overlay (`McElliotState.getPatchedBook`), renders a lazy level1→level2→section tree; entries can be added rolled-up or exploded into components (`getComposition` via `mc-price-model.json`). Global search spans both sides.
+- **Organize Categories** (views/organize.js, opened from the modal's action bar): full-page board — one lane per tab, groups/sections as a draggable tree with click-and-place, merge-on-drop, a section editor drawer, and per-tab Ungrouped buckets. **Preview**: it edits a scratch copy built on entry (`enter()`); Apply is a stub until the book gets rename/move/group persistence (groups today exist only as defaults config).
 - **Update Supplier Prices** (mcElliotUpdate.js): parse vendor CSV → dedupe → match against MC items (saved mappings first, then token-index fuzzy matching in chunks) → build overlay → auto/review/summary tabs → download buttons to commit updated JSON back into `mc-assemblies/`. See [DATA-PIPELINE.md](DATA-PIPELINE.md).
 
 ## Known quirks
