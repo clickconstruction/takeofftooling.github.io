@@ -130,6 +130,16 @@ const TakeoffUiState = (function () {
     wireTempData = { overagePercent: null, macAdapters: [] };
   }
 
+  // Set by the flow editors on any uncommitted edit; cleared on save/entry.
+  // navigateToManifest asks before discarding when this is set.
+  let flowDirty = false;
+  function setFlowDirty(value) {
+    flowDirty = !!value;
+  }
+  function getFlowDirty() {
+    return flowDirty;
+  }
+
   function getShowRemoveIcons() {
     return showRemoveIcons;
   }
@@ -181,6 +191,8 @@ const TakeoffUiState = (function () {
     setWireTempData,
     getWireTempData,
     clearWireTempData,
+    setFlowDirty,
+    getFlowDirty,
     getShowRemoveIcons,
     setShowRemoveIcons,
     toggleShowRemoveIcons,
