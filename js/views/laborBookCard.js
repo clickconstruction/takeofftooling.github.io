@@ -73,6 +73,16 @@ const TakeoffLaborBookCard = (function () {
     return Array.from(names);
   }
 
+  // Where this part lives, so a card titled "6" reads "Gear · Panels · 1PH · 6"
+  function contextTrail() {
+    const labels = TakeoffState.LABOR_BOOK_TYPE_LABELS || {};
+    const tab = current.mode === 'book' ? current.type : current.tab;
+    const section = current.mode === 'book' ? current.section : current.sectionName;
+    // dotted section names ("Panels.1PH") are sub-tables — show each level
+    const parts = [labels[tab] || tab, ...(section || '').split('.')].filter(Boolean);
+    return parts.join(' · ');
+  }
+
   function render() {
     const body = document.getElementById('part-card-body');
     const vm = current && viewModel();
@@ -104,6 +114,7 @@ const TakeoffLaborBookCard = (function () {
 
     body.innerHTML = `
       <div class="pc-head">
+        <div class="pc-context">${escapeHtml(contextTrail())}</div>
         <div class="pc-title-row">
           <h2 class="pc-title">${escapeHtml(vm.name)}</h2>
           <button type="button" class="btn btn-secondary" id="part-card-close-btn">Close</button>

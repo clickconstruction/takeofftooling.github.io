@@ -246,15 +246,21 @@ const McElliotUpdate = (function () {
   function renderReview() {
     const queue = McElliotState.getQueue();
     if (!queue.length) return '<p>Nothing to review — ambiguous matches will appear here after an upload.</p>';
+    // dollars-and-cents above $1; four places for sub-dollar unit prices
+    // (wire is priced in fractions of a cent) — never raw float noise
+    const fmtEach = (p) => {
+      const n = Number(p) || 0;
+      return n >= 1 ? n.toFixed(2) : n.toFixed(4);
+    };
     const rows = queue
       .slice(0, 300)
       .map((q) => {
         const opts = q.candidates
-          .map((c, i) => `<option value="${i}">${esc(c.desc)} — $${c.perEach} (${Math.round(c.score * 100)}%)</option>`)
+          .map((c, i) => `<option value="${i}">${esc(c.desc)} — $${fmtEach(c.perEach)} (${Math.round(c.score * 100)}%)</option>`)
           .join('');
         return `
         <div class="mc-elliot-review-row" data-itemnum="${q.itemNum}">
-          <div class="mc-elliot-review-item"><strong>${esc(q.itemName)}</strong> <span class="mc-book-section-count">$${q.oldPerEach}/ea</span></div>
+          <div class="mc-elliot-review-item"><strong>${esc(q.itemName)}</strong> <span class="mc-book-section-count">$${fmtEach(q.oldPerEach)}/ea</span></div>
           <select class="mc-elliot-review-select">${opts}</select>
           <button type="button" class="btn btn-small btn-success mc-elliot-review-match">Match</button>
           <button type="button" class="btn btn-small btn-secondary mc-elliot-review-skip">Skip</button>
