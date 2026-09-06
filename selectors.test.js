@@ -32,7 +32,7 @@ test('getPurchaseList merges identical descriptions and skips other-charge types
     item({ description: 'emt  1/2"', quantity: 5, price: 0.6 }), // case/whitespace-insensitive merge
     item({ description: 'Permit', quantity: 1, price: 500, type: 'permits' }), // skipped
     item({
-      description: 'Fixture group', quantity: 1, price: 99, // parent w/ children = grouping, own line skipped
+      description: 'Fixture group', quantity: 1, price: null, // price-less parent w/ children = grouping, own line skipped
       children: [item({ parentId: 'x', description: 'Box', quantity: 2, price: 3 })],
     }),
   ];
@@ -43,6 +43,30 @@ test('getPurchaseList merges identical descriptions and skips other-charge types
   assert.strictEqual(emt.priceVaries, true);
   assert.strictEqual(emt.extended, 8); // 10*0.5 + 5*0.6
   assert.strictEqual(totalCost, 14); // 8 + 6
+});
+
+test('getPurchaseList keeps a priced parent even when it has children', () => {
+  const m = [
+    // conduit run with an overage child: the footage itself is material
+    item({
+      description: '3/4" EMT', type: 'conduit', quantity: 220, price: 0.68,
+      children: [item({ parentId: 'x', description: 'Conduit overage (10%)', quantity: 22, price: 0.68 })],
+    }),
+    // device run (no own price) stays a grouping
+    item({
+      description: 'Receptacle run', type: 'devices', quantity: 12, price: null,
+      children: [item({ parentId: 'x', description: 'Duplex receptacle', quantity: 12, price: 3.85 })],
+    }),
+  ];
+  const { lines, totalCost } = sel.getPurchaseList(m);
+  assert.deepStrictEqual(
+    lines.map((l) => l.description).sort(),
+    ['3/4" EMT', 'Conduit overage (10%)', 'Duplex receptacle']
+  );
+  const emt = lines.find((l) => l.description === '3/4" EMT');
+  assert.strictEqual(emt.quantity, 220);
+  assert.strictEqual(emt.extended, 149.6);
+  assert.strictEqual(totalCost, 210.76); // 149.60 + 14.96 + 46.20
 });
 
 test('getFlattenedItems adds _depth', () => {

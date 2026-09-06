@@ -112,24 +112,32 @@ const McBook = (function () {
     const r2 = (n) => Math.round(n * 10000) / 10000;
     let totLabor = 0;
     let totPrice = 0;
+    let unpriced = 0;
     const rows = comps
       .map((c) => {
         totLabor += c.labor * c.qty;
         totPrice += c.price * c.qty;
+        if (!(c.price > 0)) unpriced++;
         return `
         <tr>
           <td class="mc-book-bom-qty">${r2(c.qty)}</td>
           <td>${escapeHtml(c.description)}</td>
           <td class="mc-book-entry-labor">${r2(c.labor)}</td>
-          <td class="mc-book-entry-price">$${c.price.toFixed(4)}</td>
+          <td class="mc-book-entry-price">${c.price > 0 ? '$' + c.price.toFixed(4) : '—'}</td>
         </tr>`;
       })
       .join('');
+    // A partly/fully unpriced component list can't compute a real unit price;
+    // showing "$0.26 vs book $57.34" reads like a bug. Say what's happening.
+    const priceCell = unpriced === 0 ? `$${totPrice.toFixed(2)}` : '—';
+    const label = unpriced === 0
+      ? `Computed per unit (book: ${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'})`
+      : `${unpriced === comps.length ? 'Components' : `${unpriced} of ${comps.length} components`} unpriced — using the book price (${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'})`;
     return `
       <table class="mc-book-bom">
         <thead><tr><th>Qty/unit</th><th>Component</th><th>hrs/ea</th><th>$/ea</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td></td><td>Computed per unit (book: ${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'})</td><td>${Math.round(totLabor * 1000) / 1000}</td><td>$${totPrice.toFixed(2)}</td></tr></tfoot>
+        <tfoot><tr><td></td><td>${label}</td><td>${Math.round(totLabor * 1000) / 1000}</td><td>${priceCell}</td></tr></tfoot>
       </table>`;
   }
 
@@ -159,16 +167,17 @@ const McBook = (function () {
 
     let html = '';
     if (term) {
+      const tokensMatch = TakeoffUtils.makeTokenMatcher(term);
       const matches = [];
       for (const [s, i] of pairs) {
-        const inName = s.name.toLowerCase().includes(term) || (s.section || '').toLowerCase().includes(term);
-        const inEntries = !inName && s.entries.some((e) => e.name.toLowerCase().includes(term));
+        const inName = tokensMatch(`${s.name} ${s.section || ''}`);
+        const inEntries = !inName && s.entries.some((e) => tokensMatch(`${e.name} ${s.name}`));
         if (inName || inEntries) matches.push([s, i]);
         if (matches.length >= MAX_SEARCH_SECTIONS) break;
       }
       html = matches.map(([s, i]) => renderSection(s, i)).join('');
       html =
-        `<div class="mc-book-result-count">${matches.length >= MAX_SEARCH_SECTIONS ? `First ${MAX_SEARCH_SECTIONS} matching sections` : `${matches.length} matching sections`}</div>` +
+        `<div class="mc-book-result-count">${matches.length >= MAX_SEARCH_SECTIONS ? `First ${MAX_SEARCH_SECTIONS} matching sections` : `${matches.length} matching section${matches.length === 1 ? '' : 's'}`}</div>` +
         (html || '<p class="mc-book-empty">No matches in this tab.</p>');
     } else {
       // Nested nav mirroring the MC picker: level1 category -> level2 subsection -> sections
@@ -245,14 +254,15 @@ const McBook = (function () {
    * Returns [{tab, sectionName, entry}] capped at `cap`.
    */
   function searchAssemblies(term, cap = 100) {
-    const norm = (s) => (s || '').toLowerCase().replace(/["“”]/g, '');
-    const t = norm(term).trim();
-    if (!t || !book) return [];
+    if (!(term || '').trim() || !book) return [];
+    // every query token must match, in any order; section names carry
+    // meaning for terse entry names, so they join the haystack
+    const matches = TakeoffUtils.makeTokenMatcher(term);
     const out = [];
     for (const tab of TakeoffState.getLaborBookTabOrder()) {
       for (const [s] of assemblySectionsForTab(tab)) {
         for (const entry of s.entries) {
-          if (norm(entry.name).includes(t)) {
+          if (matches(`${entry.name} ${s.name}`)) {
             out.push({ tab, sectionName: s.name, entry });
             if (out.length >= cap) return out;
           }
