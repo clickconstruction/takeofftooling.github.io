@@ -123,6 +123,7 @@ const TakeoffConduitView = (function () {
       if (target === 3 && current <= 2) commitStep2(itemId);
     }
     TakeoffState.setConduitStep(target);
+    TakeoffState.setFlowDirty(false);
     TakeoffApp.render();
   }
 
@@ -186,7 +187,7 @@ const TakeoffConduitView = (function () {
               </div>
             </div>
             ${(temp.trenchingAddons || []).length > 0 ? `
-            <table class="trenching-addons-table">
+            <div class="flow-table-scroll"><table class="trenching-addons-table">
               <thead><tr><th>Description</th><th>Quantity<br><span class="th-sub">(Hours or Days)</span></th><th>Additional Labor</th><th>Charge<br><span class="th-sub">(per Hour or Day)</span></th><th></th></tr></thead>
               <tbody>${(temp.trenchingAddons || []).map((a, i) => `
       <tr>
@@ -197,7 +198,7 @@ const TakeoffConduitView = (function () {
         <td><button type="button" class="remove-addon-btn icon-btn" data-addon-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `).join('')}</tbody>
-            </table>
+            </table></div>
             ` : ''}
           </div>
         </div>
@@ -253,10 +254,10 @@ const TakeoffConduitView = (function () {
             <option value="">-- Select from list --</option>
             ${presetOptions}
           </select>
-          <table class="fittings-table">
+          <div class="flow-table-scroll"><table class="fittings-table">
             <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
             <tbody>${fittingRows}</tbody>
-          </table>
+          </table></div>
           <button type="button" class="btn add-fitting-btn">Add Fitting Row</button>
         </div>
         <div class="flow-actions">
@@ -312,6 +313,12 @@ const TakeoffConduitView = (function () {
         TakeoffApp.navigateToManifest();
       });
 
+      // the trench fields are read from the DOM at commit time; edits still
+      // need to arm the discard guard
+      ['trench-qty', 'trench-material', 'trench-depth', 'trench-price-per-foot'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('input', () => TakeoffState.setFlowDirty(true));
+      });
+
       document.querySelectorAll('.trenching-quick-add-row').forEach((row) => {
         const applyQuickAdd = () => {
           const material = row.dataset.material || '';
@@ -327,7 +334,19 @@ const TakeoffConduitView = (function () {
           temp.trenchMaterial = material;
           temp.trenchDepth = depth;
           temp.trenchPricePerFoot = price;
+          // untouched footage defaults to the run's length — a $0-feet trench
+          // is one distracted click away otherwise
+          const qtyInput = document.getElementById('trench-qty');
+          if (qtyInput && !(parseFloat(qtyInput.value) > 0)) {
+            const item = TakeoffState.getItemById(itemId);
+            const feet = item?.quantity || 0;
+            if (feet > 0) {
+              qtyInput.value = feet;
+              temp.trenchQty = String(feet);
+            }
+          }
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
         };
         row.addEventListener('click', applyQuickAdd);
         row.addEventListener('keydown', (e) => {
@@ -346,6 +365,7 @@ const TakeoffConduitView = (function () {
           temp.trenchingAddons = temp.trenchingAddons || [];
           temp.trenchingAddons.push({ description, quantity: '', labor: '', price: '' });
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
           TakeoffApp.render();
         });
       });
@@ -357,6 +377,7 @@ const TakeoffConduitView = (function () {
           temp.trenchingAddons = temp.trenchingAddons || [];
           temp.trenchingAddons.splice(index, 1);
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
           TakeoffApp.render();
         });
       });
@@ -372,6 +393,7 @@ const TakeoffConduitView = (function () {
           const temp = TakeoffState.getConduitTempData();
           if (temp.trenchingAddons?.[index]) temp.trenchingAddons[index][field] = value;
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
         });
       });
 
@@ -396,6 +418,7 @@ const TakeoffConduitView = (function () {
         temp.fittings = temp.fittings || [];
         temp.fittings.push({ description: val, quantity: 1, labor: 0, price: '' });
         TakeoffState.setConduitTempData(temp);
+        TakeoffState.setFlowDirty(true);
         e.target.value = '';
         TakeoffApp.render();
       });
@@ -405,6 +428,7 @@ const TakeoffConduitView = (function () {
         temp.fittings = temp.fittings || [];
         temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
         TakeoffState.setConduitTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
 
@@ -425,6 +449,7 @@ const TakeoffConduitView = (function () {
             temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
           }
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
           TakeoffApp.render();
         });
       });
@@ -439,6 +464,7 @@ const TakeoffConduitView = (function () {
           const temp = TakeoffState.getConduitTempData();
           if (temp.fittings?.[index]) temp.fittings[index][field] = value;
           TakeoffState.setConduitTempData(temp);
+          TakeoffState.setFlowDirty(true);
         });
       });
 
@@ -456,6 +482,7 @@ const TakeoffConduitView = (function () {
         btn.addEventListener('click', (e) => {
           const percent = parseInt(e.target.dataset.percent, 10);
           TakeoffState.setConduitTempData({ overagePercent: percent });
+          TakeoffState.setFlowDirty(true);
           document.getElementById('overage-percent').value = percent;
           TakeoffApp.render();
         });
@@ -464,6 +491,7 @@ const TakeoffConduitView = (function () {
       document.getElementById('overage-percent')?.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         TakeoffState.setConduitTempData({ overagePercent: isNaN(val) ? null : val });
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
 
@@ -482,18 +510,23 @@ const TakeoffConduitView = (function () {
         const { additional } = TakeoffViewShared.computeOverage(baseLength, overagePercent);
 
         if (additional > 0) {
+          // extra footage is bought at the parent's unit price (material
+          // waste — no install labor)
+          const unitPrice = Number(item.price);
           TakeoffState.addItem({
             id: TakeoffState.generateId(),
             type: 'overage',
             description: `Conduit overage (${overagePercent}%)`,
             quantity: additional,
             labor: 0,
+            price: !isNaN(unitPrice) && unitPrice > 0 ? unitPrice : null,
             parentId: itemId,
             meta: { overagePercent },
           });
         }
 
         TakeoffState.endBatch();
+        TakeoffState.setFlowDirty(false);
         TakeoffApp.navigateToManifest();
       });
     }

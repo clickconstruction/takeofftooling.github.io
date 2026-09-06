@@ -73,12 +73,31 @@ const TakeoffProjectsView = (function () {
     }
   }
 
-  function createProjectFlow() {
-    const name = prompt('New project name:', '');
-    if (name === null) return;
-    TakeoffState.createProject(name);
+  // ---------- inline create row (in the Manage Projects modal footer) ----------
+
+  function showCreateRow() {
+    const row = document.getElementById('projects-new-row');
+    if (!row) return;
+    row.hidden = false;
+    const input = document.getElementById('projects-new-name');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  function hideCreateRow() {
+    const row = document.getElementById('projects-new-row');
+    if (row) row.hidden = true;
+  }
+
+  function createFromRow() {
+    const input = document.getElementById('projects-new-name');
+    TakeoffState.createProject(input ? input.value : '');
+    hideCreateRow();
     TakeoffApp.render();
     updateHeader();
+    renderModal();
   }
 
   // ---------- Manage Projects modal ----------
@@ -87,16 +106,20 @@ const TakeoffProjectsView = (function () {
     return document.getElementById('projects-modal')?.getAttribute('aria-hidden') === 'false';
   }
 
-  function openModal() {
+  // opts.create opens with the inline new-project row showing and focused
+  function openModal(opts) {
     closeMenu();
     document.getElementById('projects-modal')?.setAttribute('aria-hidden', 'false');
     renderModal();
+    if (opts && opts.create) showCreateRow();
+    else hideCreateRow();
   }
 
   function closeModal() {
     const modal = document.getElementById('projects-modal');
     if (modal?.contains(document.activeElement)) document.activeElement?.blur();
     modal?.setAttribute('aria-hidden', 'true');
+    hideCreateRow();
   }
 
   function renderModal() {
@@ -169,8 +192,7 @@ const TakeoffProjectsView = (function () {
   document.getElementById('project-menu')?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (e.target.closest('#project-menu-new')) {
-      closeMenu();
-      createProjectFlow();
+      openModal({ create: true });
       return;
     }
     if (e.target.closest('#project-menu-manage')) {
@@ -191,8 +213,17 @@ const TakeoffProjectsView = (function () {
     if (e.target.id === 'projects-modal') closeModal();
   });
   document.getElementById('projects-new-btn')?.addEventListener('click', () => {
-    createProjectFlow();
-    renderModal();
+    const row = document.getElementById('projects-new-row');
+    if (row && !row.hidden) hideCreateRow();
+    else showCreateRow();
+  });
+  document.getElementById('projects-new-create')?.addEventListener('click', createFromRow);
+  document.getElementById('projects-new-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createFromRow();
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      hideCreateRow();
+    }
   });
 
   document.getElementById('projects-list')?.addEventListener('click', (e) => {

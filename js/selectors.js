@@ -51,9 +51,12 @@ const TakeoffSelectors = (function () {
 
   /**
    * Aggregate every purchasable material line across the job.
-   * Included: all children with a description and qty > 0, plus childless
-   * top-level items (they represent the material directly). Parents WITH
-   * children are treated as groupings, and other-charges types are skipped.
+   * Included: all children with a description and qty > 0, childless
+   * top-level items (they represent the material directly), and parents
+   * WITH children that carry their own price — a conduit run's footage or
+   * a panel with add-on parts is real material, not just a grouping.
+   * Price-less parents with children (device runs) are groupings and skip
+   * their own line. Other-charges types are skipped entirely.
    * Identical descriptions merge: quantities sum, extended cost sums
    * per-occurrence so price differences stay accurate.
    */
@@ -85,6 +88,8 @@ const TakeoffSelectors = (function () {
       if (children.length === 0) {
         addLine(item);
       } else {
+        const ownPrice = Number(item.price);
+        if (item.price != null && item.price !== '' && !isNaN(ownPrice) && ownPrice > 0) addLine(item);
         for (const c of children) addLine(c);
       }
     }

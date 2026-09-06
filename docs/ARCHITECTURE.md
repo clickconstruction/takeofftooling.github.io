@@ -116,7 +116,7 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 ### Computed selectors (pure functions over manifest)
 
-`getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown` (materials + 8.5% `SALES_TAX_RATE` + labor + other charges).
+`getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower; a parent with children contributes its own line only when it carries a price — price-less parents are groupings), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown` (materials + 8.5% `SALES_TAX_RATE` + labor + other charges).
 
 ## Cloud sync (js/cloud.js, `TakeoffCloud`)
 
@@ -175,7 +175,7 @@ Six modal skeletons live in index.html:
 
 ## Import / export formats
 
-- **CountTooling clipboard import** (import.js): one line per row, tab-separated `fixture \t count \t page`. Type inferred by regex on description. Preview modal offers Add All vs Add Overages Only (skips existing descriptions; never merges quantities). Single undo frame.
+- **CountTooling clipboard import** (import.js): one line per row, tab-separated `fixture \t count \t page`. Type inferred by regex on description. Preview modal offers Add All vs Add Overages Only (adds new items; an existing description is raised to the import's count when higher — counts are totals, never summed). Single undo frame.
 - **Structured import handoff** (import.js `importFromPayload` + app.js `#import=` hash route): the no-clipboard path for Count Tooling integration. URL: `<app>/#import=<base64 JSON>` with payload `{v:1, source, items:[{description, count|quantity, page?, type?}]}`. Invalid `type` values fall back to regex inference; items flow through the same preview modal. The hash is stripped before the preview shows.
 - **Export via link** (app.js): `#d=` + base64 of `{v:2, app:'takeoff-tooling', exportedAt, name, manifest}`; on load, hash import sanitizes recursively (`sanitizeImportedItem`) and lands in a NEW project named from the payload (nothing is replaced), then strips the hash. Import accepts the envelope or a legacy bare array; `v` is ignored.
 - **PDF exports** (pdf.js): review (full columns + total labor), purchase order (item+qty), with-form (details block). Manual jsPDF layout, letter format.

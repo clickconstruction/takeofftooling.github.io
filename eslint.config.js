@@ -76,7 +76,7 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
     },

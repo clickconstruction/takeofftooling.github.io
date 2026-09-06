@@ -3,6 +3,8 @@
  */
 
 const TakeoffWireView = (function () {
+  const TRASH_SVG = TakeoffViewShared.TRASH_SVG;
+
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
   }
@@ -24,7 +26,7 @@ const TakeoffWireView = (function () {
         <td><input type="text" data-mac-index="${i}" data-field="description" value="${escapeHtml(m.description || '')}" placeholder="Description" /></td>
         <td><input type="number" data-mac-index="${i}" data-field="quantity" value="${m.quantity ?? ''}" min="0" /></td>
         <td><input type="number" data-mac-index="${i}" data-field="labor" value="${m.labor !== undefined ? m.labor : ''}" min="0" step="0.1" /></td>
-        <td><button type="button" class="remove-mac-btn" data-index="${i}">Remove</button></td>
+        <td><button type="button" class="remove-mac-btn icon-btn" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
       )
@@ -40,10 +42,10 @@ const TakeoffWireView = (function () {
         ${TakeoffViewShared.renderOverageSection({ inputId: 'wire-overage-percent', noun: 'Wire', baseLength, overagePercent })}
         <div class="flow-section">
           <h3>MAC Adapters (optional)</h3>
-          <table>
+          <div class="flow-table-scroll"><table>
             <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th></th></tr></thead>
             <tbody>${macRows}</tbody>
-          </table>
+          </table></div>
           <button type="button" class="btn add-mac-btn">Add MAC Adapter</button>
         </div>
         <div class="flow-actions">
@@ -66,6 +68,7 @@ const TakeoffWireView = (function () {
       btn.addEventListener('click', (e) => {
         const percent = parseInt(e.target.dataset.percent, 10);
         TakeoffState.setWireTempData({ overagePercent: percent });
+        TakeoffState.setFlowDirty(true);
         document.getElementById('wire-overage-percent').value = percent;
         TakeoffApp.render();
       });
@@ -74,6 +77,7 @@ const TakeoffWireView = (function () {
     document.getElementById('wire-overage-percent')?.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       TakeoffState.setWireTempData({ overagePercent: isNaN(val) ? null : val });
+      TakeoffState.setFlowDirty(true);
       TakeoffApp.render();
     });
 
@@ -82,6 +86,7 @@ const TakeoffWireView = (function () {
       temp.macAdapters = temp.macAdapters || [];
       temp.macAdapters.push({ description: '', quantity: 0, labor: 0 });
       TakeoffState.setWireTempData(temp);
+      TakeoffState.setFlowDirty(true);
       TakeoffApp.render();
     });
 
@@ -102,6 +107,7 @@ const TakeoffWireView = (function () {
           temp.macAdapters.push({ description: '', quantity: 0, labor: 0 });
         }
         TakeoffState.setWireTempData(temp);
+        TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
       });
     });
@@ -115,6 +121,7 @@ const TakeoffWireView = (function () {
         const temp = TakeoffState.getWireTempData();
         if (temp.macAdapters?.[index]) temp.macAdapters[index][field] = value;
         TakeoffState.setWireTempData(temp);
+        TakeoffState.setFlowDirty(true);
       });
     });
 
@@ -132,12 +139,16 @@ const TakeoffWireView = (function () {
       const { additional } = TakeoffViewShared.computeOverage(baseLength, overagePercent);
 
       if (additional > 0) {
+        // extra footage is bought at the parent's unit price (material
+        // waste — no install labor)
+        const unitPrice = Number(item.price);
         TakeoffState.addItem({
           id: TakeoffState.generateId(),
           type: 'overage',
           description: `Wire overage (${overagePercent}%)`,
           quantity: additional,
           labor: 0,
+          price: !isNaN(unitPrice) && unitPrice > 0 ? unitPrice : null,
           parentId: itemId,
           meta: { overagePercent },
         });
@@ -158,6 +169,7 @@ const TakeoffWireView = (function () {
       }
 
       TakeoffState.endBatch();
+      TakeoffState.setFlowDirty(false);
       TakeoffApp.navigateToManifest();
     });
   }

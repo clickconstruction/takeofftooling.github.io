@@ -18,6 +18,11 @@
 
 const TakeoffLaborBookElliot = (function () {
   const FILTER_CAP_PER_SECTION = 100;
+  // First render of an expanded catalog section stops here; "Show all" lifts
+  // it. Keeps a 4,000-row section from dropping ~70k nodes into the modal.
+  const RENDER_CAP = 100;
+  // Open supplier blocks survive re-renders (keys: `tab::section name`)
+  const openSupplierBlocks = new Set();
 
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
@@ -43,6 +48,19 @@ const TakeoffLaborBookElliot = (function () {
         <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
+  }
+
+  // Body renderer for a supplier block: first RENDER_CAP rows plus a
+  // "Show all" expander (indexes align with block.visible either way).
+  function renderCappedBody(bodyEl, block, vendor, importDate) {
+    const all = block.visible;
+    const capped = all.length > RENDER_CAP;
+    bodyEl.innerHTML =
+      renderPartRows(capped ? all.slice(0, RENDER_CAP) : all, block.section.name, vendor, importDate) +
+      (capped
+        ? `<button type="button" class="btn btn-secondary elliot-show-all-btn">Show all ${all.length.toLocaleString()} parts</button>`
+        : '');
+    bodyEl.dataset.loaded = '1';
   }
 
   /**
@@ -183,6 +201,11 @@ const TakeoffLaborBookElliot = (function () {
           TakeoffLaborBookView.attachListeners();
         });
 
+        if (openSupplierBlocks.has(`${renderedForTab}::${s.name}`)) {
+          el.classList.remove(collapsedClass);
+          renderCappedBody(bodyEl, block, vendor, importDate);
+        }
+
         el.addEventListener('click', (e) => {
           const addBtn = e.target.closest('.elliot-part-add-btn');
           if (addBtn) {
@@ -210,13 +233,20 @@ const TakeoffLaborBookElliot = (function () {
             }
             return;
           }
+          const showAll = e.target.closest('.elliot-show-all-btn');
+          if (showAll && !block._filtered) {
+            bodyEl.innerHTML = renderPartRows(block.visible, s.name, vendor, importDate);
+            return;
+          }
           const header = e.target.closest('.labor-book-section-header, .lb-offers-header');
           if (header && el.contains(header)) {
             e.stopPropagation(); // hosts have their own header toggles
             const expanded = !el.classList.toggle(block.collapsedClass);
+            const stateKey = `${renderedForTab}::${s.name}`;
+            if (expanded) openSupplierBlocks.add(stateKey);
+            else openSupplierBlocks.delete(stateKey);
             if (expanded && bodyEl.dataset.loaded === '0') {
-              bodyEl.innerHTML = renderPartRows(block.visible, s.name, vendor, importDate);
-              bodyEl.dataset.loaded = '1';
+              renderCappedBody(bodyEl, block, vendor, importDate);
             }
           }
         });
@@ -237,7 +267,9 @@ const TakeoffLaborBookElliot = (function () {
       // which runs this between its section pass and its group pass so group
       // visibility can account for supplier matches)
       partsEl._elliotFilter = (termRaw) => {
-        const term = (termRaw || '').trim().toLowerCase();
+        const term = (termRaw || '').trim();
+        // every query token must match, in any order ('3/4 emt coupling')
+        const matches = TakeoffUtils.makeTokenMatcher(term);
         for (const block of blocks) {
           const { el, bodyEl, section: s, visible, vendor, collapsedClass, sectionHost } = block;
           if (!term) {
@@ -248,12 +280,13 @@ const TakeoffLaborBookElliot = (function () {
             el.style.display = '';
             continue;
           }
-          const titleMatch = s.name.toLowerCase().includes(term);
+          const titleMatch = matches(s.name);
           const matched = [];
+          let total = 0;
           for (const en of visible) {
-            if (titleMatch || en.name.toLowerCase().includes(term) || (en.partNumber || '').toLowerCase().includes(term)) {
-              matched.push(en);
-              if (matched.length >= FILTER_CAP_PER_SECTION) break;
+            if (titleMatch || matches(`${en.name} ${en.partNumber || ''} ${s.name}`)) {
+              total++;
+              if (matched.length < FILTER_CAP_PER_SECTION) matched.push(en);
             }
           }
           if (!matched.length) {
@@ -264,7 +297,7 @@ const TakeoffLaborBookElliot = (function () {
           el.style.display = '';
           el.classList.remove(collapsedClass);
           bodyEl.innerHTML =
-            `<div class="mc-book-result-count">${matched.length >= FILTER_CAP_PER_SECTION ? `First ${FILTER_CAP_PER_SECTION} matches` : `${matched.length} matches`}</div>` +
+            `<div class="mc-book-result-count">${total > matched.length ? `First ${matched.length} of ${total.toLocaleString()} matches` : `${total} match${total === 1 ? '' : 'es'}`}</div>` +
             renderPartRows(matched, '__filtered__', vendor, importDate);
           bodyEl.dataset.loaded = '1';
           if (sectionHost) {
