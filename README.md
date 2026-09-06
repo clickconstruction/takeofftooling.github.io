@@ -73,7 +73,7 @@ Two sides, toggled at the top of the modal:
 - **Assemblies** — The MC assemblies book (24k+ entries) as a browsable category tree; add entries rolled-up or exploded into their component items
 - **Global search** — Searches parts, assemblies, and supplier parts together
 - **Add to fixture / fill mode** — Apply a selected entry to a manifest row, or fill a specific flow row via the per-row "PB" buttons
-- **Organize Categories** (preview) — A full-page board (one lane per tab) for restructuring the book: drag sections and groups, or pick one up with ✥ and click where it goes; drop onto a section's center to merge; click a section to edit its rows in a side drawer. Changes accumulate in a pending tray — applying them to the book is coming in a later update, so for now the board is a safe sandbox
+- **Organize Categories** — A full-page board (one lane per tab) for restructuring the book: drag sections and groups (create your own groups on any tab), or pick one up with ✥ and click where it goes; drop onto a section's center to merge; click a section to edit its rows in a side drawer. Changes accumulate in a pending tray until you **Apply** them to the book in one confirmed step (or Discard to reset); moved and renamed sections keep their rows, prices, and history, and your group layout syncs with the rest of the book
 - **Update Supplier Prices** — Import a vendor CSV (e.g. Elliot Electric), auto-match against MC items with a review queue, and download updated JSON to commit back into `mc-assemblies/`
 - **Abbreviation Key** — Reference for labor codes
 - **Export Groups & Sections** — Export structure for customization

@@ -31,10 +31,19 @@ const TakeoffState = (function () {
   const LABOR_BOOK_GROUPS = LABOR_BOOK_DEFAULT_GROUPS;
   let activeLaborBookTab = 'gear';
   let laborBook = JSON.parse(JSON.stringify(LABOR_BOOK_DEFAULTS));
+  // User-defined section groups from the Organize Categories view, keyed by
+  // tab: {type: [{name, sections:[names]}]}. null → the shipped defaults
+  // config (LABOR_BOOK_DEFAULT_GROUPS) applies. Persisted in the book doc.
+  let laborBookGroups = null;
   // Provenance for the shared-book feedback loop (js/laborBookMerge.js):
   // which defaults the user deleted, and which defaults version the stored
   // book was last reconciled against.
   let laborBookRemoved = {};
+  // Defaults missing from their home tab/section but present elsewhere in the
+  // book (moved/renamed via Organize Categories). The defaults merge treats
+  // them like removed (no resurrection at the old spot) but they are NOT
+  // shared as remove-corrections — a move is not a deletion suggestion.
+  let laborBookRelocated = {};
   let laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
 
   function generateId() {
@@ -154,7 +163,8 @@ const TakeoffState = (function () {
       v: 1,
       savedAt: new Date().toISOString(),
       laborBook,
-      laborBookMeta: { defaultsVersion: laborBookDefaultsVersion, removed: laborBookRemoved },
+      laborBookGroups,
+      laborBookMeta: { defaultsVersion: laborBookDefaultsVersion, removed: laborBookRemoved, relocated: laborBookRelocated },
     });
   }
 
@@ -169,11 +179,27 @@ const TakeoffState = (function () {
     persistBookNow();
   }
 
+  // Union of two removed-shaped maps ({tab: {section: [names]}}); pure.
+  function unionRemovedMaps(a, b) {
+    const out = JSON.parse(JSON.stringify(a || {}));
+    for (const tab of Object.keys(b || {})) {
+      if (!out[tab]) out[tab] = {};
+      for (const section of Object.keys(b[tab] || {})) {
+        if (!out[tab][section]) out[tab][section] = [];
+        for (const name of b[tab][section]) {
+          if (!out[tab][section].includes(name)) out[tab][section].push(name);
+        }
+      }
+    }
+    return out;
+  }
+
   // Reconcile a restored/adopted book with the shipped defaults: bootstrap
   // provenance flags on pre-versioning workspaces, then merge in any newer
   // defaults (user-touched rows win). Persists when anything changed.
   function upgradeLaborBook(meta) {
     laborBookRemoved = meta && meta.removed && typeof meta.removed === 'object' ? meta.removed : {};
+    laborBookRelocated = meta && meta.relocated && typeof meta.relocated === 'object' ? meta.relocated : {};
     let storedVersion = meta && typeof meta.defaultsVersion === 'number' ? meta.defaultsVersion : 0;
     let dirty = false;
     if (storedVersion === 0) {
@@ -183,7 +209,9 @@ const TakeoffState = (function () {
       dirty = true;
     }
     if (storedVersion < LABOR_BOOK_DEFAULTS_VERSION) {
-      TakeoffLaborBookMerge.mergeDefaults(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved);
+      // relocated defaults count as removed for the merge — moved sections
+      // must not be resurrected at their old location
+      TakeoffLaborBookMerge.mergeDefaults(laborBook, LABOR_BOOK_DEFAULTS, unionRemovedMaps(laborBookRemoved, laborBookRelocated));
       dirty = true;
     }
     laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
@@ -202,6 +230,7 @@ const TakeoffState = (function () {
     const book = TakeoffStorage.loadBook();
     if (book && book.laborBook && typeof book.laborBook === 'object') {
       laborBook = book.laborBook;
+      if (book.laborBookGroups && typeof book.laborBookGroups === 'object') laborBookGroups = book.laborBookGroups;
       upgradeLaborBook(book.laborBookMeta);
     }
     const idx = TakeoffStorage.loadProjectsIndex();
@@ -222,6 +251,7 @@ const TakeoffState = (function () {
   function adoptBook(data) {
     if (!data || data.v !== 1 || !data.laborBook || typeof data.laborBook !== 'object') return false;
     laborBook = data.laborBook;
+    laborBookGroups = data.laborBookGroups && typeof data.laborBookGroups === 'object' ? data.laborBookGroups : null;
     upgradeLaborBook(data.laborBookMeta);
     return true;
   }
@@ -488,7 +518,76 @@ const TakeoffState = (function () {
   }
 
   function getLaborBookGroups(type) {
+    if (laborBookGroups) return laborBookGroups[type] || null;
     return LABOR_BOOK_GROUPS[type] || null;
+  }
+
+  /**
+   * Commit a reorganization from the Organize Categories view. `payload` is
+   * {tabs: [{key, groups: [{name|null, sections: [{name, items:[rows],
+   * origin?: {tab, name}}]}]}]} — the full structure for every tab. Rows
+   * already carry provenance flags (stamped by the view as the user edited
+   * them); `origin` is where a section lived in the book when the view
+   * opened (absent for sections created in the view). Rebuilds each tab's
+   * section map in the given order, stores named groups as the user's group
+   * config, and re-derives the removed/relocated maps: defaults whose home
+   * section survived somewhere (moved/renamed — matched by origin) become
+   * `relocated` (no resurrection on merge, but not shared as a remove
+   * suggestion); defaults whose section is gone, or rows deleted from a
+   * surviving section, become `removed`. Not undoable (labor-book changes
+   * never are).
+   */
+  function applyBookReorganization(payload) {
+    if (!payload || !Array.isArray(payload.tabs)) return false;
+    const newBook = {};
+    const newGroups = {};
+    const survivingOrigins = new Set(); // "tab\nsection" of sections that still exist somewhere
+    for (const tab of payload.tabs) {
+      if (!LABOR_BOOK_TAB_ORDER.includes(tab.key)) continue;
+      const sections = {};
+      const named = [];
+      for (const group of tab.groups || []) {
+        const sectionNames = [];
+        for (const sec of group.sections || []) {
+          const name = String(sec.name || '').trim();
+          if (!name || sections[name]) continue; // duplicates collapse silently
+          sections[name] = Array.isArray(sec.items) ? sec.items : [];
+          sectionNames.push(name);
+          if (sec.origin && sec.origin.tab && sec.origin.name) {
+            survivingOrigins.add(sec.origin.tab + '\n' + sec.origin.name);
+          }
+        }
+        if (group.name !== null && group.name !== undefined) {
+          named.push({ name: String(group.name), sections: sectionNames });
+        }
+      }
+      newBook[tab.key] = sections;
+      newGroups[tab.key] = named;
+    }
+    // any tab the payload skipped keeps its current sections
+    for (const key of LABOR_BOOK_TAB_ORDER) {
+      if (!newBook[key]) newBook[key] = laborBook[key] || {};
+    }
+    laborBook = newBook;
+    laborBookGroups = newGroups;
+
+    const missing = TakeoffLaborBookMerge.computeRemoved(laborBook, LABOR_BOOK_DEFAULTS, true);
+    laborBookRemoved = {};
+    laborBookRelocated = {};
+    for (const tabKey of Object.keys(missing)) {
+      for (const section of Object.keys(missing[tabKey])) {
+        // a section still present at home lost individual rows → removed;
+        // a section that survived elsewhere (moved/renamed) → relocated;
+        // a section that is gone entirely → removed
+        const atHome = !!laborBook[tabKey][section];
+        const movedAway = !atHome && survivingOrigins.has(tabKey + '\n' + section);
+        const dest = movedAway ? laborBookRelocated : laborBookRemoved;
+        if (!dest[tabKey]) dest[tabKey] = {};
+        dest[tabKey][section] = missing[tabKey][section].slice();
+      }
+    }
+    persistBookNow();
+    return true;
   }
 
   function getLaborBookType(type) {
@@ -760,6 +859,7 @@ const TakeoffState = (function () {
     getLaborBook,
     getLaborBookTabOrder,
     getLaborBookGroups,
+    applyBookReorganization,
     getLaborBookType,
     setLaborBookSection,
     addLaborBookRow,

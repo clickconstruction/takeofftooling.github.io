@@ -92,3 +92,29 @@ test('fresh book against same defaults produces no corrections', () => {
   const removed = Merge.bootstrap(book, defaults());
   assert.deepEqual(Merge.computeCorrections(book, defaults(), removed), []);
 });
+
+test('computeRemoved skips missing sections by default, includes them when asked', () => {
+  const book = clone(defaults());
+  delete book.wire.Terminations; // whole section gone (moved or deleted)
+  book.wire['THHN CU'].splice(1, 1); // one row gone from a surviving section
+
+  assert.deepEqual(Merge.computeRemoved(book, defaults()), { wire: { 'THHN CU': ['12'] } });
+  assert.deepEqual(Merge.computeRemoved(book, defaults(), true), {
+    wire: { 'THHN CU': ['12'], Terminations: ['# 22-6'] },
+  });
+});
+
+test('mergeDefaults does not resurrect a fully removed/relocated section', () => {
+  const book = clone(defaults());
+  delete book.wire.Terminations; // e.g. moved to another tab via Organize Categories
+  const removed = { wire: { Terminations: ['# 22-6'] } };
+
+  Merge.mergeDefaults(book, defaults(), removed);
+  assert.equal(book.wire.Terminations, undefined);
+
+  // ...but a genuinely new default row in that section is still adopted
+  const next = defaults();
+  next.wire.Terminations.push({ name: '# 4-1', labor: 0.3, price: '' });
+  Merge.mergeDefaults(book, next, removed);
+  assert.deepEqual(book.wire.Terminations, [{ name: '# 4-1', labor: 0.3, price: '' }]);
+});

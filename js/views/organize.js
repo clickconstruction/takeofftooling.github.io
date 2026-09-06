@@ -1,14 +1,18 @@
 /**
- * Takeoff Tooling - Organize Categories view (PREVIEW)
+ * Takeoff Tooling - Organize Categories view
  *
  * Full-page board for reorganizing the Labor & Price Book structure:
  * one lane per tab, groups and sections as a draggable tree, plus
  * click-and-place for long-distance moves and a section editor drawer.
  *
- * Works on a scratch copy of the real book taken on entry; "Apply" is a
- * stub for now (nothing is written back to TakeoffState), so the whole
- * view is a safe sandbox. Opened from the Labor & Price Book modal's
- * "Organize Categories" button (TakeoffApp.navigateToOrganize).
+ * Works on a scratch copy of the real book taken on entry; every section
+ * remembers its `origin` (tab + name at entry) so Apply can tell moves
+ * from deletions. "Apply changes" commits the whole structure through
+ * TakeoffState.applyBookReorganization (NOT undoable — hence the staged
+ * changes + confirm); Discard rebuilds from the book. Row edits in the
+ * drawer stamp the same provenance flags TakeoffState.updateLaborBookRow
+ * would. Opened from the Labor & Price Book modal's "Organize Categories"
+ * button (TakeoffApp.navigateToOrganize).
  */
 const TakeoffOrganizeView = (function () {
   const escapeHtml = (s) => TakeoffUtils.escapeHtml(String(s ?? ''));
@@ -28,6 +32,7 @@ const TakeoffOrganizeView = (function () {
     const book = TakeoffState.getLaborBook();
     model = { tabs: [] };
     changes = [];
+    TakeoffState.setFlowDirty(false);
     collapsed = new Set();
     drag = null;
     placing = null;
@@ -37,11 +42,14 @@ const TakeoffOrganizeView = (function () {
       const sections = book[key] || {};
       const seen = new Set();
       const groups = [];
+      // origin = where the section lived when the view opened; Apply uses it
+      // to distinguish a moved/renamed section from a deleted one
+      const takeSec = (name) => ({ name, items: JSON.parse(JSON.stringify(sections[name])), origin: { tab: key, name } });
       for (const g of TakeoffState.getLaborBookGroups(key) || []) {
         const gs = [];
         for (const name of g.sections) {
           if (Object.prototype.hasOwnProperty.call(sections, name)) {
-            gs.push({ name, items: JSON.parse(JSON.stringify(sections[name])) });
+            gs.push(takeSec(name));
             seen.add(name);
           }
         }
@@ -49,7 +57,7 @@ const TakeoffOrganizeView = (function () {
       }
       const loose = { name: null, sections: [] };
       for (const name of Object.keys(sections)) {
-        if (!seen.has(name)) loose.sections.push({ name, items: JSON.parse(JSON.stringify(sections[name])) });
+        if (!seen.has(name)) loose.sections.push(takeSec(name));
       }
       groups.push(loose);
       model.tabs.push({ key, label, groups });
@@ -70,7 +78,7 @@ const TakeoffOrganizeView = (function () {
       <div class="org-header">
         <button type="button" class="btn btn-secondary" id="org-back-btn">&larr; Back to book</button>
         <div class="org-title">Organize Categories
-          <span class="org-sub">PREVIEW &mdash; drag, or use &#x2725; to click-and-place &middot; click a section to edit it &middot; nothing saves yet</span>
+          <span class="org-sub">drag, or use &#x2725; to click-and-place &middot; click a section to edit it &middot; nothing saves until you Apply</span>
         </div>
         <div class="org-legend">
           <span><span class="org-sw org-sw-curated"></span>section</span>
@@ -89,7 +97,7 @@ const TakeoffOrganizeView = (function () {
         <div class="org-tray-summary" id="org-summary"></div>
         <div class="org-tray-log" id="org-log"></div>
         <button type="button" class="btn btn-secondary" id="org-discard-btn">Discard</button>
-        <button type="button" class="btn org-apply-btn" id="org-apply-btn" disabled title="Preview — applying to the book is a later step">Apply changes</button>
+        <button type="button" class="btn org-apply-btn" id="org-apply-btn" disabled title="Write the staged changes to the Labor &amp; Price Book (cannot be undone)">Apply changes</button>
       </div>
     </div>`;
   }
@@ -169,12 +177,22 @@ const TakeoffOrganizeView = (function () {
     const summary = document.getElementById('org-summary');
     const log = document.getElementById('org-log');
     const apply = document.getElementById('org-apply-btn');
-    if (summary) summary.innerHTML = n ? `<b>${n}</b> pending change${n === 1 ? '' : 's'} (preview)` : 'No pending changes';
+    if (summary) summary.innerHTML = n ? `<b>${n}</b> pending change${n === 1 ? '' : 's'}` : 'No pending changes';
     if (log) log.innerHTML = changes.map((c) => `<span>${escapeHtml(c)}</span>`).join('');
     if (apply) apply.disabled = n === 0;
   }
 
-  function logChange(label) { if (!changes.includes(label)) changes.push(label); }
+  function logChange(label) {
+    if (!changes.includes(label)) changes.push(label);
+    // unapplied changes ride the flow-dirty guard: navigating away (back
+    // button, app title) asks before discarding them
+    TakeoffState.setFlowDirty(true);
+  }
+
+  function clearChanges() {
+    changes = [];
+    TakeoffState.setFlowDirty(false);
+  }
 
   // ---------- target resolution (shared by drag & place) ----------
 
@@ -398,7 +416,7 @@ const TakeoffOrganizeView = (function () {
         </table>
         <button type="button" class="org-add-row">+ Add row</button>
       </div>
-      <div class="org-drawer-note">Edits stay in this preview &mdash; nothing is written to the book yet.</div>`;
+      <div class="org-drawer-note">Row edits are staged with your other changes &mdash; Apply writes them to the book.</div>`;
 
     drawer.querySelector('.org-drawer-close').addEventListener('click', closeDrawer);
     drawer.querySelector('.org-drawer-move').addEventListener('click', () => {
@@ -434,11 +452,28 @@ const TakeoffOrganizeView = (function () {
       if (!inp) return;
       const row = drawerSec.items[+inp.dataset.i];
       if (!row) return;
+      // mirror TakeoffState.updateLaborBookRow's provenance stamping so
+      // applied rows behave identically in the defaults merge & corrections
       const f = inp.dataset.f;
-      if (f === 'name') row.name = inp.value;
-      else if (f === 'labor') row.labor = Number(inp.value) || 0;
-      else row.price = inp.value.trim();
-      logChange(`Edit rows in "${drawerSec.name}"`);
+      let valueChanged = false;
+      if (f === 'name') {
+        valueChanged = inp.value !== row.name;
+        row.name = inp.value;
+      } else if (f === 'labor') {
+        const v = Number(inp.value) || 0;
+        valueChanged = v !== (Number(row.labor) || 0);
+        row.labor = v;
+      } else {
+        const v = inp.value.trim();
+        valueChanged = String(v) !== String(row.price ?? '');
+        row.price = v;
+        if (valueChanged) {
+          row.priceSource = 'You';
+          row.pricedAt = new Date().toISOString().slice(0, 10);
+        }
+      }
+      if (valueChanged && !row.userAdded) row.edited = true;
+      if (valueChanged) logChange(`Edit rows in "${drawerSec.name}"`);
       refresh();
     });
     drawer.querySelector('.org-drawer-body').addEventListener('click', (e) => {
@@ -450,7 +485,7 @@ const TakeoffOrganizeView = (function () {
         return;
       }
       if (e.target.closest('.org-add-row')) {
-        drawerSec.items.push({ name: 'New row', labor: 0, price: '' });
+        drawerSec.items.push({ name: 'New row', labor: 0, price: '', userAdded: true });
         logChange(`Edit rows in "${drawerSec.name}"`);
         refresh();
       }
@@ -489,8 +524,11 @@ const TakeoffOrganizeView = (function () {
   function leave() {
     cancelPlace();
     removeConfirmBar();
-    drawerSec = null;
+    // navigateToManifest asks about unapplied changes (flow-dirty guard);
+    // only reopen the book if the user actually left
     TakeoffApp.navigateToManifest();
+    if (TakeoffState.getCurrentView() !== 'manifest') return;
+    drawerSec = null;
     TakeoffApp.showLaborBookModal();
   }
 
@@ -515,7 +553,26 @@ const TakeoffOrganizeView = (function () {
       refresh();
     });
     document.getElementById('org-apply-btn')?.addEventListener('click', () => {
-      toast(`Preview only — applying ${changes.length} change${changes.length === 1 ? '' : 's'} to the book is a later step; nothing was saved`);
+      if (!changes.length) return;
+      removeConfirmBar();
+      const n = changes.length;
+      const bar = document.createElement('div');
+      bar.className = 'org-confirm-bar';
+      bar.innerHTML = `
+        <span>Apply <b>${n}</b> change${n === 1 ? '' : 's'} to the Labor &amp; Price Book? This cannot be undone.</span>
+        <button type="button" class="btn org-apply-btn" data-ap="yes">Apply</button>
+        <button type="button" class="btn btn-secondary" data-ap="no">Cancel</button>`;
+      document.body.appendChild(bar);
+      bar.querySelector('[data-ap="no"]').addEventListener('click', removeConfirmBar);
+      bar.querySelector('[data-ap="yes"]').addEventListener('click', () => {
+        removeConfirmBar();
+        const ok = TakeoffState.applyBookReorganization(model);
+        if (!ok) { toast('Could not apply changes'); return; }
+        clearChanges();
+        enter(); // rebuild from the book — what you see is what was saved
+        refresh();
+        toast(`Applied ${n} change${n === 1 ? '' : 's'} to the Labor & Price Book`);
+      });
     });
 
     // -- native drag & drop --
