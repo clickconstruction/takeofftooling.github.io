@@ -28,6 +28,32 @@ const TakeoffLaborBookMerge = (function () {
   }
 
   /**
+   * Default rows missing from their home tab/section in `book`. By default,
+   * sections the book doesn't have at all are skipped (bootstrap semantics —
+   * they were never adopted); pass `includeMissingSections` to record their
+   * rows too (reorganization semantics — the section was moved or deleted).
+   * Pure; returns a fresh `removed`-shaped map. Recomputed wholesale after a
+   * reorganization so stale entries drop out when a default row comes back.
+   */
+  function computeRemoved(book, defaults, includeMissingSections) {
+    const removed = {};
+    for (const tab of Object.keys(defaults)) {
+      const bookTab = book[tab];
+      if (!bookTab) continue;
+      for (const section of Object.keys(defaults[tab])) {
+        const rows = bookTab[section];
+        if (!rows && !includeMissingSections) continue;
+        for (const def of defaults[tab][section]) {
+          if (!rows || !rows.some((r) => r.name === def.name)) {
+            recordRemoved(removed, tab, section, def.name);
+          }
+        }
+      }
+    }
+    return removed;
+  }
+
+  /**
    * First run on a pre-provenance workspace: infer flags by comparing the
    * stored book against the currently shipped defaults. Rows matching a
    * default by name but with different values → edited; rows with no default
@@ -36,20 +62,7 @@ const TakeoffLaborBookMerge = (function () {
    * Mutates `book` rows; returns the inferred `removed` map.
    */
   function bootstrap(book, defaults) {
-    const removed = {};
-    for (const tab of Object.keys(defaults)) {
-      const bookTab = book[tab];
-      if (!bookTab) continue;
-      for (const section of Object.keys(defaults[tab])) {
-        const rows = bookTab[section];
-        if (!rows) continue;
-        for (const def of defaults[tab][section]) {
-          if (!rows.some((r) => r.name === def.name)) {
-            recordRemoved(removed, tab, section, def.name);
-          }
-        }
-      }
-    }
+    const removed = computeRemoved(book, defaults);
     for (const tab of Object.keys(book)) {
       for (const section of Object.keys(book[tab] || {})) {
         const defRows = defaults[tab] ? defaults[tab][section] : null;
@@ -77,13 +90,18 @@ const TakeoffLaborBookMerge = (function () {
       if (!book[tab]) book[tab] = {};
       for (const section of Object.keys(defaults[tab])) {
         const defRows = defaults[tab][section];
+        const removedNames = (removed && removed[tab] && removed[tab][section]) || [];
         if (!book[tab][section]) {
-          book[tab][section] = JSON.parse(JSON.stringify(defRows));
-          changed += defRows.length;
+          // a section the user moved away or deleted (all rows in `removed`)
+          // stays gone; otherwise adopt the new default section
+          const fresh = defRows.filter((d) => !removedNames.includes(d.name));
+          if (fresh.length) {
+            book[tab][section] = JSON.parse(JSON.stringify(fresh));
+            changed += fresh.length;
+          }
           continue;
         }
         const rows = book[tab][section];
-        const removedNames = (removed && removed[tab] && removed[tab][section]) || [];
         for (const def of defRows) {
           const i = rows.findIndex((r) => r.name === def.name);
           if (i === -1) {
@@ -149,7 +167,7 @@ const TakeoffLaborBookMerge = (function () {
     return out;
   }
 
-  return { bootstrap, mergeDefaults, computeCorrections, rowsEqual };
+  return { bootstrap, mergeDefaults, computeCorrections, computeRemoved, rowsEqual };
 })();
 
 // Node (unit tests); inert in the browser.

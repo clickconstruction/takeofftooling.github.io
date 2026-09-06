@@ -21,7 +21,7 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 | `js/uiState.js`, `js/selectors.js` | Ephemeral UI state (re-exported by TakeoffState) and pure manifest selectors (unit-tested) |
 | `js/data/laborBookDefaults.js` | Default Labor & Price Book data (pure data; state.js deep-clones it) |
 | `js/app.js` | `TakeoffApp` — init, view routing, navigation, modal open/close, export-via-link, `#d=`/`#import=` hash routes |
-| `js/views/` | `manifest.js` (main table), `device.js` / `conduit.js` / `wire.js` (flow editors), `shared.js` (icons/overage helpers), `laborBook*.js` (Labor & Price Book modal: facade + targets/Elliot/search modules), `modal.js` (type-select modal only), `organize.js` (full-page category organizer, preview — edits a scratch copy, Apply is a stub) |
+| `js/views/` | `manifest.js` (main table), `device.js` / `conduit.js` / `wire.js` (flow editors), `shared.js` (icons/overage helpers), `laborBook*.js` (Labor & Price Book modal: facade + targets/Elliot/search modules), `modal.js` (type-select modal only), `organize.js` (full-page category organizer — stages changes on a scratch copy, Apply commits via `TakeoffState.applyBookReorganization`) |
 | `js/mcBook.js`, `js/mcElliot*.js`, `js/elliotPriceCore.js` | MC assemblies tree + supplier price-update pipeline (runtime side) |
 | `js/import.js`, `js/pdf.js` | CountTooling clipboard import; jsPDF exports |
 | `js/data/fittings.js` | Conduit fitting presets (user-editable) |
