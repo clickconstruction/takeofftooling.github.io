@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organize Categories — Takeoff Tooling (mock-up)</title>
+<style>
+  /* ===== App design tokens (copied from css/styles.css) ===== */
+  :root {
+    --bg: #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --surface3: #26262c;
+    --border: #2e2e36;
+    --border2: #3a3a44;
+    --accent: #e8c547;
+    --accent2: #c9a82e;
+    --text: #f0ede8;
+    --text2: #9e9b96;
+    --text3: #5e5c58;
+    --red: #e85447;
+    --green: #47c88e;
+    --radius: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+
+  /* ===== Header ===== */
+  .ce-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+  }
+  .ce-back {
+    background: var(--surface2); color: var(--text2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 6px 12px; cursor: pointer; font-size: 13px;
+  }
+  .ce-back:hover { background: var(--surface3); color: var(--text); }
+  .ce-title { font-size: 16px; font-weight: 600; }
+  .ce-title .sub { color: var(--text3); font-weight: 400; font-size: 12px; margin-left: 8px; }
+  .ce-search {
+    margin-left: auto;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); padding: 6px 10px; font-size: 13px; width: 220px;
+  }
+  .ce-search:focus { outline: none; border-color: var(--accent2); }
+  .ce-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text3); }
+  .ce-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .sw-curated { background: var(--surface3); border: 1px solid var(--border2); }
+  .sw-supplier { background: transparent; border: 1px dashed var(--text3); }
+  .sw-empty { background: var(--red); opacity: .7; border-radius: 50% !important; width: 7px !important; height: 7px !important; }
+
+  /* ===== Place-mode banner ===== */
+  .place-banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 7px 18px; font-size: 13px;
+    background: rgba(232,197,71,.08);
+    border-bottom: 1px solid var(--accent2);
+    color: var(--text);
+  }
+  .place-banner b { color: var(--accent); }
+  .place-banner .hint { color: var(--text2); font-size: 12px; }
+  .place-banner button {
+    margin-left: auto; background: var(--surface2); color: var(--text2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 3px 10px; cursor: pointer; font-size: 12px;
+  }
+  .place-banner button:hover { color: var(--red); }
+  body.placing .ce-board { cursor: crosshair; }
+
+  /* ===== Board ===== */
+  .ce-board {
+    flex: 1 1 auto; overflow: auto;
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px 18px 24px;
+  }
+  .lane {
+    flex: 0 0 292px; max-height: 100%;
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .lane-head {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface); border-radius: 8px 8px 0 0; z-index: 2;
+  }
+  .lane-head .name { font-weight: 600; color: var(--accent); font-size: 14px; }
+  .lane-head .count { color: var(--text3); font-size: 11px; }
+  .lane-head .add-group {
+    margin-left: auto; background: none; border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text3); font-size: 11px; padding: 2px 8px; cursor: pointer;
+  }
+  .lane-head .add-group:hover { color: var(--accent); border-color: var(--accent2); }
+  .lane-body { padding: 8px 10px 12px; overflow-y: auto; }
+
+  /* ===== Tree nodes ===== */
+  .group { margin: 6px 0 10px; }
+  .group-head {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 6px 9px; cursor: grab; user-select: none;
+  }
+  .group-head:hover { background: var(--surface3); }
+  .group-head .grip {
+    background: none; border: none; color: var(--text3); font-size: 12px; letter-spacing: 1px;
+    cursor: pointer; padding: 0 2px;
+  }
+  .group-head .grip:hover { color: var(--accent); }
+  .group-head .gname { font-weight: 600; font-size: 13px; }
+  .group-head .gcount { color: var(--text3); font-size: 11px; }
+  .group-head .add-sec {
+    margin-left: auto; background: none; border: none; color: var(--text3);
+    font-size: 15px; cursor: pointer; padding: 0 3px; line-height: 1;
+  }
+  .group-head .add-sec:hover { color: var(--accent); }
+  .group-head .collapse { background:none; border:none; color: var(--text3); cursor: pointer; font-size: 10px; padding: 0 2px; }
+
+  .group.ungrouped .group-head {
+    background: transparent; border-style: dashed; cursor: default;
+  }
+  .group.ungrouped .gname { color: var(--text3); font-weight: 500; font-style: italic; }
+  .ungrouped-empty {
+    margin: 5px 0 0 22px; padding: 7px 10px; font-size: 11.5px; color: var(--text3);
+    border: 1px dashed var(--border); border-radius: var(--radius); text-align: center;
+  }
+  .ungrouped-empty.drop-into { border-color: var(--accent); color: var(--accent); }
+
+  .children { margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--border2); }
+  .chip-wrap { position: relative; }
+  .chip-wrap::before {
+    content: ""; position: absolute; left: -12px; top: 50%; width: 10px; height: 1px; background: var(--border2);
+  }
+  .chip {
+    position: relative;
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface3); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 5px 8px; margin: 5px 0; cursor: pointer; user-select: none; font-size: 12.5px;
+  }
+  .chip:hover { border-color: var(--text3); }
+  .chip .rows { color: var(--text3); font-size: 10.5px; flex: 0 0 auto; margin-left: auto; }
+  .chip .cname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .empty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); opacity: .7; flex: 0 0 auto; }
+  .chip .minis {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    display: none; gap: 2px; background: var(--surface3); padding: 1px 2px; border-radius: 4px;
+  }
+  .chip:hover .minis { display: flex; }
+  .chip .minis button {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px;
+    color: var(--text2); font-size: 11px; cursor: pointer; padding: 1px 6px; line-height: 1.5;
+  }
+  .chip .minis button:hover { color: var(--accent); border-color: var(--accent2); }
+  .chip.armed { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); opacity: .6; }
+  .group-head.armed { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); opacity: .6; }
+  .chip.ghost {
+    background: transparent; border-style: dashed; border-color: var(--border2);
+    color: var(--text2); cursor: default; font-size: 12px;
+  }
+  .chip.ghost .vendor { color: var(--accent2); font-size: 10.5px; margin-left: auto; }
+  .group-head input {
+    background: var(--bg); border: 1px solid var(--accent2); border-radius: 4px;
+    color: var(--text); font-size: 12.5px; padding: 2px 5px; width: 100%;
+  }
+  .group-head input:focus { outline: none; }
+
+  /* drag / place target states */
+  .dragging { opacity: 0.4; }
+  .chip.drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
+  .chip.drop-after { box-shadow: 0 2px 0 0 var(--accent); }
+  .chip.drop-merge { border-color: var(--green); background: rgba(71,200,142,.12); }
+  .group-head.drop-into { border-color: var(--accent); background: var(--surface3); }
+  .group-head.drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
+  .group-head.drop-after { box-shadow: 0 2px 0 0 var(--accent); }
+  .lane.drop-into { border-color: var(--accent2); }
+  .lane-empty {
+    margin: 8px 0; padding: 18px 10px; text-align: center;
+    border: 1px dashed var(--border2); border-radius: var(--radius);
+    color: var(--text3); font-size: 12px;
+  }
+  .lane-empty.drop-into { border-color: var(--accent); color: var(--accent); }
+
+  /* search states */
+  .dim { opacity: 0.25; }
+  .hit { border-color: var(--accent) !important; }
+
+  /* ===== Section editor drawer ===== */
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 380px; z-index: 40;
+    background: var(--surface); border-left: 1px solid var(--border2);
+    box-shadow: -8px 0 24px rgba(0,0,0,.45);
+    display: flex; flex-direction: column;
+  }
+  .drawer-head {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .drawer-head .crumb { font-size: 11px; color: var(--text3); }
+  .drawer-head .crumb b { color: var(--text2); font-weight: 500; }
+  .drawer-head .row1 { display: flex; align-items: center; gap: 8px; }
+  .drawer-head input.sec-name {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-size: 14px; font-weight: 600;
+    padding: 6px 9px;
+  }
+  .drawer-head input.sec-name:focus { outline: none; border-color: var(--accent2); }
+  .drawer-head .close-drawer {
+    background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 0 4px;
+  }
+  .drawer-head .close-drawer:hover { color: var(--text); }
+  .drawer-actions { display: flex; gap: 8px; }
+  .drawer-actions button {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text2); font-size: 12px; padding: 4px 10px; cursor: pointer;
+  }
+  .drawer-actions button:hover { color: var(--text); background: var(--surface3); }
+  .drawer-actions .del-section:hover { color: var(--red); border-color: var(--red); }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 10px 16px; }
+  .rows-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rows-table th {
+    text-align: left; color: var(--text3); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .5px; padding: 4px 6px; border-bottom: 1px solid var(--border);
+  }
+  .rows-table td { padding: 3px 3px; }
+  .rows-table input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12.5px; padding: 4px 7px;
+  }
+  .rows-table input:focus { outline: none; border-color: var(--accent2); }
+  .rows-table input.num { text-align: right; }
+  .rows-table .del-row {
+    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; padding: 2px 4px;
+  }
+  .rows-table .del-row:hover { color: var(--red); }
+  .add-row {
+    margin: 10px 0 4px; width: 100%;
+    background: var(--surface2); border: 1px dashed var(--border2); border-radius: var(--radius);
+    color: var(--text2); font-size: 12.5px; padding: 7px; cursor: pointer;
+  }
+  .add-row:hover { color: var(--accent); border-color: var(--accent2); }
+  .drawer-note { font-size: 11px; color: var(--text3); padding: 8px 16px; border-top: 1px solid var(--border); }
+
+  /* ===== Pending changes tray ===== */
+  .ce-tray {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 14px;
+    padding: 9px 18px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    position: relative; z-index: 45;
+  }
+  .ce-tray .summary { font-size: 13px; color: var(--text2); }
+  .ce-tray .summary b { color: var(--accent); }
+  .ce-tray .log {
+    flex: 1 1 auto; overflow-x: auto; white-space: nowrap;
+    font-size: 11px; color: var(--text3); display: flex; gap: 8px;
+  }
+  .ce-tray .log span {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 2px 9px; flex: 0 0 auto;
+  }
+  .btn {
+    border-radius: var(--radius); padding: 7px 16px; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .btn-apply { background: var(--accent); color: #1a1a1a; font-weight: 600; border-color: var(--accent); }
+  .btn-apply:hover { background: var(--accent2); }
+  .btn-apply:disabled { background: var(--surface2); color: var(--text3); border-color: var(--border); cursor: default; }
+  .btn-discard { background: var(--surface2); color: var(--text2); }
+  .btn-discard:hover { color: var(--red); }
+
+  /* confirm bar + toast */
+  .confirm-bar {
+    position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--green); border-radius: 8px;
+    box-shadow: var(--shadow); padding: 12px 16px; z-index: 50;
+    display: flex; align-items: center; gap: 12px; font-size: 13px; max-width: 640px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%);
+    background: var(--surface3); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 10px 18px; font-size: 13px; z-index: 50; box-shadow: var(--shadow);
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="ce-header">
+  <button class="ce-back">← Back to book</button>
+  <div class="ce-title">Organize Categories
+    <span class="sub">MOCK-UP — drag, or use ✥ to click-and-place · click a section to edit it</span>
+  </div>
+  <div class="ce-legend">
+    <span><span class="sw sw-curated"></span>curated section</span>
+    <span><span class="sw sw-supplier"></span>supplier (follows name)</span>
+    <span><span class="sw sw-empty"></span>empty</span>
+  </div>
+  <input class="ce-search" id="search" type="search" placeholder="Find a section…">
+</header>
+
+<div class="place-banner" id="place-banner" hidden>
+  <span>Placing <b id="place-name"></b></span>
+  <span class="hint">scroll anywhere, then click a destination — edges of a section = before/after, center = merge · Esc cancels</span>
+  <button id="place-cancel">Cancel (Esc)</button>
+</div>
+
+<main class="ce-board" id="board"></main>
+
+<aside class="drawer" id="drawer" hidden></aside>
+
+<footer class="ce-tray">
+  <div class="summary" id="summary">No pending changes</div>
+  <div class="log" id="log"></div>
+  <button class="btn btn-discard" id="discard">Discard</button>
+  <button class="btn btn-apply" id="apply" disabled>Apply changes</button>
+</footer>
+
+<script>
+/* =========================================================================
+   Mock data — real section names & row counts from js/data/laborBookDefaults.js.
+   Ghost entries model supplier catalog sections that merge by name.
+   Row contents are generated mock data (sizes/gauges/amps).
+   ========================================================================= */
+const INITIAL = {
+  tabs: [
+    { key: 'gear', label: 'Gear', groups: [
+      { name: null, sections: [
+        { name: 'Switchboards', rows: 6 },
+        { name: 'Conduit Holes', rows: 4 },
+        { name: 'Panels.1PH', rows: 19 },
+        { name: 'Panels.3PH', rows: 19 },
+        { name: 'Transformers.1PH', rows: 5 },
+        { name: 'Transformers.3PH', rows: 12 },
+        { name: 'PANELBOARDS', ghost: true, vendor: 'Elliot', parts: 96 },
+      ]},
+    ]},
+    { key: 'lighting', label: 'Lighting', groups: [
+      { name: null, sections: [
+        { name: 'LAMPS', ghost: true, vendor: 'Elliot', parts: 412 },
+        { name: 'LIGHTING FIXTURES', ghost: true, vendor: 'Elliot', parts: 380 },
+      ]},
+    ]},
+    { key: 'devices', label: 'Devices', groups: [
+      { name: null, sections: [
+        { name: 'WIRING DEVICES', ghost: true, vendor: 'Elliot', parts: 645 },
+        { name: 'PLATES', ghost: true, vendor: 'Elliot', parts: 233 },
+      ]},
+    ]},
+    { key: 'conduit', label: 'Conduit', groups: [
+      { name: 'Fittings', sections: [
+        { name: 'EMT fittings (SS) Elbows', rows: 10 },
+        { name: 'EMT fittings (SS) - Couplings', rows: 10 },
+        { name: 'EMT fittings (RT) - Connectors', rows: 10 },
+        { name: 'EMT fittings (RT) - Couplings', rows: 10 },
+        { name: 'RIGID fittings - Set 1', rows: 10 },
+        { name: 'LOCK NUTS', rows: 10 },
+        { name: 'BUSHINGS', rows: 10 },
+        { name: 'GROUNDINGS', rows: 10 },
+        { name: 'WEATHERHEAD', rows: 10 },
+        { name: 'LB Die Cast', rows: 10 },
+        { name: 'PVC Male Adapter', rows: 10 },
+        { name: 'PVC Female Adapter', rows: 10 },
+        { name: 'PVC BI', rows: 10 },
+        { name: 'PVC fitting', rows: 10 },
+        { name: 'EMT FITTINGS', ghost: true, vendor: 'Elliot', parts: 188 },
+      ]},
+      { name: 'Connectors', sections: [
+        { name: 'EMT Die Cast Set Screw connector insulated throat', rows: 10 },
+        { name: 'EMT Die Cast Raintight connector insulated throat', rows: 10 },
+        { name: 'EMT Steel Set Screw connector insulated throat', rows: 10 },
+        { name: 'EMT raintight steel connector insulated throat', rows: 10 },
+        { name: 'Flexible conduit (available in aluminum or steel)', rows: 10 },
+        { name: 'Weatherproof flexible conduit (Steel or aluminum) PVC exterior', rows: 10 },
+        { name: 'PVC 90 (Available in different sized sweeps) also there are pvc 45s And 30 degrees', rows: 10 },
+      ]},
+      { name: 'Couplings', sections: [
+        { name: 'EMT(SS)CP.INSL', rows: 0 },
+        { name: 'EMT(RT)CP.INSL', rows: 0 },
+        { name: 'EMT(SS)ST.CP.INSL', rows: 0 },
+        { name: 'EMT(RT)ST.CP.INSL', rows: 0 },
+        { name: 'Meyers Hubs', rows: 10 },
+        { name: 'Bolt on Hubs', rows: 0 },
+        { name: 'RIGID fittings - Set 2', rows: 10 },
+      ]},
+      { name: 'Tubing', sections: [
+        { name: 'EMT (Electro Mechanical Tubing)', rows: 10 },
+        { name: 'PVC (Tubing)', rows: 10 },
+        { name: 'FLEX Tubing (available in steel or aluminum)', rows: 10 },
+        { name: 'RGS (Ridgid Steel)', rows: 10 },
+        { name: 'IMC (Intermediate Medial Conduit)', rows: 10 },
+        { name: 'ST (Seal Tight)', rows: 10 },
+        { name: "RGS (Smaller sizes under 10')", rows: 10 },
+        { name: 'PVC C', rows: 10 },
+        { name: 'EMT CONDUIT', ghost: true, vendor: 'Elliot', parts: 132 },
+      ]},
+      { name: 'Special', sections: [
+        { name: 'PVC GLUE', rows: 2 },
+        { name: 'Grounding rod', rows: 15 },
+        { name: 'PITCH PAN', rows: 3 },
+        { name: 'STRAP', rows: 20 },
+        { name: 'BOX Supports', rows: 2 },
+        { name: 'Cable Tray.3" DEEP', rows: 7 },
+        { name: 'Cable Tray.4" DEEP', rows: 7 },
+        { name: 'Cable Tray.6" DEEP', rows: 7 },
+      ]},
+    ]},
+    { key: 'wire', label: 'Wire', groups: [
+      { name: null, sections: [
+        { name: 'THHN CU', rows: 21 },
+        { name: 'THW AL', rows: 17 },
+        { name: 'Wire Terminations', rows: 5 },
+        { name: 'BUILDING WIRE', ghost: true, vendor: 'Elliot', parts: 289 },
+      ]},
+    ]},
+    { key: 'specialSystems', label: 'Special Systems', groups: [
+      { name: null, sections: [
+        { name: 'DATACOM', ghost: true, vendor: 'Elliot', parts: 154 },
+      ]},
+    ]},
+  ],
+};
+
+let model = structuredClone(INITIAL);
+let changes = [];        // change labels
+let drag = null;         // {kind:'section'|'group', t, g, s} — native drag in progress
+let placing = null;      // same shape — click-and-place armed
+let collapsed = new Set();
+let drawerSec = null;    // direct object reference to the section open in the drawer
+
+const board = document.getElementById('board');
+const drawer = document.getElementById('drawer');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Generated mock rows: conduit → trade sizes, wire → gauges, gear → amps */
+const SIZES = ['1/2"','3/4"','1"','1-1/4"','1-1/2"','2"','2-1/2"','3"','3-1/2"','4"','5"','6"','8"','10"','12"','14"','16"','18"','20"','24"'];
+const GAUGES = ['#14','#12','#10','#8','#6','#4','#3','#2','#1','1/0','2/0','3/0','4/0','250 MCM','300 MCM','350 MCM','400 MCM','500 MCM','600 MCM','750 MCM','1000 MCM'];
+const AMPS = ['100A','225A','400A','600A','800A','1000A','1200A','1600A','2000A','2500A','3000A','4000A','100A 42ckt','225A 42ckt','400A 42ckt','600A 42ckt','800A 42ckt','30 KVA','45 KVA'];
+function ensureItems(sec, tabKey) {
+  if (sec.items) return;
+  const names = tabKey === 'wire' ? GAUGES : tabKey === 'gear' ? AMPS : SIZES;
+  sec.items = Array.from({ length: sec.rows }, (_, i) => ({
+    name: names[i] || `Row ${i + 1}`,
+    labor: +(0.02 * (i + 1)).toFixed(3),
+    price: +(0.35 * Math.pow(1.55, i)).toFixed(2),
+  }));
+}
+
+/* Every tab gets an explicit Ungrouped bucket (name: null), kept at the end. */
+function ensureLoose(tab) {
+  let g = tab.groups.find((x) => x.name === null);
+  if (!g) { g = { name: null, sections: [] }; tab.groups.push(g); }
+  return g;
+}
+model.tabs.forEach(ensureLoose);
+
+/* ============================ Rendering ============================ */
+function render() {
+  model.tabs.forEach(ensureLoose);
+  board.innerHTML = model.tabs.map((tab, t) => {
+    const curated = tab.groups.flatMap(g => g.sections).filter(s => !s.ghost).length;
+    return `
+    <section class="lane" data-t="${t}">
+      <div class="lane-head">
+        <span class="name">${esc(tab.label)}</span>
+        <span class="count">${curated} section${curated === 1 ? '' : 's'}</span>
+        <button class="add-group" data-act="add-group" data-t="${t}">+ Group</button>
+      </div>
+      <div class="lane-body">
+        ${tab.groups.map((g, gi) => renderGroup(tab, t, g, gi)).join('')}
+      </div>
+    </section>`;
+  }).join('');
+  applySearch();
+  renderTray();
+  renderDrawer();
+  // keep the armed chip highlighted across re-renders
+  if (placing) {
+    const el = placing.kind === 'section'
+      ? board.querySelector(`.chip[data-t="${placing.t}"][data-g="${placing.g}"][data-s="${placing.s}"]`)
+      : board.querySelector(`.group-head[data-t="${placing.t}"][data-g="${placing.g}"]`);
+    el?.classList.add('armed');
+  }
+}
+
+function renderGroup(tab, t, g, gi) {
+  const isLoose = g.name === null;
+  const key = `${t}:${gi}`;
+  // an active search force-expands groups so every hit is visible
+  const searching = document.getElementById('search').value.trim() !== '';
+  const isCollapsed = collapsed.has(key) && !searching;
+  const curatedCount = g.sections.filter(s => !s.ghost).length;
+  const chips = isCollapsed ? '' : `<div class="children">` + g.sections.map((s, si) => {
+    if (s.ghost) {
+      return `<div class="chip-wrap"><div class="chip ghost" data-t="${t}" data-g="${gi}" data-s="${si}">
+        <span class="cname">${esc(s.name)}</span><span class="vendor">${esc(s.vendor)} · ${s.parts}</span></div></div>`;
+    }
+    const rowCount = s.items ? s.items.length : s.rows;
+    return `<div class="chip-wrap"><div class="chip" draggable="true" data-t="${t}" data-g="${gi}" data-s="${si}" title="${esc(s.name)}">
+      ${rowCount === 0 ? '<span class="empty-dot" title="0 rows"></span>' : ''}
+      <span class="cname">${esc(s.name)}</span>
+      <span class="rows">${rowCount}</span>
+      <span class="minis">
+        <button data-act="pick-sec" title="Pick up — then click where it goes">✥</button>
+        <button data-act="edit-sec" title="Edit section">✎</button>
+      </span></div></div>`;
+  }).join('') + (isLoose && g.sections.length === 0
+      ? `<div class="ungrouped-empty" data-t="${t}" data-g="${gi}">empty — drop or place a section here</div>` : '')
+    + `</div>`;
+
+  const head = isLoose
+    ? `<div class="group-head" data-t="${t}" data-g="${gi}">
+        <button class="collapse" data-act="collapse" data-key="${key}">${isCollapsed ? '▶' : '▼'}</button>
+        <span class="gname">Ungrouped</span>
+        <span class="gcount">${curatedCount}</span>
+        <button class="add-sec" data-act="add-sec" data-t="${t}" data-g="${gi}" title="Add section">+</button>
+      </div>`
+    : `<div class="group-head" draggable="true" data-t="${t}" data-g="${gi}">
+        <button class="collapse" data-act="collapse" data-key="${key}">${isCollapsed ? '▶' : '▼'}</button>
+        <button class="grip" data-act="pick-group" title="Pick up group — then click where it goes">⠿</button>
+        <span class="gname">${esc(g.name)}</span>
+        <span class="gcount">${curatedCount}</span>
+        <button class="add-sec" data-act="add-sec" data-t="${t}" data-g="${gi}" title="Add section">+</button>
+      </div>`;
+
+  return `<div class="group${isLoose ? ' ungrouped' : ''}" data-t="${t}" data-g="${gi}">${head}${chips}</div>`;
+}
+
+function renderTray() {
+  const n = changes.length;
+  document.getElementById('summary').innerHTML = n
+    ? `<b>${n}</b> pending change${n === 1 ? '' : 's'}` : 'No pending changes';
+  document.getElementById('log').innerHTML = changes.map(c => `<span>${esc(c)}</span>`).join('');
+  document.getElementById('apply').disabled = n === 0;
+}
+
+function logChange(label) { if (!changes.includes(label)) changes.push(label); }
+
+/* ============================ Target resolution (shared by drag & place) ============================ */
+function resolveTarget(e) {
+  const chip = e.target.closest('.chip:not(.ghost)');
+  const ghead = e.target.closest('.group-head');
+  const looseEmpty = e.target.closest('.ungrouped-empty');
+  const lane = e.target.closest('.lane');
+  if (chip) {
+    const r = chip.getBoundingClientRect();
+    const y = (e.clientY - r.top) / r.height;
+    return { el: chip, type: y < 0.3 ? 'before' : y > 0.7 ? 'after' : 'merge',
+             t: +chip.dataset.t, g: +chip.dataset.g, s: +chip.dataset.s };
+  }
+  if (ghead) {
+    const t = +ghead.dataset.t, g = +ghead.dataset.g;
+    const r = ghead.getBoundingClientRect();
+    return { el: ghead, type: 'group', t, g, half: (e.clientY - r.top) / r.height < 0.5 ? 'before' : 'after' };
+  }
+  if (looseEmpty) return { el: looseEmpty, type: 'loose', t: +looseEmpty.dataset.t, g: +looseEmpty.dataset.g };
+  if (lane) return { el: lane, type: 'lane', t: +lane.dataset.t };
+  return null;
+}
+
+function showHint(src, tgt) {
+  clearDropHints();
+  if (!tgt) return;
+  if (src.kind === 'section') {
+    if (tgt.type === 'before') tgt.el.classList.add('drop-before');
+    else if (tgt.type === 'after') tgt.el.classList.add('drop-after');
+    else if (tgt.type === 'merge') tgt.el.classList.add('drop-merge');
+    else if (tgt.type === 'group') tgt.el.classList.add('drop-into');
+    else tgt.el.classList.add('drop-into');
+  } else if (src.kind === 'group') {
+    if (tgt.type === 'group') tgt.el.classList.add(tgt.half === 'before' ? 'drop-before' : 'drop-after');
+    else if (tgt.type === 'lane') tgt.el.classList.add('drop-into');
+  }
+}
+
+function commitMove(src, tgt) {
+  if (!tgt) return;
+  if (src.kind === 'section') {
+    if (tgt.type === 'merge') {
+      if (tgt.t === src.t && tgt.g === src.g && tgt.s === src.s) return;
+      return promptMerge(src, tgt);
+    }
+    if (tgt.type === 'before' || tgt.type === 'after') {
+      if (tgt.t === src.t && tgt.g === src.g && tgt.s === src.s) return;
+      return moveSection(src, tgt.t, tgt.g, tgt.s + (tgt.type === 'after' ? 1 : 0));
+    }
+    if (tgt.type === 'group' || tgt.type === 'loose') return moveSection(src, tgt.t, tgt.g, Infinity);
+    if (tgt.type === 'lane') { // lane background → Ungrouped bucket
+      const t = tgt.t;
+      ensureLoose(model.tabs[t]);
+      return moveSection(src, t, model.tabs[t].groups.findIndex(g => g.name === null), Infinity);
+    }
+  } else if (src.kind === 'group') {
+    if (tgt.type === 'group') {
+      const dstIsLoose = model.tabs[tgt.t].groups[tgt.g].name === null;
+      const at = dstIsLoose ? tgt.g : tgt.g + (tgt.half === 'after' ? 1 : 0);
+      return moveGroup(src, tgt.t, Math.min(at, tgt.g + 1));
+    }
+    if (tgt.type === 'lane') return moveGroup(src, tgt.t, Infinity);
+  }
+}
+
+/* ============================ Native drag & drop ============================ */
+board.addEventListener('dragstart', (e) => {
+  if (placing) { e.preventDefault(); return; }
+  const chip = e.target.closest('.chip:not(.ghost)');
+  const ghead = e.target.closest('.group-head:not(.ungrouped .group-head)');
+  if (chip) {
+    drag = { kind: 'section', t: +chip.dataset.t, g: +chip.dataset.g, s: +chip.dataset.s };
+    chip.classList.add('dragging');
+  } else if (ghead && ghead.closest('.group.ungrouped') === null) {
+    drag = { kind: 'group', t: +ghead.dataset.t, g: +ghead.dataset.g };
+    ghead.classList.add('dragging');
+  }
+  if (drag) e.dataTransfer.effectAllowed = 'move';
+});
+board.addEventListener('dragend', () => { drag = null; clearDropHints(); board.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging')); });
+
+function clearDropHints() {
+  board.querySelectorAll('.drop-before,.drop-after,.drop-merge,.drop-into').forEach(el =>
+    el.classList.remove('drop-before', 'drop-after', 'drop-merge', 'drop-into'));
+}
+
+board.addEventListener('dragover', (e) => {
+  if (!drag) return;
+  e.preventDefault();
+  showHint(drag, resolveTarget(e));
+});
+
+board.addEventListener('drop', (e) => {
+  if (!drag) return;
+  e.preventDefault();
+  const src = drag; drag = null;
+  clearDropHints();
+  commitMove(src, resolveTarget(e));
+});
+
+/* ============================ Click-and-place mode ============================ */
+function armPlace(src, name) {
+  placing = src;
+  document.body.classList.add('placing');
+  document.getElementById('place-name').textContent = name;
+  document.getElementById('place-banner').hidden = false;
+  render();
+}
+function cancelPlace() {
+  placing = null;
+  document.body.classList.remove('placing');
+  document.getElementById('place-banner').hidden = true;
+  clearDropHints();
+  board.querySelectorAll('.armed').forEach(el => el.classList.remove('armed'));
+}
+document.getElementById('place-cancel').addEventListener('click', cancelPlace);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && placing) cancelPlace(); });
+
+board.addEventListener('mousemove', (e) => {
+  if (!placing) return;
+  showHint(placing, resolveTarget(e));
+});
+
+/* ============================ Board clicks ============================ */
+board.addEventListener('click', (e) => {
+  // Place mode: any board click is a placement attempt (except on the armed source itself)
+  if (placing) {
+    const tgt = resolveTarget(e);
+    const src = placing;
+    if (tgt && tgt.type !== 'lane' && tgt.el.classList.contains('armed')) { cancelPlace(); return; }
+    cancelPlace();
+    commitMove(src, tgt);
+    return;
+  }
+
+  const btn = e.target.closest('[data-act]');
+  if (btn) {
+    const act = btn.dataset.act;
+    if (act === 'collapse') {
+      const k = btn.dataset.key;
+      collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k);
+      render();
+    } else if (act === 'add-group') {
+      const t = +btn.dataset.t;
+      const name = nextName(model.tabs[t].groups.map(g => g.name), 'New Group');
+      // insert before the Ungrouped bucket so it stays last
+      const looseIdx = model.tabs[t].groups.findIndex(g => g.name === null);
+      model.tabs[t].groups.splice(looseIdx < 0 ? model.tabs[t].groups.length : looseIdx, 0, { name, sections: [] });
+      logChange(`New group "${name}" in ${model.tabs[t].label}`);
+      render();
+    } else if (act === 'add-sec') {
+      const t = +btn.dataset.t, g = +btn.dataset.g;
+      const grp = model.tabs[t].groups[g];
+      const name = nextName(grp.sections.map(s => s.name), 'New Section');
+      grp.sections.push({ name, rows: 0 });
+      logChange(`New section "${name}" in ${grp.name || model.tabs[t].label + ' / Ungrouped'}`);
+      render();
+    } else if (act === 'pick-sec') {
+      const chip = btn.closest('.chip');
+      armPlace({ kind: 'section', t: +chip.dataset.t, g: +chip.dataset.g, s: +chip.dataset.s },
+        chip.querySelector('.cname').textContent);
+    } else if (act === 'pick-group') {
+      const gh = btn.closest('.group-head');
+      armPlace({ kind: 'group', t: +gh.dataset.t, g: +gh.dataset.g },
+        'group "' + gh.querySelector('.gname').textContent + '"');
+    } else if (act === 'edit-sec') {
+      const chip = btn.closest('.chip');
+      openDrawer(+chip.dataset.t, +chip.dataset.g, +chip.dataset.s);
+    }
+    return;
+  }
+
+  // plain click on a chip opens the editor drawer
+  const chip = e.target.closest('.chip');
+  if (chip) {
+    if (chip.classList.contains('ghost')) {
+      toast('Supplier sections follow the curated section with the same name — their parts are edited in the book');
+      return;
+    }
+    openDrawer(+chip.dataset.t, +chip.dataset.g, +chip.dataset.s);
+  }
+});
+
+function nextName(existing, base) {
+  let n = base, i = 2;
+  while (existing.includes(n)) n = `${base} ${i++}`;
+  return n;
+}
+
+/* group rename stays on double-click (section rename lives in the drawer) */
+board.addEventListener('dblclick', (e) => {
+  if (placing) return;
+  const nameEl = e.target.closest('.gname');
+  if (!nameEl || nameEl.closest('.group.ungrouped')) return;
+  const holder = nameEl.closest('.group-head');
+  const target = model.tabs[+holder.dataset.t].groups[+holder.dataset.g];
+  const old = target.name;
+  const input = document.createElement('input');
+  input.value = old;
+  nameEl.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    const v = input.value.trim();
+    if (v && v !== old) {
+      target.name = v;
+      logChange(`Rename group "${old}" → "${v}"`);
+    }
+    render();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') input.blur();
+    if (ev.key === 'Escape') { input.value = old; input.blur(); }
+  });
+});
+
+/* ============================ Moves ============================ */
+function takeSection(src) {
+  return model.tabs[src.t].groups[src.g].sections.splice(src.s, 1)[0];
+}
+function moveSection(src, dt, dg, ds) {
+  const sec = model.tabs[src.t].groups[src.g].sections[src.s];
+  const srcTab = model.tabs[src.t], dstTab = model.tabs[dt];
+  let dstGroup = dstTab.groups[Math.min(dg, dstTab.groups.length - 1)];
+  if (!dstGroup) dstGroup = ensureLoose(dstTab);
+  const same = (src.t === dt && dstGroup === model.tabs[src.t].groups[src.g]);
+  takeSection(src);
+  let at = Math.min(ds === Infinity ? dstGroup.sections.length : ds, dstGroup.sections.length);
+  if (same && ds !== Infinity && ds > src.s) at = ds - 1;
+  dstGroup.sections.splice(at, 0, sec);
+  const gLabel = dstGroup.name || 'Ungrouped';
+  const where = dstTab === srcTab
+    ? (dstGroup === model.tabs[src.t].groups[src.g] ? 'reordered' : `→ ${gLabel}`)
+    : `${srcTab.label} → ${dstTab.label} / ${gLabel}`;
+  logChange(`Move "${sec.name}" ${where}`);
+  render();
+}
+function moveGroup(src, dt, dg) {
+  if (model.tabs[src.t].groups[src.g].name === null) return; // Ungrouped bucket stays put
+  const g = model.tabs[src.t].groups.splice(src.g, 1)[0];
+  const dstTab = model.tabs[dt];
+  // keep the Ungrouped bucket last
+  const looseIdx = dstTab.groups.findIndex(x => x.name === null);
+  const cap = looseIdx < 0 ? dstTab.groups.length : looseIdx;
+  let at = dg === Infinity ? cap : Math.min(dg, cap);
+  if (src.t === dt && dg !== Infinity && dg > src.g) at = Math.min(dg - 1, cap);
+  dstTab.groups.splice(at, 0, g);
+  logChange(src.t === dt
+    ? `Reorder group "${g.name}"`
+    : `Move group "${g.name}" ${model.tabs[src.t].label} → ${dstTab.label}`);
+  render();
+}
+
+/* ============================ Merge confirm ============================ */
+function promptMerge(src, dst) {
+  const s = model.tabs[src.t].groups[src.g].sections[src.s];
+  const d = model.tabs[dst.t].groups[dst.g].sections[dst.s];
+  const bar = document.createElement('div');
+  bar.className = 'confirm-bar';
+  const sRows = s.items ? s.items.length : s.rows;
+  bar.innerHTML = `
+    <span>Merge <b>${esc(s.name)}</b> (${sRows} rows) into <b>${esc(d.name)}</b>?
+    Its rows move over and the empty section is removed.</span>
+    <button class="btn btn-apply" id="mg-yes">Merge</button>
+    <button class="btn btn-discard" id="mg-no">Cancel</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector('#mg-no').onclick = () => bar.remove();
+  bar.querySelector('#mg-yes').onclick = () => {
+    bar.remove();
+    ensureItems(s, model.tabs[src.t].key);
+    ensureItems(d, model.tabs[dst.t].key);
+    d.items = d.items.concat(s.items);
+    d.rows = d.items.length;
+    if (drawerSec === s) closeDrawer();
+    takeSection(src);
+    logChange(`Merge "${s.name}" into "${d.name}"`);
+    render();
+  };
+}
+
+/* ============================ Section editor drawer ============================ */
+function findSec(sec) {
+  for (let t = 0; t < model.tabs.length; t++)
+    for (let g = 0; g < model.tabs[t].groups.length; g++) {
+      const s = model.tabs[t].groups[g].sections.indexOf(sec);
+      if (s >= 0) return { t, g, s };
+    }
+  return null;
+}
+function openDrawer(t, g, s) {
+  const sec = model.tabs[t].groups[g].sections[s];
+  ensureItems(sec, model.tabs[t].key);
+  drawerSec = sec;
+  renderDrawer();
+}
+function closeDrawer() { drawerSec = null; drawer.hidden = true; }
+
+function renderDrawer() {
+  if (!drawerSec) { drawer.hidden = true; return; }
+  const loc = findSec(drawerSec);
+  if (!loc) { closeDrawer(); return; }
+  const tab = model.tabs[loc.t], grp = tab.groups[loc.g];
+  drawer.hidden = false;
+  drawer.innerHTML = `
+    <div class="drawer-head">
+      <div class="row1">
+        <input class="sec-name" value="${esc(drawerSec.name)}" title="Section name — edit and press Enter">
+        <button class="close-drawer" title="Close">✕</button>
+      </div>
+      <div class="crumb">${esc(tab.label)} › <b>${esc(grp.name || 'Ungrouped')}</b> · ${drawerSec.items.length} row${drawerSec.items.length === 1 ? '' : 's'}</div>
+      <div class="drawer-actions">
+        <button class="pick-from-drawer">✥ Move this section…</button>
+        <button class="del-section">Delete section</button>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <table class="rows-table">
+        <thead><tr><th>Name</th><th style="width:64px">Labor</th><th style="width:72px">Price</th><th style="width:26px"></th></tr></thead>
+        <tbody>
+          ${drawerSec.items.map((r, i) => `
+          <tr>
+            <td><input data-i="${i}" data-f="name" value="${esc(r.name)}"></td>
+            <td><input data-i="${i}" data-f="labor" class="num" value="${r.labor}"></td>
+            <td><input data-i="${i}" data-f="price" class="num" value="${r.price}"></td>
+            <td><button class="del-row" data-i="${i}" title="Remove row">🗑</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <button class="add-row">+ Add row</button>
+    </div>
+    <div class="drawer-note">Row contents are generated mock data — the real editor shows the section's book rows.</div>`;
+
+  drawer.querySelector('.close-drawer').onclick = closeDrawer;
+  drawer.querySelector('.pick-from-drawer').onclick = () => {
+    const l = findSec(drawerSec);
+    const name = drawerSec.name;
+    closeDrawer();
+    armPlace({ kind: 'section', t: l.t, g: l.g, s: l.s }, name);
+  };
+  drawer.querySelector('.del-section').onclick = () => {
+    const l = findSec(drawerSec);
+    const name = drawerSec.name;
+    model.tabs[l.t].groups[l.g].sections.splice(l.s, 1);
+    logChange(`Delete section "${name}"`);
+    closeDrawer();
+    render();
+  };
+  drawer.querySelector('.sec-name').addEventListener('change', (e) => {
+    const v = e.target.value.trim();
+    if (v && v !== drawerSec.name) {
+      logChange(`Rename "${drawerSec.name}" → "${v}"`);
+      drawerSec.name = v;
+      render();
+    }
+  });
+  drawer.querySelector('.drawer-body').addEventListener('change', (e) => {
+    const inp = e.target.closest('input[data-i]');
+    if (!inp) return;
+    const row = drawerSec.items[+inp.dataset.i];
+    const f = inp.dataset.f;
+    row[f] = f === 'name' ? inp.value : (Number(inp.value) || 0);
+    logChange(`Edit rows in "${drawerSec.name}"`);
+    render();
+  });
+  drawer.querySelector('.drawer-body').addEventListener('click', (e) => {
+    const del = e.target.closest('.del-row');
+    if (del) {
+      drawerSec.items.splice(+del.dataset.i, 1);
+      logChange(`Edit rows in "${drawerSec.name}"`);
+      render();
+      return;
+    }
+    if (e.target.closest('.add-row')) {
+      drawerSec.items.push({ name: 'New row', labor: 0, price: 0 });
+      logChange(`Edit rows in "${drawerSec.name}"`);
+      render();
+    }
+  });
+}
+
+/* ============================ Search ============================ */
+document.getElementById('search').addEventListener('input', render);
+function applySearch() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  board.querySelectorAll('.chip').forEach(chip => {
+    chip.classList.remove('dim', 'hit');
+    if (!q) return;
+    const name = chip.querySelector('.cname').textContent.toLowerCase();
+    chip.classList.add(name.includes(q) ? 'hit' : 'dim');
+  });
+}
+
+/* ============================ Tray ============================ */
+document.getElementById('discard').addEventListener('click', () => {
+  model = structuredClone(INITIAL);
+  model.tabs.forEach(ensureLoose);
+  changes = [];
+  cancelPlace();
+  closeDrawer();
+  render();
+});
+document.getElementById('apply').addEventListener('click', () => {
+  const n = changes.length;
+  changes = [];
+  renderTray();
+  toast(`Applied ${n} change${n === 1 ? '' : 's'} to the Labor & Price Book (mock — nothing saved)`);
+});
+document.querySelector('.ce-back').addEventListener('click', () =>
+  toast('In the real app this returns to the Labor & Price Book'));
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+render();
+</script>
+</body>
+</html>

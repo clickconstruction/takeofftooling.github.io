@@ -21,6 +21,9 @@
     } else if (view === 'wire' && itemId) {
       mainContent.innerHTML = TakeoffWireView.render(itemId);
       TakeoffWireView.attachListeners(itemId);
+    } else if (view === 'organize') {
+      mainContent.innerHTML = TakeoffOrganizeView.render();
+      TakeoffOrganizeView.attachListeners();
     }
     updateUndoRedoButtons();
     if (typeof TakeoffProjectsView !== 'undefined') TakeoffProjectsView.updateHeader();
@@ -198,6 +201,13 @@
     render();
   }
 
+  // Full-page category organizer (opened from the Labor & Price Book modal)
+  function navigateToOrganize() {
+    TakeoffState.setCurrentView('organize', null);
+    TakeoffOrganizeView.enter();
+    render();
+  }
+
   function navigateToWire(itemId) {
     TakeoffState.setCurrentView('wire', itemId);
     const item = TakeoffState.getItemById(itemId);
@@ -262,6 +272,7 @@
     navigateToDevice,
     navigateToConduit,
     navigateToWire,
+    navigateToOrganize,
   };
 
   // App title - navigate to manifest

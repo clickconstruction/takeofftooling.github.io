@@ -32,6 +32,7 @@ const appGlobals = {
   TakeoffDeviceView: 'readonly',
   TakeoffConduitView: 'readonly',
   TakeoffWireView: 'readonly',
+  TakeoffOrganizeView: 'readonly',
   McElliotCore: 'readonly',
   McElliotState: 'readonly',
   McElliotMatch: 'readonly',
