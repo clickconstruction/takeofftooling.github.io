@@ -637,8 +637,8 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '4" PVC C', labor: 57.84, price: '' },
     ],
     'PVC GLUE': [
-      { name: 'PVC GLUE', labor: 15, price: '' },
-      { name: 'PVC GLUE', labor: 5, price: '' },
+      { name: 'PVC GLUE QUART', labor: 15, price: '' },
+      { name: 'PVC GLUE PINT', labor: 5, price: '' },
     ],
     'Grounding rod': [
       { name: '1/2" X 8\'', labor: 12, price: '' },
