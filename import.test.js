@@ -116,3 +116,21 @@ test('payload: rejects foreign shapes', () => {
   assert.strictEqual(TakeoffImport.parsePayload(null), null);
   assert.strictEqual(TakeoffImport.parsePayload({ v: 2, items: 'nope' }), null);
 });
+
+// The fixture CountTooling's own spec generates and asserts (takeoff-handoff.spec.js
+// there writes takeoff-handoff.fixture.txt; this is that file). If CountTooling's
+// exporter changes shape, this test and that spec fail together.
+test('real CountTooling export (shared fixture) parses with the same shape CountTooling asserts', () => {
+  const real = fs.readFileSync(path.join(__dirname, 'import-files', 'counttooling-export.real.fixture.txt'), 'utf8');
+  const { items, skipped } = TakeoffImport.parseCountToolingClipboard(real);
+  assert.strictEqual(skipped, 0);
+  assert.deepStrictEqual(items.map((i) => [i.description, i.quantity, i.unit, i.group, i.planPage, i.children.map((c) => [c.description, c.quantity])]), [
+    ['Duplex Receptacle', 2, 'ea', 'LP-1 / 7', '1', [['4" Square Box', 2]]],
+    ['1/2" EMT', 10, 'ft', 'LP-1 / 7', '1', [['Coupling', 1]]],
+    ['Panel LP-1', 1, 'ea', null, '1', []],
+    ['Feeder', 100, 'px', null, '2', []],
+  ]);
+  assert.strictEqual(items[0].type, 'devices');
+  assert.strictEqual(items[1].type, 'conduit');
+  assert.strictEqual(items[2].type, 'gear');
+});

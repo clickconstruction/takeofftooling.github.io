@@ -1,0 +1,6 @@
+[LP-1 / 7] Duplex Receptacle	2	1
+  [LP-1 / 7] 4" Square Box	2	1
+[LP-1 / 7] ft of 1/2" EMT	10.00	1
+  [LP-1 / 7] Coupling	1	1
+Panel LP-1	1	1
+px of Feeder	100	2
