@@ -437,7 +437,7 @@ const TakeoffLaborBookView = (function () {
         }
       })
       .catch((err) => {
-        alert('Failed to copy: ' + (err.message || 'Unknown error'));
+        TakeoffUtils.toast('Could not copy: ' + (err.message || 'clipboard unavailable'), { kind: 'error' });
       });
   }
 

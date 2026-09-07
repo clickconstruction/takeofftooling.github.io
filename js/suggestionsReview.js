@@ -135,7 +135,7 @@ const TakeoffSuggestionsReview = (function () {
     if (!g) return;
     const err = await TakeoffCloud.setSuggestionStatus(g.ids, status);
     if (err) {
-      alert('Could not update: ' + err);
+      TakeoffUtils.toast('Could not update: ' + err, { kind: 'error' });
       return;
     }
     groups.splice(index, 1);
@@ -146,7 +146,7 @@ const TakeoffSuggestionsReview = (function () {
   async function downloadAcceptedPatch() {
     const { data, error } = await TakeoffCloud.fetchSuggestions('accepted');
     if (error) {
-      alert('Could not load accepted suggestions: ' + error);
+      TakeoffUtils.toast('Could not load accepted suggestions: ' + error, { kind: 'error' });
       return;
     }
     const changes = aggregate(data).map((g) => ({

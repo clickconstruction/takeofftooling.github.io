@@ -320,6 +320,11 @@
     }
   });
 
+  // Copy for PipeTooling (v0 handoff: PipeTooling's Counts-import text)
+  document.getElementById('copy-pipetooling-btn')?.addEventListener('click', () => {
+    TakeoffHandoff.copyForPipeTooling();
+  });
+
   // Export via link (versioned envelope; import still accepts legacy bare arrays)
   document.getElementById('export-link-btn')?.addEventListener('click', async () => {
     const envelope = {
@@ -339,7 +344,7 @@
       if (btn) btn.textContent = 'Link copied!';
       setTimeout(() => { if (btn) btn.textContent = orig || 'Export via link'; }, 2000);
     } catch (err) {
-      alert('Could not copy link. Try selecting and copying manually.');
+      TakeoffUtils.toast('Could not copy the link — the clipboard was not available.', { kind: 'error' });
     }
   });
 
@@ -445,7 +450,7 @@
       }
       window.history.replaceState(null, '', window.location.pathname);
     } catch (err) {
-      alert('This shared link could not be loaded — it may be truncated or corrupted.');
+      TakeoffUtils.toast('This shared link could not be loaded — it may be truncated or corrupted.', { kind: 'error' });
     }
   } else if (hash && hash.startsWith('#import=')) {
     // Structured count handoff (from Count Tooling): #import= + base64 JSON
@@ -456,10 +461,10 @@
       const payload = JSON.parse(json);
       window.history.replaceState(null, '', window.location.pathname);
       if (!TakeoffImport.importFromPayload(payload)) {
-        alert('This import link contained no valid items.');
+        TakeoffUtils.toast('This import link contained no valid items.', { kind: 'error' });
       }
     } catch (err) {
-      alert('This import link could not be loaded — it may be truncated or corrupted.');
+      TakeoffUtils.toast('This import link could not be loaded — it may be truncated or corrupted.', { kind: 'error' });
     }
   }
 

@@ -86,7 +86,7 @@ const TakeoffLaborBookTargets = (function () {
     }
     const targetId = applyToEl?.dataset.targetFixtureId || document.getElementById('labor-book-target-select')?.value;
     if (!targetId) {
-      alert('Please select a fixture from "Add to fixture" first.');
+      TakeoffUtils.toast('Pick a fixture under “Add to fixture” first.', { kind: 'error' });
       return false;
     }
     if (
@@ -169,7 +169,7 @@ const TakeoffLaborBookTargets = (function () {
 
     const targetId = applyToEl?.dataset.targetFixtureId || document.getElementById('labor-book-target-select')?.value;
     if (!targetId) {
-      alert('Please select a fixture from "Add to fixture" first.');
+      TakeoffUtils.toast('Pick a fixture under “Add to fixture” first.', { kind: 'error' });
       return false;
     }
     const targetItem = TakeoffState.getItemById(targetId);

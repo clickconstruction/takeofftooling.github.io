@@ -16,6 +16,7 @@
       <div class="project-switch-wrap">
         <button type="button" id="project-switch-btn" class="project-switch-btn" aria-haspopup="true" aria-expanded="false" title="Switch project"><span id="project-switch-name">Untitled project</span><span class="project-switch-caret">&#9662;</span></button>
         <div id="project-menu" class="project-menu" aria-hidden="true"></div>
+        <a id="project-plans-link" class="project-plans-link" href="#" target="_blank" rel="noopener noreferrer" title="Open the CountTooling plans this takeoff was counted from" hidden>Plans</a>
       </div>
       <div class="header-actions">
         <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
@@ -33,6 +34,7 @@
           </button>
           <div id="header-menu" class="header-menu" aria-hidden="true">
             <button type="button" id="new-takeoff-btn" class="header-menu-item" title="Start a new project (the open one is kept)">New Project</button>
+            <button type="button" id="copy-pipetooling-btn" class="header-menu-item" title="Copy the manifest as counts for PipeTooling’s Bids → Counts → Import from /Tooling">Copy for PipeTooling</button>
             <button type="button" id="export-link-btn" class="header-menu-item">Export via link</button>
             <button type="button" id="remove-toggle-btn" class="header-menu-item" title="Toggle remove icons" aria-pressed="false">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
@@ -236,6 +238,19 @@
     </div>
   </div>
 
+  <!-- Paste fallback for the CountTooling import (clipboard read denied/unavailable) -->
+  <div id="import-paste-modal" class="modal" aria-hidden="true">
+    <div class="modal-content import-paste-modal-content">
+      <h2>Paste from CountTooling</h2>
+      <p class="import-preview-intro">The browser would not share the clipboard. Paste CountTooling’s Copy to /Tooling text here instead.</p>
+      <textarea id="import-paste-text" class="import-paste-text" rows="10" placeholder="[Group] Fixture&#9;12&#9;1, 2&#10;ft of 1/2&quot; EMT&#9;143.00&#9;1" spellcheck="false"></textarea>
+      <div class="import-preview-actions">
+        <button type="button" class="btn btn-secondary" id="import-paste-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-success" id="import-paste-import-btn">Import</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Cloud sync modal (sign in / account; body rendered by js/cloud.js) -->
   <div id="cloud-modal" class="modal" aria-hidden="true">
     <div class="modal-content cloud-modal-content">
@@ -280,8 +295,11 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <!-- Third-party libs are vendored (version-pinned filenames) so the app boots with no CDN in the path. -->
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+  <script src="vendor/jspdf.umd-2.5.1.min.js"></script>
+  <script src="vendor/supabase-js-2.49.4.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/data/fittings.js"></script>
   <script src="js/data/laborBookDefaults.js"></script>
@@ -291,6 +309,7 @@
   <script src="js/selectors.js"></script>
   <script src="js/state.js"></script>
   <script src="js/import.js"></script>
+  <script src="js/handoff.js"></script>
   <script src="js/elliotPriceCore.js"></script>
   <script src="js/mcElliotState.js"></script>
   <script src="js/mcElliotMatch.js"></script>
