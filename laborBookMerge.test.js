@@ -2,7 +2,19 @@
 // Unit tests for js/laborBookMerge.js (node:test; *.test.js = units, *.spec.js = Playwright).
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const Merge = require('./js/laborBookMerge.js');
+
+// js/data/laborBookDefaults.js is a browser <script> global (no exports);
+// evaluate it in a sandbox to read LABOR_BOOK_DEFAULTS here.
+function loadShippedDefaults() {
+  const file = path.join(__dirname, 'js', 'data', 'laborBookDefaults.js');
+  const src = fs.readFileSync(file, 'utf8');
+  // top-level const doesn't become a context property; evaluate to the value
+  return vm.runInNewContext(`${src};LABOR_BOOK_DEFAULTS`, {});
+}
 
 function defaults() {
   return {
@@ -102,6 +114,57 @@ test('computeRemoved skips missing sections by default, includes them when asked
   assert.deepEqual(Merge.computeRemoved(book, defaults(), true), {
     wire: { 'THHN CU': ['12'], Terminations: ['# 22-6'] },
   });
+});
+
+test('shipped defaults have unique row names within every section', () => {
+  // bootstrap/mergeDefaults/computeCorrections all match rows by name within
+  // a section, so duplicate names break provenance (see the tests below).
+  const shipped = loadShippedDefaults();
+  for (const [tab, sections] of Object.entries(shipped)) {
+    for (const [section, rows] of Object.entries(sections)) {
+      const seen = new Set();
+      for (const row of rows) {
+        assert.ok(!seen.has(row.name), `duplicate row name "${row.name}" in ${tab} / ${section}`);
+        seen.add(row.name);
+      }
+    }
+  }
+});
+
+test('bootstrap misflags the second of two same-named default rows as edited', () => {
+  // Documents why default row names must be unique per section: find() always
+  // returns the first name match, so the second row compares against the
+  // first's values and is wrongly flagged edited (and computeCorrections then
+  // reports a bogus edit). Guarded against by the uniqueness test above.
+  const defs = { conduit: { GLUE: [
+    { name: 'GLUE', labor: 15, price: '' },
+    { name: 'GLUE', labor: 5, price: '' },
+  ] } };
+  const book = clone(defs);
+  Merge.bootstrap(book, clone(defs));
+  assert.equal(book.conduit.GLUE[0].edited, undefined);
+  assert.equal(book.conduit.GLUE[1].edited, true); // untouched, yet flagged
+  const list = Merge.computeCorrections(book, clone(defs), {});
+  assert.equal(list.length, 1); // bogus "edit" for a row the user never touched
+  assert.equal(list[0].kind, 'edit');
+});
+
+test('renaming default rows migrates untouched books to the new names', () => {
+  // The v3 PVC GLUE fix: two same-named untouched rows are dropped (no default
+  // carries the old name anymore) and the renamed defaults are adopted.
+  const book = { conduit: { 'PVC GLUE': [
+    { name: 'PVC GLUE', labor: 15, price: '' },
+    { name: 'PVC GLUE', labor: 5, price: '' },
+  ] } };
+  const next = { conduit: { 'PVC GLUE': [
+    { name: 'PVC GLUE QUART', labor: 15, price: '' },
+    { name: 'PVC GLUE PINT', labor: 5, price: '' },
+  ] } };
+  Merge.mergeDefaults(book, next, {});
+  assert.deepEqual(
+    book.conduit['PVC GLUE'].map((r) => r.name).sort(),
+    ['PVC GLUE PINT', 'PVC GLUE QUART']
+  );
 });
 
 test('mergeDefaults does not resurrect a fully removed/relocated section', () => {

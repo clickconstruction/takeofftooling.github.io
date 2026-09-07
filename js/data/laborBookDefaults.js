@@ -8,7 +8,7 @@
 // Bump when the defaults below change: state.js merges the new values into
 // existing workspaces on load (user-edited rows always win — see
 // js/laborBookMerge.js). Version 1 is the implicit pre-versioning book.
-const LABOR_BOOK_DEFAULTS_VERSION = 2;
+const LABOR_BOOK_DEFAULTS_VERSION = 3;
 
 const LABOR_BOOK_DEFAULT_GROUPS = {
   conduit: [
@@ -572,8 +572,8 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '4" PVC C', labor: 57.84, price: '' },
     ],
     'PVC GLUE': [
-      { name: 'PVC GLUE', labor: 15, price: '' },
-      { name: 'PVC GLUE', labor: 5, price: '' },
+      { name: 'PVC GLUE QUART', labor: 15, price: '' },
+      { name: 'PVC GLUE PINT', labor: 5, price: '' },
     ],
     'Grounding rod': [
       { name: '1/2" X 8\'', labor: 12, price: '' },
