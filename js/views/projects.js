@@ -22,10 +22,22 @@ const TakeoffProjectsView = (function () {
   }
 
   function updateHeader() {
-    const name = TakeoffState.getCurrentProject().name;
+    const project = TakeoffState.getCurrentProject();
+    const name = project.name;
     const el = document.getElementById('project-switch-name');
     if (el) el.textContent = name;
     document.title = `${name} — Takeoff Tooling`;
+    // the CountTooling plans link the counts came from (set by the import)
+    const plans = document.getElementById('project-plans-link');
+    if (plans) {
+      if (project.plansUrl) {
+        plans.href = project.plansUrl;
+        plans.hidden = false;
+      } else {
+        plans.hidden = true;
+        plans.removeAttribute('href');
+      }
+    }
   }
 
   // ---------- header dropdown ----------

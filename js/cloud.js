@@ -1,28 +1,34 @@
 /**
- * TakeoffCloud — optional Supabase-backed sync for the workspace + assemblies.
+ * TakeoffCloud — optional Supabase-backed sync for projects, the Labor &
+ * Price Book, and saved assemblies.
  *
  * The app stays local-first: TakeoffStorage (localStorage) remains the
  * synchronous source the app boots from. When signed in, this module
- *   - pulls on sign-in: book conflicts resolve by newest savedAt; projects
- *     (takeoff_projects, schema-aligned with Count Tooling) merge as a
- *     union by id with per-project last-write-wins
- *     (last write wins); assemblies merge as a union by id,
+ *   - pulls on sign-in: the BOOK resolves by newest savedAt; PROJECTS
+ *     (takeoff_projects, schema-aligned with Count Tooling's projects table)
+ *     merge as a union by id with per-project last-write-wins by updated_at;
+ *     assemblies merge as a union by id,
  *   - pushes on every save (TakeoffStorage notifies via onBookSaved /
  *     onProjectSaved / onAssembliesSaved), debounced; pending pushes flush
- *     when the tab hides.
+ *     when the tab hides. A project push first checks whether the remote
+ *     row moved since this device last saw it and toasts when it did (the
+ *     stale-write guard — there is no checkout lock yet).
  *
- * Signed out (or with the CDN blocked) the app behaves exactly as before.
- * Auth is Supabase email OTP: a 6-digit code, no passwords and no redirect
- * URLs, so the same flow works on localhost and GitHub Pages.
+ * Signed out (or with supabase-js unavailable) the app behaves exactly as
+ * before. Auth is email + password, with an emailed 6-digit code as the
+ * fallback (no redirect URLs, so the same flow works on localhost and
+ * GitHub Pages). Roles (user < admin < dev) come from takeoff_profiles.
  *
- * Cloud rows live in public.takeoff_store (user_id, key, value jsonb) with
+ * Cloud rows: public.takeoff_projects (one row per project; data holds
+ * manifest, laborRate, taxRate, plansUrl), public.takeoff_store (user_id,
+ * key, value jsonb — the 'book' and 'assemblies' documents, plus the legacy
+ * pre-projects 'workspace' row that sign-in migrates once), all under
  * row-level security scoping every operation to auth.uid() = user_id.
- * Keys mirror localStorage: 'workspace' and 'assemblies'.
  *
- * Shared-book corrections (opt-in): after each workspace push, a consenting
+ * Shared-book corrections (opt-in): after each book push, a consenting
  * user's Parts-book diff (TakeoffState.getBookCorrections) is upserted into
- * public.takeoff_suggestions; the admin account reviews it via
- * js/suggestionsReview.js. Opting out deletes the user's shared rows.
+ * public.takeoff_suggestions; admins review it via js/suggestionsReview.js.
+ * Opting out deletes the user's shared rows.
  */
 const TakeoffCloud = (function () {
   const SUPABASE_URL = 'https://awjcdxqhvgnqsrlnoyxr.supabase.co';
@@ -166,8 +172,14 @@ const TakeoffCloud = (function () {
       name: r.name || 'Untitled project',
       manifest: r.data && Array.isArray(r.data.manifest) ? r.data.manifest : [],
       laborRate: r.data && typeof r.data.laborRate === 'number' ? r.data.laborRate : 0,
+      taxRate: r.data && typeof r.data.taxRate === 'number' ? r.data.taxRate : undefined,
+      plansUrl: r.data && typeof r.data.plansUrl === 'string' ? r.data.plansUrl : '',
     };
   }
+
+  // updated_at of every remote project row as of the last sync or push —
+  // the cheap stale-write guard in pushProjectNow compares against it.
+  const knownRemoteUpdatedAt = {};
 
   async function syncProjects(legacyWs) {
     if (!projectsTableAvailable) return;
@@ -177,6 +189,7 @@ const TakeoffCloud = (function () {
       return;
     }
     const remoteRows = data || [];
+    for (const r of remoteRows) knownRemoteUpdatedAt[r.id] = r.updated_at;
     const remoteById = new Map(remoteRows.map((r) => [r.id, r]));
     const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: null, projects: [] };
     let indexChanged = false;
@@ -260,19 +273,38 @@ const TakeoffCloud = (function () {
     if (!client || !session || !(id in pendingProjects)) return;
     const project = pendingProjects[id];
     delete pendingProjects[id];
+    // Stale-write guard (per-project last-write-wins has no lock): if the
+    // row moved since this device last saw it, someone else saved this
+    // project in between. Say so — the push still goes through (the other
+    // copy is not lost: the pull on their next sign-in resolves by time),
+    // but the estimator hears about it instead of discovering it later.
+    let overwroteNewer = false;
+    try {
+      const { data: rows } = await client.from(PROJECTS_TABLE).select('updated_at').eq('id', project.id).limit(1);
+      const remoteAt = rows && rows[0] ? rows[0].updated_at : null;
+      const known = knownRemoteUpdatedAt[project.id] || null;
+      if (remoteAt && known && Date.parse(remoteAt) > Date.parse(known)) overwroteNewer = true;
+    } catch (_) { /* the guard is best-effort; the save must not depend on it */ }
+    const dataCol = { manifest: project.manifest, laborRate: project.laborRate };
+    if (typeof project.taxRate === 'number') dataCol.taxRate = project.taxRate;
+    if (project.plansUrl) dataCol.plansUrl = project.plansUrl;
     const { error } = await client.from(PROJECTS_TABLE).upsert({
       id: project.id,
       user_id: session.user.id,
       name: project.name,
-      data: { manifest: project.manifest, laborRate: project.laborRate },
+      data: dataCol,
       updated_at: project.savedAt,
     });
     if (error) {
       pendingProjects[id] = project; // retry on the next save or flush
       noteProjectsError(error);
     } else {
+      knownRemoteUpdatedAt[project.id] = project.savedAt;
       lastSyncedAt = new Date();
       setStatus('synced');
+      if (overwroteNewer) {
+        TakeoffUtils.toast(`"${project.name}" was also saved from another device while you had it open — your save is now the latest copy.`, { kind: 'error', durationMs: 10000 });
+      }
     }
   }
 

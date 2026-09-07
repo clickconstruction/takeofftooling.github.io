@@ -39,7 +39,41 @@ const TakeoffUtils = (function () {
     };
   }
 
-  return { escapeHtml, searchNorm, makeTokenMatcher };
+  /**
+   * In-app notice, replacing window.alert() everywhere user-facing. Renders
+   * into #toast-region (index.html); stacks, auto-dismisses (errors linger
+   * longer), click to dismiss. `kind`: 'info' | 'success' | 'error'.
+   * Inert outside a document (unit tests) — falls back to console.
+   */
+  function toast(message, opts) {
+    const o = opts || {};
+    const kind = o.kind || 'info';
+    if (typeof document === 'undefined') {
+      (kind === 'error' ? console.error : console.log)('[toast] ' + message);
+      return null;
+    }
+    const region = document.getElementById('toast-region');
+    if (!region) {
+      console.warn('[toast]', message);
+      return null;
+    }
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + kind;
+    el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    el.textContent = message;
+    const dismiss = () => {
+      if (!el.isConnected) return;
+      el.classList.add('toast-leaving');
+      setTimeout(() => el.remove(), 180);
+    };
+    el.addEventListener('click', dismiss);
+    region.appendChild(el);
+    const ms = o.durationMs || (kind === 'error' ? 7000 : 3500);
+    setTimeout(dismiss, ms);
+    return el;
+  }
+
+  return { escapeHtml, searchNorm, makeTokenMatcher, toast };
 })();
 
 // Node (unit tests); inert in the browser.

@@ -84,12 +84,14 @@ Circular-ish coupling (views ↔ TakeoffApp, McBook ↔ McElliotState ↔ Takeof
 ### Manifest item (canonical shape)
 
 ```js
-{ id,                    // 'id_' + Date.now() + '_' + rand
+{ id,                    // uuid (legacy 'id_…' ids still accepted)
   type,                  // string|null — see type lists below
   description, quantity,
+  unit,                  // 'ea' | 'ft' | 'px' — px = CountTooling unscaled run: flagged, excluded from all totals
   labor,                 // per-unit hours (number)
   price,                 // number|null
-  planPage,              // string
+  planPage,              // string (pages / location)
+  group,                 // string|null — CountTooling [Group] (circuit, panel, area); shown as a tag, never part of the name
   parentId,              // string|null
   children,              // [item] — max depth 2 (getItemById only searches top + children)
   conduitMeta, meta }    // meta: trenching {feet, material, depth, pricePerFoot}; overage {overagePercent}
@@ -118,7 +120,7 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 ### Computed selectors (pure functions over manifest)
 
-`getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower; a parent with children contributes its own line only when it carries a price — price-less parents are groupings), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown` (materials + 8.5% `SALES_TAX_RATE` + labor + other charges).
+`getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower; a parent with children contributes its own line only when it carries a price — price-less parents are groupings), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown(manifest, taxRate)` (materials + sales tax at the passed FRACTION, default `SALES_TAX_RATE` 0.0825 + labor + other charges; returns `taxRate` and `unscaledCount`), `countUnscaled`. Every selector skips `unit === 'px'` rows' own labor and price.
 
 ## Cloud sync (js/cloud.js, `TakeoffCloud`)
 
@@ -133,7 +135,7 @@ All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) �
 | Key | Owner | Content |
 |---|---|---|
 | `takeoff-projects-index` | storage.js (via state.js) | `{v:1, currentId, projects:[{id,name,createdAt,updatedAt}]}` — device-local, never synced (cloud rebuilds the list from `takeoff_projects` rows) |
-| `takeoff-project-<id>` | storage.js (via state.js) | `{v:1, id, savedAt, name, manifest, laborRate}` — 400 ms debounced write, flushed on `beforeunload`/project switch |
+| `takeoff-project-<id>` | storage.js (via state.js) | `{v:1, id, savedAt, name, manifest, laborRate, taxRate?, plansUrl?}` — 400 ms debounced write, flushed on `beforeunload`/project switch. `taxRate` is a percent (absent = default 8.25); `plansUrl` is the CountTooling view link the counts came from |
 | `takeoff-book` | storage.js (via state.js) | `{v:1, savedAt, laborBook, laborBookGroups, laborBookMeta}` — account-level, own 400 ms debounce; `laborBookGroups` (null until the user applies an Organize Categories layout) holds per-tab `[{name, sections}]`, `laborBookMeta` = `{defaultsVersion, removed, relocated}` |
 | `takeoff-workspace` | legacy | pre-projects single workspace; migrated into the keys above on first boot (`TakeoffStorage.migrateLegacyWorkspace`), then left untouched as a rollback backup |
 | `takeoff-assemblies` | storage.js (via state.js) | assemblies array — written immediately |
@@ -177,10 +179,11 @@ Six modal skeletons live in index.html:
 
 ## Import / export formats
 
-- **CountTooling clipboard import** (import.js): one line per row, tab-separated `fixture \t count \t page`. Type inferred by regex on description. Preview modal offers Add All vs Add Overages Only (adds new items; an existing description is raised to the import's count when higher — counts are totals, never summed). Single undo frame.
-- **Structured import handoff** (import.js `importFromPayload` + app.js `#import=` hash route): the no-clipboard path for Count Tooling integration. URL: `<app>/#import=<base64 JSON>` with payload `{v:1, source, items:[{description, count|quantity, page?, type?}]}`. Invalid `type` values fall back to regex inference; items flow through the same preview modal. The hash is stripped before the preview shows.
+- **CountTooling clipboard / paste import** (import.js `parseCountToolingClipboard`): one line per row, tab-separated `fixture \t quantity \t pages` (a 4-cell `fixture \t quantity \t group \t pages` is read too). Honors CountTooling's export conventions, the same ones PipeTooling's importer reads: `[Group] ` prefix → `group`; `ft of …` → unit `ft`; `px of …` → unit `px` (unscaled; imported flagged, excluded from totals, called out in the preview); a two-space indent → a child of the row above; the `View link:\t<url>` footer (detected by its `t=<uuid>` param) → the project's `plansUrl`. Type is inferred from name + unit (lengths are `conduit` unless the name says cable/wire). When the browser refuses clipboard access the paste modal (`#import-paste-modal`) takes the same text. Preview modal offers Add All vs Add Overages Only (matched by description + unit; raised to the import's total when higher — counts are totals, never summed; children follow the same rule under their parent). Single undo frame. On commit the plans link is saved on the project and, if the open project is still the blank starter, the payload's project name is adopted.
+- **Structured import handoff** (import.js `importFromPayload` + app.js `#import=` hash route): the no-clipboard path for CountTooling. URL: `<app>/#import=<base64 JSON>`. **v2** payload: `{v:2, source, project?:{name?, plansUrl?}, items:[{description, quantity|count, unit?:'ea'|'ft'|'px', type?, pages?|page?, group?, meta?, children?:[{description, quantity, unit?, type?}]}]}` — CountTooling states facts, nothing it provided is inferred; an invalid `type` falls back to inference, a missing `unit` reads the name convention, then `ea`. **v1** (`{v:1, source, items:[{description, count, page?, type?}]}`) still imports. Both land in the same preview modal; the hash is stripped first. Checked-in contracts: `import-files/counttooling-export.fixture.txt` (a hand-built export covering every convention; asserted by import.test.js and import-fixture.spec.js) and `import-files/counttooling-export.real.fixture.txt` (the file CountTooling's own `takeoff-handoff.spec.js` generates and asserts as `takeoff-handoff.fixture.txt` — copy it over when that changes; import.test.js asserts its shape).
+- **Copy for PipeTooling** (handoff.js `buildPipeToolingText`, header ☰ menu): the manifest as PipeTooling's Counts-import text — exactly the CountTooling format above (`[Group] `, `ft of `, `px of `, two-space children, `View link:` footer from `plansUrl`) — so an electrical bid's counts land on a PipeTooling bid with no PipeTooling change. Other-charge rows, blank rows and qty-0 rows are left out. Prices and labor do not travel (the v1 priced handoff needs a PipeTooling import of priced rows).
 - **Export via link** (app.js): `#d=` + base64 of `{v:2, app:'takeoff-tooling', exportedAt, name, manifest}`; on load, hash import sanitizes recursively (`sanitizeImportedItem`) and lands in a NEW project named from the payload (nothing is replaced), then strips the hash. Import accepts the envelope or a legacy bare array; `v` is ignored.
-- **PDF exports** (pdf.js): review (full columns + total labor), purchase order (item+qty), with-form (details block). Manual jsPDF layout, letter format.
+- **PDF exports** (pdf.js): review (type, description, qty with unit, hrs/unit, unit $, extended, page; totals block with tax at the project rate), purchase order (the purchase list with unit and extended $), with-form (description + qty, then the permit form block). One wrapping table engine sized to the letter page's 532pt printable width, header row repeated after page breaks, project name / date / "page n of N" on every page. px rows print with no money.
 
 ## Labor & Price Book modal (two sides)
 
@@ -191,7 +194,8 @@ Six modal skeletons live in index.html:
 
 ## Known quirks
 
-- Export envelope is `v:2`, workspace persistence is `v:1`; neither has real migration logic (`restoreWorkspace` silently drops anything not `v===1`).
+- Export envelope is `v:2`, workspace persistence is `v:1`; neither has real migration logic (`restoreWorkspace` silently drops anything not `v===1`). Project documents gained optional `taxRate` / `plansUrl` and rows gained `unit` / `group` without a version bump — readers default anything missing.
+- Project cloud sync is per-project last-write-wins with no checkout lock. `pushProjectNow` compares the remote `updated_at` against the value this device last saw and toasts when it overwrote a newer save (the stale-write guard) — the push still wins. The real fix is the checkout/turn-in model the schema mirrors from CountTooling.
 - `getItemById` reaches depth 2 only; `sanitizeImportedItem` recurses arbitrarily deep — grandchildren would import but be unreachable.
 - `TRASH_SVG`/`BOOK_SVG` constants duplicated verbatim in manifest.js, device.js, conduit.js; overage render/save logic near-duplicated between conduit step 3 and wire.js; blank-row-reseed idiom repeats across flows.
 - css/styles.css is one ~2,870-line file organized by `/* section */` comments.

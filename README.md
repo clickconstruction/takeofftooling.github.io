@@ -52,17 +52,31 @@ Overage percentage and optional MAC Adapters.
 
 ### Import from CountTooling.com
 
-Paste clipboard data (fixture, count, page per line). A **preview modal** shows:
+**Paste from CountTooling.com** reads the clipboard (or opens a paste box when the browser won't share it) and understands everything CountTooling's **Copy to /Tooling** puts there:
 
-- Current manifest items vs. import items
-- **Add All** — Add all import items to the manifest
-- **Add Overages Only** — Add only items that increase quantities (merge overages into existing)
+- `[Group] ` prefixes become a **group tag** on the row (a circuit, a panel, an area) and stay off the part name so it can match the book
+- `ft of …` rows import as **feet**; `px of …` rows (pages with no scale in CountTooling) import **flagged as unscaled** and stay out of every total until you set the scale there and copy again
+- indented rows (CountTooling child counts — couplings under a conduit, boxes under a device) import as **children** of the row above
+- the **plans link** in the footer is saved on the project (a **Plans** chip in the header) and travels on to PipeTooling
+- each row gets a **type** from its name and unit (`1/2" EMT` → Conduit, `MC 12/2` → Wire, `Type A` → Lighting, `Panel LP-1` → Gear, `Data Drop` → Special Systems)
+
+CountTooling can also open Takeoff Tooling directly with a structured handoff link (`#import=`), which carries units, types, groups and children explicitly. Either way a **preview modal** shows the manifest beside the import, with **Add All** or **Add Overages Only** (an existing row is raised to the import's total when higher — counts are totals, never added twice).
+
+### Copy for PipeTooling
+
+Header ☰ → **Copy for PipeTooling** puts the manifest on the clipboard in the exact text PipeTooling's **Bids → Counts → Import from /Tooling** reads (groups, `ft of`, children, the plans link), so an electrical bid's counts land on a PipeTooling bid with no retyping. Prices and labor stay here for now; PipeTooling prices the bid.
 
 ### Export
 
-- **Print for Review** — PDF for internal review
-- **Print for Purchase Order** — PDF for PO
-- **Print with Form** — PDF with Address, Permit NO, Builder or Occupant, Electrical Count
+- **Print for Review** — PDF for internal review (type, description, quantity with unit, hours, unit and extended price, page; cost totals with the project's tax rate)
+- **Print for Purchase Order** — the purchase list as a PDF
+- **Print with Form** — description and quantity, then the permit form block (Address, Permit NO, Builder or Occupant, Electrical Count)
+
+All three wrap long descriptions, paginate, and stamp the project name, date and page numbers on every page.
+
+### Totals
+
+The summary below the table is a **cost summary**: materials by type, sales tax at the project's rate (editable beside the line; default 8.25%), labor hours × the project's labor rate, other charges. Margin and the bid price are set in PipeTooling.
 - **Export via link** — Generates a shareable base64 URL with full manifest data
 
 ### Labor and Price Book

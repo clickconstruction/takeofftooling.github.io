@@ -8,8 +8,8 @@ const assert = require('node:assert');
 const sel = require('./js/selectors.js');
 
 const item = (over) => ({
-  id: 'x', type: null, description: 'item', quantity: 0, labor: 0,
-  planPage: '', parentId: null, price: null, children: [], meta: null, ...over,
+  id: 'x', type: null, description: 'item', quantity: 0, unit: 'ea', labor: 0,
+  planPage: '', group: null, parentId: null, price: null, children: [], meta: null, ...over,
 });
 
 test('getTotalLabor multiplies per-unit hours by qty; qty-0 with labor counts once', () => {
@@ -87,6 +87,33 @@ test('getSummaryBreakdown rolls children into the top-level parent type and taxe
   assert.strictEqual(s.labor.devices, 3);      // 2 + 1
   assert.strictEqual(s.materials.misc, 0);
   assert.strictEqual(s.otherCharges.permits, 100);
-  assert.strictEqual(Math.round(s.salesTax * 1000) / 1000, 2.55); // 8.5% of 30
+  assert.strictEqual(Math.round(s.salesTax * 1000) / 1000, 2.475); // default 8.25% of 30
   assert.strictEqual(s.laborTotal, 3);
+});
+
+test('unscaled (px) rows are excluded from labor, price, purchase list and summary — and counted', () => {
+  const m = [
+    item({ id: 'a', type: 'conduit', description: 'Feeder', quantity: 1840, unit: 'px', labor: 0.1, price: 2 }),
+    item({ id: 'b', type: 'conduit', description: '1/2" EMT', quantity: 100, unit: 'ft', labor: 0.05, price: 0.5 }),
+  ];
+  assert.strictEqual(sel.getTotalLabor(m), 5);
+  assert.strictEqual(sel.getTotalPrice(m), 50);
+  assert.deepStrictEqual(sel.getPurchaseList(m).lines.map((l) => l.description), ['1/2" EMT']);
+  const b = sel.getSummaryBreakdown(m);
+  assert.strictEqual(b.materialsSubtotal, 50);
+  assert.strictEqual(b.unscaledCount, 1);
+  assert.strictEqual(sel.countUnscaled(m), 1);
+});
+
+test('getSummaryBreakdown uses the passed tax rate, defaulting to 8.25%', () => {
+  const m = [item({ type: 'devices', quantity: 10, price: 10 })];
+  const dflt = sel.getSummaryBreakdown(m);
+  assert.strictEqual(dflt.taxRate, 0.0825);
+  assert.strictEqual(Math.round(dflt.salesTax * 100) / 100, 8.25);
+  const custom = sel.getSummaryBreakdown(m, 0.06);
+  assert.strictEqual(custom.salesTax, 6);
+  assert.strictEqual(custom.materialsTotal, 106);
+  const zero = sel.getSummaryBreakdown(m, 0);
+  assert.strictEqual(zero.salesTax, 0);
+  assert.strictEqual(sel.getSummaryBreakdown(m, -1).taxRate, 0.0825, 'negative → default');
 });

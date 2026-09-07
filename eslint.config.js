@@ -17,6 +17,7 @@ const appGlobals = {
   TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
   TakeoffImport: 'readonly',
+  TakeoffHandoff: 'readonly',
   TakeoffPDF: 'readonly',
   TakeoffApp: 'readonly',
   TakeoffViewShared: 'readonly',
@@ -45,12 +46,14 @@ const appGlobals = {
   TakeoffLaborBookMerge: 'readonly',
   TakeoffSuggestionsReview: 'readonly',
   jspdf: 'readonly',
-  supabase: 'readonly', // @supabase/supabase-js UMD (CDN)
+  supabase: 'readonly', // @supabase/supabase-js UMD (vendor/)
 };
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**'],
+    // .claude/** — Claude Code worktrees are full repo copies; without this a run
+    // from the primary checkout lints every sibling worktree (thousands of errors).
+    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**', '.claude/**', 'vendor/**'],
   },
   js.configs.recommended,
   {
@@ -77,7 +80,7 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/import.js', 'js/handoff.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
     },

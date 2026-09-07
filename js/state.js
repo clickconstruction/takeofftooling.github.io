@@ -15,6 +15,13 @@ const TakeoffState = (function () {
   let manifest = [];
   let assemblies = TakeoffStorage.loadAssemblies();
   let laborRate = 0;
+  // Sales tax as a PERCENT (8.25), a project setting beside the labor rate.
+  // null = never set → the selectors' default applies.
+  let taxRate = null;
+  // Link back to the CountTooling project the counts came from (the
+  // `?t=<token>` view link CountTooling appends to its export). Travels on
+  // to PipeTooling with the counts.
+  let plansUrl = '';
 
   // The open project (manifest + laborRate are its contents)
   let projectId = null;
@@ -57,6 +64,11 @@ const TakeoffState = (function () {
     return manifest;
   }
 
+  // Row units (see TakeoffSelectors.UNITS): anything unknown is a count.
+  function normalizeUnit(u) {
+    return typeof u === 'string' && TakeoffSelectors.UNITS.includes(u) ? u : 'ea';
+  }
+
   const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
   function sanitizeImportedItem(raw, parentId) {
@@ -68,8 +80,10 @@ const TakeoffState = (function () {
       type: typeof raw.type === 'string' ? raw.type : null,
       description: typeof raw.description === 'string' ? raw.description : '',
       quantity: Number(raw.quantity) || 0,
+      unit: normalizeUnit(raw.unit),
       labor: Number(raw.labor) || 0,
       planPage: typeof raw.planPage === 'string' ? raw.planPage : '',
+      group: typeof raw.group === 'string' && raw.group.trim() ? raw.group.trim() : null,
       parentId: parentId ?? null,
       price: isNaN(price) || raw.price == null || raw.price === '' ? null : price,
       children: [],
@@ -146,10 +160,19 @@ const TakeoffState = (function () {
     TakeoffStorage.saveProjectsIndex(idx);
   }
 
+  // The persisted PROJECT document (v1 + optional fields; readers default
+  // anything missing so older saves still load).
+  function currentProjectDoc(savedAt) {
+    const doc = { v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate };
+    if (taxRate != null) doc.taxRate = taxRate;
+    if (plansUrl) doc.plansUrl = plansUrl;
+    return doc;
+  }
+
   function persistNow() {
     if (!projectId) return;
     const savedAt = new Date().toISOString();
-    TakeoffStorage.saveProject({ v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate });
+    TakeoffStorage.saveProject(currentProjectDoc(savedAt));
     touchIndexEntry(savedAt);
   }
 
@@ -223,6 +246,8 @@ const TakeoffState = (function () {
     projectName = data.name || 'Untitled project';
     manifest = Array.isArray(data.manifest) ? data.manifest : [];
     laborRate = typeof data.laborRate === 'number' ? data.laborRate : 0;
+    taxRate = typeof data.taxRate === 'number' && isFinite(data.taxRate) && data.taxRate >= 0 ? data.taxRate : null;
+    plansUrl = typeof data.plansUrl === 'string' ? data.plansUrl : '';
   }
 
   function restoreOnBoot() {
@@ -277,7 +302,17 @@ const TakeoffState = (function () {
   }
 
   function getCurrentProject() {
-    return { id: projectId, name: projectName };
+    return { id: projectId, name: projectName, plansUrl };
+  }
+
+  // The CountTooling plans link for this project (set by the import; shown in
+  // the header and forwarded to PipeTooling). Empty string clears it.
+  function setPlansUrl(url) {
+    const next = typeof url === 'string' ? url.trim() : '';
+    if (next && !/^https?:\/\//i.test(next)) return false;
+    plansUrl = next;
+    schedulePersist();
+    return true;
   }
 
   function setProjectName(name) {
@@ -314,6 +349,8 @@ const TakeoffState = (function () {
     projectId = TakeoffStorage.generateProjectId();
     projectName = (name || '').trim() || 'Untitled project';
     manifest = [];
+    plansUrl = '';
+    // laborRate and taxRate carry over as the new project's defaults
     clearManifestHistory();
     persistNow();
     return projectId;
@@ -321,7 +358,7 @@ const TakeoffState = (function () {
 
   function duplicateProject(id) {
     const source = id === projectId
-      ? { v: 1, id: projectId, name: projectName, manifest, laborRate }
+      ? currentProjectDoc(new Date().toISOString())
       : TakeoffStorage.loadProject(id);
     if (!source) return null;
     const savedAt = new Date().toISOString();
@@ -333,6 +370,8 @@ const TakeoffState = (function () {
       manifest: JSON.parse(JSON.stringify(source.manifest || [])),
       laborRate: typeof source.laborRate === 'number' ? source.laborRate : 0,
     };
+    if (typeof source.taxRate === 'number') copy.taxRate = source.taxRate;
+    if (typeof source.plansUrl === 'string' && source.plansUrl) copy.plansUrl = source.plansUrl;
     TakeoffStorage.saveProject(copy);
     const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
     idx.projects.push({ id: copy.id, name: copy.name, createdAt: savedAt, updatedAt: savedAt });
@@ -407,8 +446,10 @@ const TakeoffState = (function () {
       type: item.type || null,
       description: item.description || '',
       quantity: Number(item.quantity) || 0,
+      unit: normalizeUnit(item.unit),
       labor: Number(item.labor) || 0,
       planPage: item.planPage ?? '',
+      group: typeof item.group === 'string' && item.group.trim() ? item.group.trim() : null,
       parentId: item.parentId ?? null,
       price: item.price ?? null,
       children: item.children || [],
@@ -444,6 +485,7 @@ const TakeoffState = (function () {
     const list = parent ? parent.children : manifest;
     const idx = list.findIndex((i) => i.id === id);
     if (idx === -1) return null;
+    if ('unit' in updates) updates = { ...updates, unit: normalizeUnit(updates.unit) };
     Object.assign(list[idx], updates);
     return list[idx];
   }
@@ -496,6 +538,18 @@ const TakeoffState = (function () {
 
   function setLaborRate(value) {
     laborRate = Number(value) || 0;
+    schedulePersist();
+  }
+
+  // --- Sales tax (percent; null = default) ---
+
+  function getTaxRate() {
+    return taxRate != null ? taxRate : TakeoffSelectors.SALES_TAX_RATE * 100;
+  }
+
+  function setTaxRate(value) {
+    const n = Number(value);
+    taxRate = value === '' || value == null || !isFinite(n) || n < 0 ? null : Math.round(n * 1000) / 1000;
     schedulePersist();
   }
 
@@ -814,7 +868,7 @@ const TakeoffState = (function () {
   }
 
   function getSummaryBreakdown() {
-    return TakeoffSelectors.getSummaryBreakdown(manifest);
+    return TakeoffSelectors.getSummaryBreakdown(manifest, getTaxRate() / 100);
   }
 
   restoreOnBoot();
@@ -856,6 +910,9 @@ const TakeoffState = (function () {
     generateId,
     getLaborRate,
     setLaborRate,
+    getTaxRate,
+    setTaxRate,
+    setPlansUrl,
     getLaborBook,
     getLaborBookTabOrder,
     getLaborBookGroups,

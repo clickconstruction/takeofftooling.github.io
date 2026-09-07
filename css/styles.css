@@ -4744,3 +4744,127 @@ body.org-placing .org-board {
   z-index: 50;
   box-shadow: var(--shadow);
 }
+
+/* Toasts (TakeoffUtils.toast — replaces window.alert) */
+.toast-region {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  cursor: pointer;
+  animation: toast-in 0.18s ease-out;
+}
+.toast-success { border-left-color: var(--green); }
+.toast-error { border-left-color: var(--red); }
+.toast-leaving { opacity: 0; transform: translateY(6px); transition: opacity 0.18s, transform 0.18s; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast-leaving { transition: none; } }
+
+/* Row units and groups (CountTooling import) */
+.unit-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: var(--surface3);
+  color: var(--text2);
+  margin: 0 0.25rem;
+  vertical-align: middle;
+}
+.unit-tag-px { background: rgba(232,84,71,0.16); color: var(--red); }
+.group-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  margin-right: 0.4rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.qty-unit-select {
+  width: auto !important;
+  min-width: 3.1rem;
+  padding: 0.2rem 0.25rem !important;
+  font-size: 0.75rem !important;
+  font-family: 'DM Mono', monospace;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text2);
+  margin-left: 0.3rem;
+}
+.qty-unit-select.is-px { color: var(--red); border-color: rgba(232,84,71,0.5); }
+tr.row-unscaled input[data-field="price"], tr.row-unscaled input[data-field="labor"] { opacity: 0.45; }
+.plan-cell-wrap { display: flex; align-items: center; gap: 0.3rem; }
+.plan-cell-wrap input { min-width: 0; flex: 1; }
+.summary-tax-input { width: 4.2rem !important; text-align: right; }
+.summary-unscaled-note { color: var(--red); font-size: 0.8rem; padding: 0.4rem 0 0; }
+.project-plans-link {
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-decoration: none;
+  margin-left: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+.project-plans-link:hover { border-color: var(--accent); }
+
+/* Import preview: notices, children, unscaled rows; paste fallback */
+.import-preview-notice {
+  font-size: 0.82rem;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.import-preview-notice-warn { color: var(--text); border-color: rgba(232,84,71,0.5); }
+.import-preview-item-child { padding-left: 1.4rem; opacity: 0.9; }
+.import-preview-item-px .import-preview-desc { color: var(--text2); }
+.import-preview-type {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  margin-left: 0.3rem;
+}
+.import-paste-modal-content { width: min(640px, 92vw); }
+.import-paste-text {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+.manifest-summary-grand-note { font-size: 0.75rem; font-weight: 400; color: var(--text3); margin-top: 0.25rem; }
