@@ -9,7 +9,15 @@
 const TakeoffSelectors = (function () {
   const MATERIAL_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems'];
   const OTHER_TYPES = ['permits', 'powerCoCharges', 'temporaryPower'];
-  const SALES_TAX_RATE = 0.085;
+  // Default sales-tax RATE for a project that has never set one (Texas'
+  // combined maximum). The project's own rate is a setting beside Labor Rate
+  // (TakeoffState.getTaxRate, stored as a percent); callers pass it in.
+  const SALES_TAX_RATE = 0.0825;
+  // Row units: 'ea' (a count), 'ft' (a length), 'px' (an UNSCALED length
+  // from CountTooling — pixels, not feet). px rows are never priced, labored
+  // or summed: they are flagged for the estimator to rescale and re-copy.
+  const UNITS = ['ea', 'ft', 'px'];
+  const isUnscaled = (item) => item && item.unit === 'px';
 
   function topLevel(manifest) {
     return manifest.filter((i) => !i.parentId);
@@ -19,7 +27,7 @@ const TakeoffSelectors = (function () {
     function sumLabor(items) {
       let total = 0;
       for (const item of items) {
-        const unitLabor = Number(item.labor) || 0;
+        const unitLabor = isUnscaled(item) ? 0 : Number(item.labor) || 0;
         const qty = Number(item.quantity) || 0;
         // labor is per-unit hours; a priced/labored line with qty 0 counts once (same rule as price)
         const effectiveQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
@@ -37,7 +45,7 @@ const TakeoffSelectors = (function () {
     function sumPrice(items) {
       let total = 0;
       for (const item of items) {
-        const p = Number(item.price);
+        const p = isUnscaled(item) ? NaN : Number(item.price);
         const q = Number(item.quantity) || 0;
         if (!isNaN(p) && p > 0) total += p * q;
         if (item.children && item.children.length) {
@@ -66,7 +74,7 @@ const TakeoffSelectors = (function () {
     function addLine(item) {
       const desc = (item.description || '').trim();
       const qty = Number(item.quantity) || 0;
-      if (!desc || qty <= 0) return;
+      if (!desc || qty <= 0 || isUnscaled(item)) return;
       const key = desc.toLowerCase().replace(/\s+/g, ' ');
       const price = item.price != null && item.price !== '' && !isNaN(Number(item.price)) ? Number(item.price) : null;
       let line = byKey.get(key);
@@ -129,7 +137,9 @@ const TakeoffSelectors = (function () {
     return result;
   }
 
-  function getSummaryBreakdown(manifest) {
+  // taxRate is a FRACTION (0.0825); TakeoffState converts its stored percent.
+  function getSummaryBreakdown(manifest, taxRate) {
+    const rate = typeof taxRate === 'number' && isFinite(taxRate) && taxRate >= 0 ? taxRate : SALES_TAX_RATE;
     const materials = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
     const labor = { lighting: 0, gear: 0, devices: 0, conduit: 0, wire: 0, specialSystems: 0, misc: 0 };
     const otherCharges = { permits: 0, powerCoCharges: 0, temporaryPower: 0 };
@@ -141,10 +151,10 @@ const TakeoffSelectors = (function () {
       for (const item of items) {
         const effectiveType = parentType || item.type || null;
         const qty = Number(item.quantity) || 0;
-        const priceVal = Number(item.price);
+        const priceVal = isUnscaled(item) ? NaN : Number(item.price);
         const effectiveQty = qty > 0 ? qty : (!isNaN(priceVal) && priceVal > 0 ? 1 : 0);
         const priceAmount = !isNaN(priceVal) && priceVal > 0 ? priceVal * effectiveQty : 0;
-        const unitLabor = Number(item.labor) || 0;
+        const unitLabor = isUnscaled(item) ? 0 : Number(item.labor) || 0;
         const laborQty = qty > 0 ? qty : (unitLabor > 0 ? 1 : 0);
         const laborHrs = unitLabor * laborQty;
 
@@ -166,7 +176,7 @@ const TakeoffSelectors = (function () {
     processItems(topLevel(manifest), null);
 
     const materialsSubtotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (materials[t] || 0), 0);
-    const salesTax = materialsSubtotal * SALES_TAX_RATE;
+    const salesTax = materialsSubtotal * rate;
     const materialsTotal = materialsSubtotal + salesTax;
     const laborTotal = [...MATERIAL_TYPES, 'misc'].reduce((s, t) => s + (labor[t] || 0), 0);
     const otherTotal = OTHER_TYPES.reduce((s, t) => s + (otherCharges[t] || 0), 0);
@@ -175,15 +185,29 @@ const TakeoffSelectors = (function () {
       materials,
       materialsSubtotal,
       salesTax,
+      taxRate: rate,
       materialsTotal,
       labor,
       laborTotal,
       otherCharges,
       otherTotal,
+      unscaledCount: countUnscaled(manifest),
     };
   }
 
-  return { getTotalLabor, getTotalPrice, getPurchaseList, getFlattenedItems, getSummaryBreakdown, MATERIAL_TYPES, OTHER_TYPES, SALES_TAX_RATE };
+  // Rows still carrying pixel lengths (unit 'px') anywhere in the manifest.
+  function countUnscaled(manifest) {
+    let n = 0;
+    (function walk(items) {
+      for (const item of items) {
+        if (isUnscaled(item)) n++;
+        if (item.children && item.children.length) walk(item.children);
+      }
+    })(topLevel(manifest));
+    return n;
+  }
+
+  return { getTotalLabor, getTotalPrice, getPurchaseList, getFlattenedItems, getSummaryBreakdown, countUnscaled, MATERIAL_TYPES, OTHER_TYPES, SALES_TAX_RATE, UNITS };
 })();
 
 // Node (unit tests); inert in the browser.

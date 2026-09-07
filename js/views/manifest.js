@@ -42,7 +42,7 @@ const TakeoffManifestView = (function () {
 
     const planPageCell = isChild
       ? '<td></td>'
-      : `<td><input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></td>`;
+      : `<td><div class="plan-cell-wrap">${item.group ? `<span class="group-tag" title="Group / circuit from CountTooling">${escapeHtml(item.group)}</span>` : ''}<input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></div></td>`;
 
     const typeLabelDisplay = item.type
       ? (isChild ? CHILD_TYPE_LABELS[item.type] || TYPE_LABELS[item.type] || item.type : TYPE_LABELS[item.type] || item.type)
@@ -79,12 +79,12 @@ const TakeoffManifestView = (function () {
     const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}</td>`;
 
     return `
-      <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
+      <tr class="${isChild ? 'child-row' : ''} ${item.unit === 'px' ? 'row-unscaled' : ''}" data-id="${item.id}">
         ${removeCell}
         ${laborBookCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Assembly Description" /></td>
         ${typeCell}
-        <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn" data-id="${item.id}" title="Subtract 1">−</button><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div></td>
+        <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn" data-id="${item.id}" title="Subtract 1">−</button><input type="number" data-field="quantity" data-id="${item.id}" dir="ltr" value="${item.quantity || ''}" min="0" step="${item.unit === 'ea' ? 1 : 'any'}" placeholder="0" /><button type="button" class="qty-up-btn" data-id="${item.id}" title="Add 1">+</button></div>${renderUnitSelect(item)}</td>
         <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /></td>
         <td class="price-cell"><input type="number" data-field="price" data-id="${item.id}" dir="ltr" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" /></td>
         ${planPageCell}
@@ -94,6 +94,16 @@ const TakeoffManifestView = (function () {
 
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
+  }
+
+  // Unit beside the quantity: ea (a count) or ft (a length). px is CountTooling's
+  // unscaled-run flag — shown, never chosen; it clears by picking ea or ft
+  // once the estimator has a real length.
+  function renderUnitSelect(item) {
+    const unit = item.unit || 'ea';
+    const opts = [['ea', 'ea'], ['ft', 'ft']];
+    if (unit === 'px') opts.push(['px', 'px · unscaled']);
+    return `<select class="qty-unit-select ${unit === 'px' ? 'is-px' : ''}" data-field="unit" data-id="${item.id}" title="${unit === 'px' ? 'Unscaled: a pixel length from CountTooling. Left out of every total — set the scale there and re-import, or pick a unit once you know the length.' : 'Quantity unit'}">${opts.map(([v, l]) => `<option value="${v}" ${v === unit ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   }
 
   const SUMMARY_LABELS = {
@@ -132,7 +142,7 @@ const TakeoffManifestView = (function () {
           <table class="manifest-summary-table">
             ${materialsRows}
             <tr class="summary-subtotal"><td>Sub Total</td><td class="summary-value">$${formatMoney(s.materialsSubtotal)}</td></tr>
-            <tr><td>SALES TAX (8.5%)</td><td class="summary-value">$${formatMoney(s.salesTax)}</td></tr>
+            <tr><td>SALES TAX <input type="number" id="tax-rate-input" class="summary-tax-input" value="${TakeoffState.getTaxRate()}" min="0" max="25" step="0.01" title="Sales tax rate for this project (percent)" />%</td><td class="summary-value">$${formatMoney(s.salesTax)}</td></tr>
             <tr class="summary-total"><td>Materials TOTAL $</td><td class="summary-value">$${formatMoney(s.materialsTotal)}</td></tr>
           </table>
         </div>
@@ -153,23 +163,38 @@ const TakeoffManifestView = (function () {
           </table>
         </div>
         <div class="manifest-summary-grand-total">
-          Grand Total: $${formatMoney(grandTotal)}
+          Total cost: $${formatMoney(grandTotal)}
+          <div class="manifest-summary-grand-note">Cost only — margin and the bid price are set in PipeTooling.</div>
+          ${s.unscaledCount ? `<div class="summary-unscaled-note">${s.unscaledCount} unscaled row${s.unscaledCount === 1 ? '' : 's'} (px) left out of totals — set the scale in CountTooling and re-import.</div>` : ''}
         </div>
       </div>
     `;
+  }
+
+  function attachSummaryListeners() {
+    document.getElementById('labor-rate-input')?.addEventListener('change', (e) => {
+      TakeoffState.setLaborRate(e.target.value);
+      updateSummaryOnly();
+    });
+    document.getElementById('tax-rate-input')?.addEventListener('change', (e) => {
+      TakeoffState.setTaxRate(e.target.value);
+      updateSummaryOnly();
+    });
   }
 
   function updateSummaryOnly() {
     const laborInput = document.getElementById('labor-rate-input');
     if (laborInput) TakeoffState.setLaborRate(laborInput.value);
     const summaryEl = document.querySelector('.manifest-view .manifest-summary');
-    if (summaryEl) {
-      summaryEl.outerHTML = renderSummary();
-      document.getElementById('labor-rate-input')?.addEventListener('change', (e) => {
-        TakeoffState.setLaborRate(e.target.value);
-        updateSummaryOnly();
-      });
-    }
+    if (!summaryEl || !summaryEl.isConnected) return;
+    // Replacing the block while one of its inputs has focus makes Chrome fire
+    // blur mid-removal and throw on the outerHTML swap — blur first, then
+    // swap the node whole.
+    if (summaryEl.contains(document.activeElement)) document.activeElement.blur();
+    const tpl = document.createElement('template');
+    tpl.innerHTML = renderSummary().trim();
+    summaryEl.replaceWith(tpl.content.firstElementChild);
+    attachSummaryListeners();
   }
 
   // Ghost row closing a child block: adding lands exactly where the row appears
@@ -302,7 +327,7 @@ const TakeoffManifestView = (function () {
           setTimeout(() => { if (btn) btn.textContent = 'Copy'; }, 1500);
         }
       },
-      () => alert('Could not copy to clipboard.')
+      () => TakeoffUtils.toast('Could not copy to the clipboard.', { kind: 'error' })
     );
   }
 
@@ -346,10 +371,7 @@ const TakeoffManifestView = (function () {
       TakeoffApp.render();
     });
 
-    document.getElementById('labor-rate-input')?.addEventListener('change', (e) => {
-      TakeoffState.setLaborRate(e.target.value);
-      TakeoffApp.render();
-    });
+    attachSummaryListeners();
 
     document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -364,6 +386,12 @@ const TakeoffManifestView = (function () {
       if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
       if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
       const updates = { [field]: value };
+      if (field === 'unit') {
+        // unit changes re-render the row (px flag, step) and the totals
+        TakeoffState.updateItem(id, updates);
+        TakeoffApp.render();
+        return;
+      }
       if (field === 'description') {
         const item = TakeoffState.getItemById(id);
         const descVal = (value || '').trim();
