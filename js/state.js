@@ -26,6 +26,16 @@ const TakeoffState = (function () {
   // `?t=<token>` view link CountTooling appends to its export). Shown in the
   // header; travels on to PipeTooling with the counts.
   let plansUrl = '';
+  // The bid stamp (PipeTooling's bid number, e.g. "b409") and the review lane
+  // (draft → ready → reviewed | changes) — the same fields CountTooling's
+  // projects carry, so a manifest a twin imports through the agent door is a
+  // reviewable fact PipeTooling reads over the bridge. agentImport is the
+  // door's provenance (null for hand-built projects).
+  let externalRef = null;
+  let reviewStatus = 'draft';
+  let reviewNote = null;
+  let agentImport = null;
+  const REVIEW_STATUSES = ['draft', 'ready', 'changes', 'reviewed'];
 
   // The open project (manifest + laborRate are its contents)
   let projectId = null;
@@ -213,6 +223,11 @@ const TakeoffState = (function () {
       doc.archived = true;
       doc.archivedAt = projectArchivedAt;
     }
+    // bid stamp + review lane + agent-door provenance ride the same document
+    if (externalRef) doc.externalRef = externalRef;
+    if (reviewStatus !== 'draft') doc.reviewStatus = reviewStatus;
+    if (reviewNote) doc.reviewNote = reviewNote;
+    if (agentImport) doc.agentImport = agentImport;
     TakeoffStorage.saveProject(doc);
     touchIndexEntry(savedAt);
   }
@@ -349,6 +364,10 @@ const TakeoffState = (function () {
     const arch = sanitizeArchived(data);
     projectArchived = arch.archived;
     projectArchivedAt = arch.archivedAt;
+    externalRef = typeof data.externalRef === 'string' && data.externalRef.trim() ? data.externalRef.trim() : null;
+    reviewStatus = REVIEW_STATUSES.includes(data.reviewStatus) ? data.reviewStatus : 'draft';
+    reviewNote = typeof data.reviewNote === 'string' && data.reviewNote ? data.reviewNote : null;
+    agentImport = data.agentImport && typeof data.agentImport === 'object' ? data.agentImport : null;
   }
 
   function restoreOnBoot() {
@@ -403,7 +422,25 @@ const TakeoffState = (function () {
   }
 
   function getCurrentProject() {
-    return { id: projectId, name: projectName, plansUrl };
+    return { id: projectId, name: projectName, plansUrl, externalRef, reviewStatus, reviewNote, agentImport };
+  }
+
+  // The bid stamp: PipeTooling's bid number ("b409"). Empty clears it.
+  function setExternalRef(ref) {
+    const next = typeof ref === 'string' ? ref.trim().slice(0, 40) : '';
+    externalRef = next || null;
+    schedulePersist();
+  }
+
+  // The review lane. 'ready' asks for a human look; 'changes' sends it back with
+  // a note; 'reviewed' clears it. Persisted with the project and carried in the
+  // cloud row's data so PipeTooling's bridge reads the same fact.
+  function setReviewStatus(status, note) {
+    if (!REVIEW_STATUSES.includes(status)) return false;
+    reviewStatus = status;
+    if (note !== undefined) reviewNote = typeof note === 'string' && note.trim() ? note.trim().slice(0, 500) : null;
+    schedulePersist();
+    return true;
   }
 
   // The CountTooling plans link for this project (set by the import; shown in
@@ -511,6 +548,10 @@ const TakeoffState = (function () {
     projectArchived = false;
     projectArchivedAt = null;
     plansUrl = ''; // the counts for a new bid have not come from anywhere yet
+    externalRef = null;
+    reviewStatus = 'draft';
+    reviewNote = null;
+    agentImport = null;
     // laborRate and taxRate carry over as the new project's defaults
     manifest = [
       { id: generateId(), type: null, description: '', quantity: 1, unit: 'ea', labor: 0, planPage: '', group: null, parentId: null, price: null, children: [], conduitMeta: null, meta: null },
@@ -1417,6 +1458,9 @@ const TakeoffState = (function () {
     setTaxRate,
     LEGACY_TAX_RATE,
     setPlansUrl,
+    setExternalRef,
+    setReviewStatus,
+    REVIEW_STATUSES,
     clearManifestHistory,
     getLaborBook,
     getLaborBookTabOrder,

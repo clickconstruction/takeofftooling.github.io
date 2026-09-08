@@ -87,6 +87,14 @@ A **preview modal** shows what is on the bid beside what the count says. **The c
 
 CountTooling can also open Takeoff Tooling directly with a structured handoff link (`#import=`, payload v2 — v1 still opens), which carries units, types, groups, children and the project's name and plans link explicitly.
 
+### Explode: the assembly in one click
+
+A ⚡ button appears on any typed row an assembly template knows — receptacles, GFCIs, switches and sensors, data drops, lay-in fixtures, EMT / PVC / MC runs — while it has no children. One click adds the assembly as child rows (box, ring, plate, connectors; couplings and straps per 10 ft, connectors per run) priced from your Labor & Price Book by name. A part your book doesn't carry is added unpriced and flagged, never guessed. Undo removes the whole assembly. Your own children always win: the button hides once a row has any.
+
+### Bid stamp and review lane
+
+A project can carry the PipeTooling bid number it belongs to (a chip beside the project name) and a review status — draft, ready for review, changes requested, reviewed — set from Manage Projects → Review. Both save with the project and sync to the cloud, where PipeTooling's bridge reads them; a robot's manifest arrives already stamped.
+
 ### Copy for PipeTooling
 
 Header ☰ → **Copy for PipeTooling** puts the manifest on the clipboard in the exact text PipeTooling's **Bids → Counts → Import from /Tooling** reads (groups, `ft of`, children, the plans link), so an electrical bid's counts land on a PipeTooling bid with no retyping. Prices and labor stay here for now; PipeTooling prices the bid.
@@ -196,3 +204,7 @@ TAKEOFF_TEST_PASSWORD=its-password
 ## Customization
 
 - **Conduit fittings list**: Edit `js/data/fittings.js` and add your pre-made fittings. Each entry can be a string or `{ description: string }`.
+
+## Digital twins
+
+Agent-operated estimator accounts (PipeTooling's digital-twin program) have a seat here too. A twin signs in through `twin-login` with its per-twin token, wears a 🤖 banner on every screen, and never drives the flows: it POSTs its counts to the `import-manifest` door and gets back a normal project, exploded and priced by the same kernel the ⚡ button uses. PipeTooling reads the priced rows and the review lane over the `manage-user` bridge, and a human opens the twin's manifest in their own app from the bridge's share link. Setup, secrets and deploy commands: `supabase/README.md`.

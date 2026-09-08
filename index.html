@@ -16,12 +16,15 @@
 </head>
 <body>
   <div id="app">
+    <div id="twin-banner" class="twin-banner" role="status" hidden></div>
     <header>
       <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
       <div class="project-switch-wrap">
         <button type="button" id="project-switch-btn" class="project-switch-btn" aria-haspopup="true" aria-expanded="false" title="Switch project"><span class="project-switch-label"><span class="project-switch-title"><span id="project-switch-name">Untitled project</span><span id="project-switch-chip" class="project-chip" hidden></span></span><span id="project-switch-saved" class="project-switch-saved"></span></span><span class="project-switch-caret">&#9662;</span></button>
         <div id="project-menu" class="project-menu" aria-hidden="true"></div>
         <a id="project-plans-link" class="project-plans-link" href="#" target="_blank" rel="noopener noreferrer" title="Open the CountTooling plans this takeoff was counted from" hidden>Plans</a>
+        <span id="project-ref-chip" class="project-ref-chip" title="PipeTooling bid this manifest belongs to" hidden></span>
+        <span id="project-review-chip" class="project-review-chip" title="Review lane" hidden></span>
       </div>
       <div class="header-actions">
         <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
@@ -300,6 +303,7 @@
   <script src="js/state.js"></script>
   <script src="js/import.js"></script>
   <script src="js/handoff.js"></script>
+  <script src="js/explode.js"></script>
   <script src="js/elliotPriceCore.js"></script>
   <script src="js/mcElliotState.js"></script>
   <script src="js/mcElliotMatch.js"></script>

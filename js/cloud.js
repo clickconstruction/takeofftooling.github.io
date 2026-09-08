@@ -55,6 +55,7 @@ const TakeoffCloud = (function () {
   let client = null;
   let session = null;
   let profileRole = null; // 'user' | 'admin' | 'dev' — from takeoff_profiles
+  let profileIsTwin = false; // takeoff_profiles.is_digital_twin — the 🤖 banner (006 migration)
   let syncedThisLoad = false;
   let suppressPush = false; // true while adopting remote data locally
   let lastSyncedAt = null;
@@ -307,6 +308,11 @@ const TakeoffCloud = (function () {
     if (typeof d.plansUrl === 'string' && d.plansUrl) project.plansUrl = d.plansUrl;
     if (d.details && typeof d.details === 'object') project.details = d.details;
     if (d.importedFrom && typeof d.importedFrom === 'object') project.importedFrom = d.importedFrom;
+    // bid stamp + review lane + agent-door provenance (006 twins) ride data like everything else
+    if (typeof d.externalRef === 'string' && d.externalRef) project.externalRef = d.externalRef;
+    if (typeof d.reviewStatus === 'string' && d.reviewStatus) project.reviewStatus = d.reviewStatus;
+    if (typeof d.reviewNote === 'string' && d.reviewNote) project.reviewNote = d.reviewNote;
+    if (d.agentImport && typeof d.agentImport === 'object') project.agentImport = d.agentImport;
     // a bid closed out on one device is closed out on all of them
     if (d.archived === true) {
       project.archived = true;
@@ -321,6 +327,11 @@ const TakeoffCloud = (function () {
     if (typeof project.plansUrl === 'string' && project.plansUrl) payload.plansUrl = project.plansUrl;
     if (project.details && typeof project.details === 'object') payload.details = project.details;
     if (project.importedFrom && typeof project.importedFrom === 'object') payload.importedFrom = project.importedFrom;
+    // bid stamp + review lane + agent-door provenance (twin projects; humans can stamp too)
+    if (typeof project.externalRef === 'string' && project.externalRef) payload.externalRef = project.externalRef;
+    if (typeof project.reviewStatus === 'string' && project.reviewStatus !== 'draft') payload.reviewStatus = project.reviewStatus;
+    if (typeof project.reviewNote === 'string' && project.reviewNote) payload.reviewNote = project.reviewNote;
+    if (project.agentImport && typeof project.agentImport === 'object') payload.agentImport = project.agentImport;
     if (project.archived === true) {
       payload.archived = true;
       if (typeof project.archivedAt === 'string') payload.archivedAt = project.archivedAt;
@@ -678,15 +689,39 @@ const TakeoffCloud = (function () {
   async function fetchProfileRole() {
     if (!client || !session) {
       profileRole = null;
+      profileIsTwin = false;
+      renderTwinBanner();
       return;
     }
     try {
-      const { data } = await client.from('takeoff_profiles').select('role').eq('user_id', session.user.id).maybeSingle();
+      // is_digital_twin arrives with 006; until it is applied the select falls back to role only
+      let { data, error } = await client.from('takeoff_profiles').select('role, is_digital_twin').eq('user_id', session.user.id).maybeSingle();
+      if (error && /is_digital_twin/.test(error.message || '')) {
+        ({ data } = await client.from('takeoff_profiles').select('role').eq('user_id', session.user.id).maybeSingle());
+      }
       profileRole = data ? data.role : null;
+      profileIsTwin = !!(data && data.is_digital_twin);
     } catch (_) {
       profileRole = null;
+      profileIsTwin = false;
     }
+    renderTwinBanner();
     updateUi();
+  }
+
+  // 🤖 DIGITAL TWIN banner: a twin session is never mistaken for a person
+  // (PipeTooling docs/DIGITAL_TWINS_PLAN.md — humans and the twin can always tell).
+  function renderTwinBanner() {
+    const el = document.getElementById('twin-banner');
+    if (!el) return;
+    const on = !!(session && profileIsTwin);
+    el.hidden = !on;
+    document.body.classList.toggle('is-digital-twin', on);
+    if (on) el.textContent = `🤖 DIGITAL TWIN — ${getEmail() || 'twin'}`;
+  }
+
+  function isDigitalTwin() {
+    return !!(session && profileIsTwin);
   }
 
   function getRole() {
@@ -1517,5 +1552,5 @@ const TakeoffCloud = (function () {
     localStorage.removeItem(LEGACY_SHARE_KEY);
   } catch (_) { /* private mode */ }
 
-  return { isSignedIn, getEmail, getEndpoint, isAdmin, isDev, getRole, refreshRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus, fetchLayoutSuggestions, setLayoutSuggestionStatus, getSharedRowKeys, getLastSyncedAt };
+  return { isSignedIn, getEmail, getEndpoint, isAdmin, isDev, isDigitalTwin, getRole, refreshRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus, fetchLayoutSuggestions, setLayoutSuggestionStatus, getSharedRowKeys, getLastSyncedAt };
 })();

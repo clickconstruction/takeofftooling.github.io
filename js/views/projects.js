@@ -163,6 +163,20 @@ const TakeoffProjectsView = (function () {
         plans.removeAttribute('href');
       }
     }
+    // bid stamp + review lane (agent-door projects; humans can set them too)
+    const ref = document.getElementById('project-ref-chip');
+    if (ref) {
+      ref.hidden = !project.externalRef;
+      ref.textContent = project.externalRef || '';
+    }
+    const review = document.getElementById('project-review-chip');
+    if (review) {
+      const st = project.reviewStatus || 'draft';
+      review.hidden = st === 'draft';
+      review.dataset.status = st;
+      review.textContent = st === 'ready' ? 'Ready for review' : st === 'changes' ? 'Changes requested' : st === 'reviewed' ? 'Reviewed' : '';
+      review.title = project.reviewNote ? `Review lane · ${project.reviewNote}` : 'Review lane';
+    }
   }
 
   // ---------- header dropdown ----------
@@ -391,7 +405,7 @@ const TakeoffProjectsView = (function () {
         if (p.id === renamingId) {
           return `
         <tr data-id="${escapeHtml(p.id)}" class="projects-renaming">
-          <td colspan="3"><div class="inline-name-row projects-rename-row"><input type="text" class="projects-rename-input" aria-label="Project name" value="${escapeHtml(p.name)}" autocomplete="off" /></div></td>
+          <td colspan="4"><div class="inline-name-row projects-rename-row"><input type="text" class="projects-rename-input" aria-label="Project name" value="${escapeHtml(p.name)}" autocomplete="off" /></div></td>
           <td><div class="projects-actions">
             <button type="button" class="btn btn-success projects-rename-save" data-id="${escapeHtml(p.id)}">Save</button>
             <button type="button" class="btn btn-secondary projects-rename-cancel">Cancel</button>
@@ -401,7 +415,7 @@ const TakeoffProjectsView = (function () {
         if (p.id === confirmDeleteId) {
           return `
         <tr data-id="${escapeHtml(p.id)}" class="projects-confirming">
-          <td colspan="3" class="projects-confirm-text">Delete "${escapeHtml(p.name)}" and its ${count} line${count === 1 ? '' : 's'}? This can't be undone.</td>
+          <td colspan="4" class="projects-confirm-text">Delete "${escapeHtml(p.name)}" and its ${count} line${count === 1 ? '' : 's'}? This can't be undone.</td>
           <td><div class="projects-actions">
             <button type="button" class="btn btn-secondary projects-delete-yes" data-id="${escapeHtml(p.id)}">Delete</button>
             <button type="button" class="btn btn-secondary projects-delete-no">Cancel</button>
@@ -409,6 +423,11 @@ const TakeoffProjectsView = (function () {
         </tr>`;
         }
         const { stem, chip } = splitChip(p.name);
+        // bid stamp + review lane: the open bid from live state, the rest from their stored document
+        const doc = (isOpen ? TakeoffState.getCurrentProject() : TakeoffStorage.loadProject(p.id)) || {};
+        const ref = typeof doc.externalRef === 'string' ? doc.externalRef : '';
+        const status = TakeoffState.REVIEW_STATUSES.includes(doc.reviewStatus) ? doc.reviewStatus : 'draft';
+        const reviewSelect = `<select class="projects-review-select" data-id="${escapeHtml(p.id)}" title="Review lane">${TakeoffState.REVIEW_STATUSES.map((st) => `<option value="${st}" ${st === status ? 'selected' : ''}>${st === 'changes' ? 'changes requested' : st}</option>`).join('')}</select>`;
         // Archive is the closed-out state, not a delete: the open bid can't take
         // it (open another one first), the same reason Delete gives.
         const archiveBtn = isClosed
@@ -418,7 +437,8 @@ const TakeoffProjectsView = (function () {
             : `<button type="button" class="btn btn-secondary projects-archive-btn" data-id="${escapeHtml(p.id)}">Archive</button>`;
         return `
         <tr data-id="${escapeHtml(p.id)}">
-          <td><span class="projects-name" title="${escapeHtml(p.name)}">${escapeHtml(middleEllipsis(stem, 46))}</span>${chip ? `<span class="project-chip">${escapeHtml(chip)}</span>` : ''}${isOpen ? '<span class="projects-open-chip">Open</span>' : ''}</td>
+          <td><span class="projects-name" title="${escapeHtml(p.name)}">${escapeHtml(middleEllipsis(stem, 46))}</span>${chip ? `<span class="project-chip">${escapeHtml(chip)}</span>` : ''}${ref ? `<span class="projects-ref">${escapeHtml(ref)}</span>` : ''}${isOpen ? '<span class="projects-open-chip">Open</span>' : ''}</td>
+          <td class="projects-meta" data-label="Review">${reviewSelect}</td>
           <td class="projects-meta" data-label="Lines">${count}</td>
           <td class="projects-meta" data-label="Last edited">${escapeHtml(fmtAgo(p.updatedAt))}</td>
           <td><div class="projects-actions">
@@ -435,7 +455,7 @@ const TakeoffProjectsView = (function () {
 
     const table = (facts_, cls) => `
       <table class="projects-table${cls ? ` ${cls}` : ''}">
-        <thead><tr><th>Name</th><th>Lines</th><th>Last edited</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Review</th><th>Lines</th><th>Last edited</th><th></th></tr></thead>
         <tbody>${facts_.map(rowHtml).join('')}</tbody>
       </table>`;
 
@@ -563,6 +583,49 @@ const TakeoffProjectsView = (function () {
       closeModal();
     }
   });
+
+  // review lane: the open project through state (persisted + synced); others by
+
+  // rewriting their stored document the way rename does
+
+  document.getElementById('projects-list')?.addEventListener('change', (e) => {
+
+    const sel = e.target.closest('.projects-review-select');
+
+    if (!sel) return;
+
+    const id = sel.dataset.id;
+
+    const status = sel.value;
+
+    const current = TakeoffState.getCurrentProject();
+
+    if (id === current.id) {
+
+      TakeoffState.setReviewStatus(status);
+
+      TakeoffState.persistNow();
+
+    } else {
+
+      const data = TakeoffStorage.loadProject(id);
+
+      if (!data) return;
+
+      if (status === 'draft') delete data.reviewStatus; else data.reviewStatus = status;
+
+      data.savedAt = new Date().toISOString();
+
+      TakeoffStorage.saveProject(data);
+
+    }
+
+    updateHeader();
+
+    TakeoffUtils.toast(status === 'draft' ? 'Review lane cleared.' : status === 'ready' ? 'Marked ready for review.' : status === 'changes' ? 'Sent back with changes requested.' : 'Marked reviewed.', { kind: 'success' });
+
+  });
+
 
   document.getElementById('projects-list')?.addEventListener('click', (e) => {
     const sw = e.target.closest('.projects-switch-btn');
