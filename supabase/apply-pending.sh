@@ -6,14 +6,30 @@
 # Every migration here is idempotent, and the redirect list is merged, never
 # replaced — so re-running this is safe.
 #
-# Auth: your own Supabase access token, taken from the CLI (`supabase login`)
-# or from SUPABASE_ACCESS_TOKEN. Nothing is written to disk.
+# Auth: your own Supabase access token. It is read from SUPABASE_ACCESS_TOKEN
+# if set, otherwise from the CLI's keychain entry on macOS (`supabase login`
+# puts it there) — that read pops a one-time "allow access" prompt, so run this
+# from a terminal you can click on. Nothing is written to disk.
 #
 #   bash supabase/apply-pending.sh
+#
+# Not on macOS, or would rather not use the keychain? Mint a token at
+# https://supabase.com/dashboard/account/tokens and pass it in:
+#
+#   SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-export SB_TOKEN="${SUPABASE_ACCESS_TOKEN:-$(supabase orgs list --debug 2>&1 | grep -o 'sbp_[A-Za-z0-9]\{20,\}' | head -1 || true)}"
-[ -n "${SB_TOKEN:-}" ] || { echo "No access token — run 'supabase login', or export SUPABASE_ACCESS_TOKEN=sbp_..."; exit 1; }
+# The CLI stopped logging the token under --debug (checked on 2.72.7), so the
+# keychain is the only place to get it without minting a new one.
+export SB_TOKEN="${SUPABASE_ACCESS_TOKEN:-$(security find-generic-password -s 'Supabase CLI' -a supabase -w 2>/dev/null || true)}"
+case "${SB_TOKEN:-}" in
+  sbp_*) ;;
+  *) echo "No access token."
+     echo "  - macOS: run 'supabase login' first; if the keychain prompt appeared, click Allow and re-run."
+     echo "  - Otherwise: SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh"
+     echo "    (mint one at https://supabase.com/dashboard/account/tokens)"
+     exit 1 ;;
+esac
 
 python3 - <<'PY'
 import json, os, urllib.request, urllib.error

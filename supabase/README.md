@@ -54,8 +54,9 @@ replaced, so it is safe to re-run:
 bash supabase/apply-pending.sh
 ```
 
-It authenticates with your own Supabase access token — from `supabase login`, or
-`SUPABASE_ACCESS_TOKEN` — and writes nothing to disk. The dashboard route below
+It authenticates with your own Supabase access token: `SUPABASE_ACCESS_TOKEN` if
+you set it, otherwise the keychain entry `supabase login` leaves behind (macOS
+asks once for permission to read it — click Allow). It writes nothing to disk. The dashboard route below
 still works if you prefer it.
 
 | File | What |
