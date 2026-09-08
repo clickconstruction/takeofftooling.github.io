@@ -36,9 +36,9 @@ screen — deliberately. Each section is its own **sideways-scrolling strip**: s
 the row left to reach Price and the trash can, and the page itself never moves.
 
 **Save is always on screen.** Below 900 px, the Save/Cancel bar is pinned to the
-bottom of the window, so **Save parts to the bid** (or **Save and Back to
-Manifest** in the conduit and wire flows) is one tap away no matter how far down
-the parts you have scrolled. On an iPad in landscape the bar is not pinned — it
+bottom of the window, so **Save parts to the bid** — the same words in the
+devices, conduit and wire flows — is one tap away no matter how far down the
+parts you have scrolled. On an iPad in landscape the bar is not pinned — it
 sits at the foot of the page, like the desktop.
 
 **Load into Ledger** — the button that fills a run from a saved assembly — is on

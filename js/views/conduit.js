@@ -170,6 +170,8 @@ const TakeoffConduitView = (function () {
           labor: f.labor || 0,
           price: f.price !== '' && f.price != null && !isNaN(parseFloat(f.price)) ? parseFloat(f.price) : null,
           parentId: itemId,
+          // a fitting filled from the book watches that book row (X1)
+          meta: f.book ? { book: f.book } : null,
         });
       }
     }
@@ -354,7 +356,7 @@ const TakeoffConduitView = (function () {
         <div class="flow-actions">
           <button type="button" class="btn btn-secondary" id="conduit-cancel-btn">Cancel</button>
           <button type="button" class="btn btn-secondary" id="conduit-back-fittings">Back</button>
-          <button type="button" class="btn btn-success" id="conduit-save-btn">Save and Back to Manifest</button>
+          <button type="button" class="btn btn-success" id="conduit-save-btn">Save parts to the bid</button>
         </div>
       </div>
     `;

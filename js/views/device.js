@@ -649,6 +649,8 @@ const TakeoffDeviceView = (function () {
             quantity: r.quantity || 0,
             labor: r.labor || 0,
             price: r.price != null && r.price !== '' ? (parseFloat(r.price) || null) : null,
+            // a row filled from the book watches that book row (X1)
+            book: r.book || null,
           });
         }
       }
@@ -665,7 +667,9 @@ const TakeoffDeviceView = (function () {
             (c.description || '') === d.description &&
             (Number(c.quantity) || 0) === (Number(d.quantity) || 0) &&
             (Number(c.labor) || 0) === (Number(d.labor) || 0) &&
-            num(c.price) === num(d.price)
+            num(c.price) === num(d.price) &&
+            // the book reference is part of what a save writes (X1)
+            JSON.stringify((c.meta && c.meta.book) || null) === JSON.stringify(d.book || null)
           );
         });
 
@@ -698,6 +702,7 @@ const TakeoffDeviceView = (function () {
           labor: d.labor,
           price: d.price,
           parentId: itemId,
+          meta: d.book ? { book: d.book } : null,
         });
       }
 

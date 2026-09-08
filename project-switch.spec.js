@@ -298,7 +298,7 @@ test('B11 — the Lines column counts components, not just parents', async ({ pa
   await expect(page.locator('.projects-table thead')).toContainText('Lines');
   await expect(page.locator('.projects-table thead')).toContainText('Last edited');
   await expect(page.locator('.projects-table thead')).not.toContainText('Rows');
-  const lines = await page.evaluate(() => document.querySelector('.projects-table tbody tr td.projects-meta').textContent.trim());
+  const lines = await page.evaluate(() => document.querySelector('.projects-table tbody tr td.projects-meta[data-label="Lines"]').textContent.trim());
   expect(lines).toBe('3');
 });
 

@@ -19,7 +19,7 @@ share link**, then **Job details**.
 
    > **What you'll see:** the same Labor TOTAL (hrs) the screen shows, printed to
    > two decimals, so 3,000 ft of wire at 0.006 hrs/ft prints **0.01** each and
-   > **18.00** extended — never 0.0. Types print as labels — `POWER CO. CHARGES`,
+   > **18.00** extended — never 0.0. Types print as labels — `Power co. charges`,
    > `Box` — not internal keys.
 
 2. **Print purchase list (PO)** — the purchase list on paper, the same merged

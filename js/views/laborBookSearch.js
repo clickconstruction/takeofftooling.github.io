@@ -213,7 +213,7 @@ const TakeoffLaborBookSearch = (function () {
     } else if (btn.dataset.kind === 'part') {
       const hit = lastSearch.parts[i];
       if (hit) TakeoffLaborBookTargets.addEntryToTarget({
-        description: TakeoffLaborBookTargets.describeBookRow(hit.row.name || '', hit.section),
+        description: TakeoffLaborBookTargets.describeBookRowIn(hit.tab, hit.section, hit.row.name || ''),
         labor: hit.row.labor || 0,
         price: hit.row.price != null && hit.row.price !== '' ? String(hit.row.price) : null,
       });

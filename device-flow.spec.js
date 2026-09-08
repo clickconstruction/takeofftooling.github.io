@@ -409,3 +409,55 @@ test('T2-04 — a no-change save pushes no undo frame and keeps the child ids', 
   expect(await depth()).toBe(depthBefore + 1);
   expect(await idsOf()).toEqual(before);
 });
+
+// X1 for flow parts: a component filled from the book carries the link to the
+// book row onto the bid, so the amber "book: $…" chip can reach it too. Before
+// this, every device/conduit/wire child landed with meta: null.
+test('a device row filled from the book lands with meta.book, and the chip finds it', async ({ page }) => {
+  const id = await openDeviceFlow(page, 4);
+
+  // open Boxes, then fill its row from the book through the row's own Book button
+  await page.getByRole('button', { name: '+ Box', exact: true }).click();
+  await page.locator('.part-book-icon-btn').first().click();
+  await expect(page.locator('#labor-book-modal')).toHaveAttribute('aria-hidden', 'false');
+
+  await page.locator('.labor-book-tab[data-tab="devices"]').click();
+  await page.locator('.labor-book-section-header', { hasText: 'Boxes & Rings' }).click();
+  const addBtn = page.locator('.labor-book-add-btn[data-type="devices"][data-section="Boxes & Rings"][data-index="0"]');
+  await expect(addBtn).toBeVisible();
+  const picked = await page.evaluate(() => {
+    const section = 'Boxes & Rings';
+    const rows = TakeoffState.getLaborBookType('devices')[section];
+    return { section, name: rows[0].name, price: rows[0].price };
+  });
+  expect(await addBtn.getAttribute('data-section')).toBe(picked.section);
+  await addBtn.click();
+  // the fill closed the book and wrote the row
+  await expect(page.locator('#labor-book-modal')).toHaveAttribute('aria-hidden', 'true');
+  const boxes = page.locator('.flow-section', { has: page.getByRole('heading', { name: 'Boxes' }) });
+  await expect(boxes.locator('input[data-field="description"]').first()).toHaveValue(picked.name);
+
+  await page.locator('#device-save-btn').click();
+  const child = await page.evaluate((i) => TakeoffState.getItemById(i).children[0], id);
+  expect(child.meta.book).toMatchObject({ type: 'devices', section: picked.section, name: picked.name });
+
+  // no chip while the row and the book agree
+  await expect(page.locator('.book-price-chip')).toHaveCount(0);
+
+  // the book gets a new price: the child says so, on the manifest
+  await page.evaluate((p) => {
+    const rows = TakeoffState.getLaborBookType('devices')[p.section];
+    const index = rows.findIndex((r) => r.name === p.name);
+    TakeoffState.updateLaborBookRow('devices', p.section, index, { price: String(Number(p.price || 0) + 7.25) });
+    TakeoffApp.render();
+  }, picked);
+  const chip = page.locator('.book-price-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).toHaveText(`book: $${(Number(picked.price || 0) + 7.25).toFixed(2)}`);
+
+  // re-opening the editor and saving again keeps the link (the buffer carries it)
+  await page.evaluate((i) => TakeoffApp.navigateToDevice(i), id);
+  await page.locator('#device-save-btn').click();
+  const again = await page.evaluate((i) => TakeoffState.getItemById(i).children[0], id);
+  expect(again.meta.book).toMatchObject({ type: 'devices', section: picked.section, name: picked.name });
+});

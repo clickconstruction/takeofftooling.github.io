@@ -559,7 +559,7 @@ const TakeoffLaborBookView = (function () {
       // only as money, never as text the bid would render blank
       const typed = TakeoffUtils.parseMoney(row.querySelector('.labor-book-price')?.value);
       const entry = {
-        description: TakeoffLaborBookTargets.describeBookRow(row.querySelector('.labor-book-name')?.value || '', row.dataset.section || ''),
+        description: TakeoffLaborBookTargets.describeBookRowIn(row.dataset.type, row.dataset.section || '', row.querySelector('.labor-book-name')?.value || ''),
         labor: parseFloat(row.dataset.labor) || 0,
         price: Number.isFinite(typed) ? String(typed) : null,
       };

@@ -6,6 +6,7 @@ const TakeoffManifestView = (function () {
   const TRASH_SVG = TakeoffViewShared.TRASH_SVG;
   const BOOK_SVG = TakeoffViewShared.BOOK_SVG;
   const CHILD_ARROW_SVG = TakeoffViewShared.CHILD_ARROW_SVG;
+  const BOLT_SVG = TakeoffViewShared.BOLT_SVG;
 
   const TYPE_LABELS = {
     lighting: 'Lighting',
@@ -14,9 +15,9 @@ const TakeoffManifestView = (function () {
     conduit: 'Conduit',
     wire: 'Wire',
     specialSystems: 'Special Systems',
-    permits: 'PERMITS',
-    powerCoCharges: 'POWER CO. CHARGES',
-    temporaryPower: 'TEMPORARY POWER',
+    permits: 'Permits',
+    powerCoCharges: 'Power co. charges',
+    temporaryPower: 'Temporary power',
   };
 
   // Flow-generated component types, shown on child rows
@@ -195,7 +196,7 @@ const TakeoffManifestView = (function () {
     // Explode: fill children from the assembly template (js/explode.js) when one
     // matches this row and it has no children yet — the same kernel the agent door runs.
     const template = showRailAdd && typeof TakeoffExplode !== 'undefined' ? TakeoffExplode.findTemplate(item) : null;
-    const explodeBtn = template ? `<button type="button" class="explode-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Explode: add the ${escapeHtml(template.label)} assembly (box, ring, plate, fittings…) priced from your book">⚡</button>` : '';
+    const explodeBtn = template ? `<button type="button" class="explode-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Explode: add the ${escapeHtml(template.label)} assembly (box, ring, plate, fittings…) priced from your book">${BOLT_SVG}</button>` : '';
     const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn row-btn" tabindex="0" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}${explodeBtn}</td>`;
 
     return `
@@ -235,9 +236,9 @@ const TakeoffManifestView = (function () {
     specialSystems: 'Special Systems',
     misc: 'Misc.',
     other: 'Other',
-    permits: 'PERMITS',
-    powerCoCharges: 'POWER CO. CHARGES',
-    temporaryPower: 'TEMPORARY POWER',
+    permits: 'Permits',
+    powerCoCharges: 'Power co. charges',
+    temporaryPower: 'Temporary power',
     siteWork: 'Site work & rentals',
   };
 

@@ -8,8 +8,8 @@ stray line gone — and Undo standing behind all of it.
 
 1. **Click `type…` in the Type column**, or press one of the six letters once the
    picker is open: `L` lighting, `G` gear, `D` devices, `C` conduit, `W` wire,
-   `S` special systems. **Other ▾** holds PERMITS, POWER CO. CHARGES and
-   TEMPORARY POWER; it stays open for the rest of the session once you use it.
+   `S` special systems. **Other ▾** holds Permits, Power co. charges and
+   Temporary power; it stays open for the rest of the session once you use it.
 
 2. **Know which types leave the table.** Lighting, Gear, Special Systems and the
    three Other types stay put and drop the cursor into that row's Labor box.
@@ -97,7 +97,7 @@ will still be there next week when you have forgotten why.
 - **A price-less parent is a grouping.** It contributes no material of its own,
   its components list individually on the purchase list, and it never appears
   there itself.
-- **Hours typed on a PERMITS / POWER CO. CHARGES / TEMPORARY POWER row** bill
+- **Hours typed on a Permits / Power co. charges / Temporary power row** bill
   under Other Charges but still count in the labor total, on the *Other* line —
   the screen and the printed bid read the same number.
 - **Tab walks the boxes, not the buttons.** Description → quantity → hours →

@@ -9,17 +9,56 @@
  */
 
 const TakeoffLaborBookTargets = (function () {
-  // Book names are terse ("600a", '1/2" EMT(S)') and only the section says what
-  // the part is, so the section always joins the description. Name length used
-  // to gate this, which is a proxy for nothing: an elbow and a coupling that
-  // share a name then merged into one unorderable purchase-list line.
-  function describeBookRow(name, section) {
+  /**
+   * Names that appear in more than one section of one tab — the only names a
+   * section has to disambiguate. `sections` is a tab's {section: rows} map.
+   */
+  function duplicatedNames(sections) {
+    const firstSection = new Map();
+    const dup = new Set();
+    for (const section of Object.keys(sections || {})) {
+      for (const row of sections[section] || []) {
+        if (!row || !row.name) continue;
+        const seen = firstSection.get(row.name);
+        if (seen === undefined) firstSection.set(row.name, section);
+        else if (seen !== section) dup.add(row.name);
+      }
+    }
+    return dup;
+  }
+
+  function isAmbiguous(name, tab) {
+    if (!tab) return false;
+    return (tab instanceof Set ? tab : duplicatedNames(tab)).has(name);
+  }
+
+  /**
+   * How a book row reads on the bid. Some sections carry the whole meaning of
+   * a terse name ("600a" → "600a Panel (3PH)") and always join it. Otherwise
+   * the section is appended ONLY when the bare name also lives in another
+   * section of the same tab: an elbow and a coupling that share a name must
+   * stay two orderable lines, but a name that is unique on its tab needs no
+   * suffix — appending one wrote `4" Square Box, 1-1/2" deep Boxes & Rings`.
+   *
+   * `tab` is that tab's {section: rows} map, or a precomputed Set of its
+   * duplicated names (duplicatedNames above); with no tab, nothing is
+   * ambiguous and the bare name stands.
+   */
+  function describeBookRow(name, section, tab) {
     if (section === 'Panels.1PH') return `${name} Panel (1PH)`;
     if (section === 'Panels.3PH') return `${name} Panel (3PH)`;
     if (section === 'THHN CU' || section === 'THW AL') return `${section} ${name}`;
     if (section.startsWith('Cable Tray.')) return `${name} Cable Tray (${section.replace('Cable Tray.', '')})`;
-    if (section) return `${name} ${section}`;
+    if (section && isAmbiguous(name, tab)) return `${name} — ${section}`;
     return name;
+  }
+
+  /** describeBookRow for a row identified by tab + section (looks the tab up). */
+  function describeBookRowIn(tab, section, name) {
+    const sections = typeof TakeoffState !== 'undefined' && TakeoffState.getLaborBookType
+      ? TakeoffState.getLaborBookType(tab)
+      : null;
+    return describeBookRow(name, section, sections || null);
   }
 
   /**
@@ -40,10 +79,13 @@ const TakeoffLaborBookTargets = (function () {
     const book = TakeoffState.getLaborBook() || {};
     let found = null;
     for (const type of Object.keys(book)) {
+      // one dup-name Set per tab: describeBookRow must build the same string
+      // here as it did when the description was written, or nothing resolves
+      const dup = duplicatedNames(book[type]);
       for (const section of Object.keys(book[type] || {})) {
         for (const row of book[type][section] || []) {
           if (!row || !row.name) continue;
-          if (describeBookRow(row.name, section) !== desc) continue;
+          if (describeBookRow(row.name, section, dup) !== desc) continue;
           if (found) return null; // two rows answer to this name: don't guess
           found = { type, section, name: row.name };
           if (row.partNumber) found.partNumber = row.partNumber;
@@ -106,11 +148,17 @@ const TakeoffLaborBookTargets = (function () {
   // Fill one flow row from a book entry. A filled row counts once until the
   // estimator says otherwise: a row left at qty 0 is a part that is on the
   // screen and not on the bid, which is how the preset rows already behave.
-  function fillRow(row, description, laborHours, priceNum) {
+  //
+  // The book reference rides on the buffer row (`row.book`) so the flow's save
+  // can put it on the child as meta.book — a part filled here watches its book
+  // row exactly like a fixture priced from the book does (X1).
+  function fillRow(row, description, laborHours, priceNum, bookRef) {
     row.description = description;
     row.labor = laborHours;
     row.price = priceNum != null ? priceNum : '';
     if (!(Number(row.quantity) > 0)) row.quantity = 1;
+    if (bookRef) row.book = bookRef;
+    else delete row.book;
   }
 
   /**
@@ -146,19 +194,19 @@ const TakeoffLaborBookTargets = (function () {
         const temp = TakeoffState.getDeviceTempData();
         const row = temp[fill.section]?.[fill.index];
         if (!row) return false;
-        fillRow(row, description, laborHours, priceNum);
+        fillRow(row, description, laborHours, priceNum, bookRef);
         TakeoffState.setDeviceTempData(temp);
       } else if (fill.kind === 'conduit-fitting') {
         const temp = TakeoffState.getConduitTempData();
         const row = (temp.fittings || [])[fill.index];
         if (!row) return false;
-        fillRow(row, description, laborHours, priceNum);
+        fillRow(row, description, laborHours, priceNum, bookRef);
         TakeoffState.setConduitTempData(temp);
       } else if (fill.kind === 'wire-mac') {
         const temp = TakeoffState.getWireTempData();
         const row = (temp.macAdapters || [])[fill.index];
         if (!row) return false;
-        fillRow(row, description, laborHours, priceNum);
+        fillRow(row, description, laborHours, priceNum, bookRef);
         TakeoffState.setWireTempData(temp);
       } else {
         return false;
@@ -181,7 +229,8 @@ const TakeoffLaborBookTargets = (function () {
     ) {
       const temp = TakeoffState.getConduitTempData();
       temp.fittings = temp.fittings || [];
-      temp.fittings.push({ description, quantity: 1, labor: laborHours, price: price || '' });
+      // same book reference a filled fitting row carries (saveAll copies it)
+      temp.fittings.push(Object.assign({ description, quantity: 1, labor: laborHours, price: price || '' }, bookRef ? { book: bookRef } : null));
       TakeoffState.setConduitTempData(temp);
       lastTargetNote = '×1 in this run’s fittings — set the count';
       // the book stays open over the wizard: say where the add landed
@@ -276,6 +325,8 @@ const TakeoffLaborBookTargets = (function () {
 
   return {
     describeBookRow,
+    describeBookRowIn,
+    duplicatedNames,
     addEntryToTarget,
     addComponentsToTarget,
     hasFillTarget,
