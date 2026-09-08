@@ -14,8 +14,23 @@
 const TakeoffSuggestionsReview = (function () {
   const escapeHtml = (s) => TakeoffUtils.escapeHtml(s);
 
+  // Failures the reviewer can act on without leaving the panel: the app's one
+  // feedback region (js/toast.js), not a dialog they have to click away. The
+  // confirm() over an outlier stays a confirm — that one is a question.
+  function warn(text) {
+    if (typeof TakeoffToast !== 'undefined') TakeoffToast.show(text, { kind: 'warn', timeout: 9000 });
+  }
+
   let groups = []; // aggregated pending suggestions
   let acceptedGroupCount = 0;
+
+  // A proposed number this far off the shipped one is a fat finger, not a
+  // correction — 20x either way, the same rule for hours and for price.
+  const OUTLIER_FACTOR = 20;
+  // …and with nothing to compare against (a brand-new part), these are the
+  // bounds no real electrical part falls outside of.
+  const NEW_PART_MAX_HOURS = 100;
+  const NEW_PART_MAX_PRICE = 500000;
 
   function median(nums) {
     const list = nums.filter((n) => typeof n === 'number' && !isNaN(n)).sort((a, b) => a - b);
@@ -24,9 +39,21 @@ const TakeoffSuggestionsReview = (function () {
     return list.length % 2 ? list[mid] : (list[mid - 1] + list[mid]) / 2;
   }
 
+  function offBy20x(next, prev) {
+    if (!(prev > 0) || !(next > 0)) return false;
+    return next / prev >= OUTLIER_FACTOR || next / prev <= 1 / OUTLIER_FACTOR;
+  }
+
+  /**
+   * Group the pending rows per part and work out what the maintainer needs to
+   * decide: how many people proposed it, the median hours and price, whether
+   * either number is a fat finger, and whether the two medians even come from
+   * the same person (a two-user group can otherwise ship user A's hours with
+   * user B's price — a part nobody proposed).
+   */
   function aggregate(rows) {
     const byKey = new Map();
-    for (const r of rows) {
+    for (const r of rows || []) {
       const key = JSON.stringify([r.kind, r.tab, r.section, r.part_name]);
       if (!byKey.has(key)) byKey.set(key, []);
       byKey.get(key).push(r);
@@ -39,20 +66,39 @@ const TakeoffSuggestionsReview = (function () {
       const medLabor = median(rowsForKey.map((r) => r.new_value && Number(r.new_value.labor)));
       const old = rowsForKey.find((r) => r.old_value)?.old_value || null;
       const oldPrice = old ? parseFloat(old.price) : null;
-      // fat-finger guard: a proposed price 20x off the current default
+      const oldLabor = old ? Number(old.labor) : null;
+      const partNumber = (rowsForKey.find((r) => r.new_value && r.new_value.partNumber)?.new_value || {}).partNumber || '';
+
+      // fat-finger guard — hours as well as price, and new parts too
       const outlier =
-        first.kind === 'edit' && oldPrice > 0 && medPrice > 0 && (medPrice / oldPrice >= 20 || medPrice / oldPrice <= 0.05);
+        first.kind === 'edit'
+          ? offBy20x(medPrice, oldPrice) || offBy20x(medLabor, oldLabor)
+          : first.kind === 'new'
+            ? (medLabor != null && medLabor > NEW_PART_MAX_HOURS) || (medPrice != null && medPrice > NEW_PART_MAX_PRICE)
+            : false;
+
+      // chimera guard: with two proposals, the median hours and the median
+      // price can come from different people. Three or more is a consensus,
+      // so the mix is fine there.
+      const carriers = rowsForKey.filter(
+        (r) => r.new_value && Number(r.new_value.labor) === medLabor && parseFloat(r.new_value.price) === medPrice
+      );
+      const chimera = users >= 2 && users < 3 && medLabor != null && medPrice != null && carriers.length === 0;
+
       out.push({
         kind: first.kind,
         tab: first.tab,
         section: first.section,
         name: first.part_name,
+        partNumber,
         ids: rowsForKey.map((r) => r.id),
         users,
         medPrice,
         medLabor,
         old,
         outlier,
+        chimera,
+        blocked: outlier || chimera,
       });
     }
     out.sort((a, b) => b.users - a.users || a.name.localeCompare(b.name));
@@ -67,7 +113,8 @@ const TakeoffSuggestionsReview = (function () {
   }
 
   function usersBadge(g) {
-    if (g.outlier) return '<span class="sugg-badge sugg-badge-outlier">outlier</span>';
+    if (g.outlier) return '<span class="sugg-badge sugg-badge-outlier">check this number</span>';
+    if (g.chimera) return '<span class="sugg-badge sugg-badge-outlier">hours and price from different people</span>';
     if (g.users >= 2) return `<span class="sugg-badge sugg-badge-agree">${g.users} users agree</span>`;
     return '<span class="sugg-badge sugg-badge-single">1 user</span>';
   }
@@ -97,16 +144,17 @@ const TakeoffSuggestionsReview = (function () {
             : g.kind === 'new'
               ? `<strong>${escapeHtml(fmtValue(g.medLabor, g.medPrice))}</strong> <span class="sugg-kind-label">new part</span>`
               : `<span class="sugg-kind-label">remove</span> (was ${escapeHtml(fmtValue(g.old && Number(g.old.labor), g.old && parseFloat(g.old.price)))})`;
+        const trail = [g.tab, ...String(g.section || '').split('.')].filter(Boolean).join(' · ');
         return `
         <div class="sugg-row" data-index="${i}">
           <div class="sugg-part">
-            <div class="sugg-name">${escapeHtml(g.name)}</div>
-            <div class="sugg-where">${escapeHtml(g.tab)} · ${escapeHtml(g.section)}</div>
+            <div class="sugg-name">${escapeHtml(g.name)}${g.partNumber ? ` <span class="sugg-partnum">${escapeHtml(g.partNumber)}</span>` : ''}</div>
+            <div class="sugg-where">${escapeHtml(trail)}</div>
           </div>
           <div class="sugg-change">${change}</div>
           ${usersBadge(g)}
           <div class="sugg-actions">
-            <button type="button" class="btn btn-small sugg-accept-btn" data-index="${i}">Accept</button>
+            <button type="button" class="btn btn-small sugg-accept-btn" data-index="${i}"${g.blocked ? ' data-blocked="1"' : ''}>Accept</button>
             <button type="button" class="btn btn-small btn-secondary sugg-dismiss-btn" data-index="${i}">Dismiss</button>
           </div>
         </div>`;
@@ -133,9 +181,17 @@ const TakeoffSuggestionsReview = (function () {
   async function resolveGroup(index, status) {
     const g = groups[index];
     if (!g) return;
+    // A flagged group can still be accepted — the maintainer may know the
+    // number is right — but never by a stray click.
+    if (status === 'accepted' && g.blocked) {
+      const why = g.outlier
+        ? `“${g.name}” is ${OUTLIER_FACTOR}x off the shipped number.`
+        : `“${g.name}” takes its hours from one person and its price from another.`;
+      if (!confirm(`${why}\n\nAccept it anyway?`)) return;
+    }
     const err = await TakeoffCloud.setSuggestionStatus(g.ids, status);
     if (err) {
-      alert('Could not update: ' + err);
+      warn('Could not update: ' + err);
       return;
     }
     groups.splice(index, 1);
@@ -143,17 +199,28 @@ const TakeoffSuggestionsReview = (function () {
     render();
   }
 
+  /**
+   * The patch is a DELTA: every accepted group in it is marked `shipped`, so
+   * the next download carries what has been accepted since — re-emitting the
+   * whole history meant applying the same rows twice.
+   */
   async function downloadAcceptedPatch() {
     const { data, error } = await TakeoffCloud.fetchSuggestions('accepted');
     if (error) {
-      alert('Could not load accepted suggestions: ' + error);
+      warn('Could not load accepted suggestions: ' + error);
       return;
     }
-    const changes = aggregate(data).map((g) => ({
+    const accepted = aggregate(data);
+    if (!accepted.length) {
+      warn('Nothing accepted since the last patch.');
+      return;
+    }
+    const changes = accepted.map((g) => ({
       tab: g.tab,
       section: g.section,
       name: g.name,
       kind: g.kind,
+      partNumber: g.partNumber || undefined,
       labor: g.medLabor,
       price: g.medPrice != null ? g.medPrice.toFixed(2) : null,
     }));
@@ -165,12 +232,27 @@ const TakeoffSuggestionsReview = (function () {
       note: 'Apply to js/data/laborBookDefaults.js and bump LABOR_BOOK_DEFAULTS_VERSION',
       changes,
     };
-    const blob = new Blob([JSON.stringify(patch, null, 2)], { type: 'application/json' });
+    const json = JSON.stringify(patch, null, 2);
+    if (json.length < 100) {
+      warn('That patch came out empty — nothing was downloaded.');
+      return;
+    }
+    const blob = new Blob([json], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'labor-book-defaults-patch.json';
     a.click();
     URL.revokeObjectURL(a.href);
+
+    // mark them shipped so the next patch is the next delta
+    const ids = accepted.flatMap((g) => g.ids);
+    const err = await TakeoffCloud.setSuggestionStatus(ids, 'shipped');
+    if (err) {
+      warn(`The patch downloaded, but marking those ${accepted.length} rows as shipped failed: ${err}`);
+      return;
+    }
+    acceptedGroupCount = 0;
+    render();
   }
 
   function openModal() {
@@ -184,7 +266,10 @@ const TakeoffSuggestionsReview = (function () {
     document.getElementById('suggestions-modal')?.setAttribute('aria-hidden', 'true');
   }
 
-  // one-time listeners (delegated for the per-row buttons)
+  // one-time listeners (delegated for the per-row buttons). Guarded so the
+  // aggregation guards above can be unit-tested in Node (suggestions.test.js)
+  // — this panel is admin-only and cannot be walked without an account.
+  if (typeof document === 'undefined') return { aggregate, median };
   document.getElementById('review-suggestions-btn')?.addEventListener('click', openModal);
   document.getElementById('suggestions-modal-close')?.addEventListener('click', closeModal);
   document.addEventListener('keydown', function suggestionsModalKeyHandler(e) {
@@ -211,5 +296,10 @@ const TakeoffSuggestionsReview = (function () {
     if (dismiss) resolveGroup(Number(dismiss.dataset.index), 'dismissed');
   });
 
-  return { openModal, load };
+  return { openModal, load, aggregate, median };
 })();
+
+// Node (unit tests); inert in the browser.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = TakeoffSuggestionsReview;
+}

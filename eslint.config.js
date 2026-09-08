@@ -11,8 +11,11 @@ const globals = require('globals');
 // Cross-file app globals (each defined in exactly one js/ file)
 const appGlobals = {
   TakeoffUtils: 'readonly',
+  TakeoffEvents: 'readonly',
+  TakeoffToast: 'readonly',
   TakeoffStorage: 'readonly',
   TakeoffCloud: 'readonly',
+  TakeoffCloudSync: 'readonly',
   TakeoffUiState: 'readonly',
   TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
@@ -20,6 +23,7 @@ const appGlobals = {
   TakeoffPDF: 'readonly',
   TakeoffApp: 'readonly',
   TakeoffViewShared: 'readonly',
+  TakeoffPrintPanel: 'readonly',
   TakeoffManifestView: 'readonly',
   TakeoffModal: 'readonly',
   TakeoffLaborBookView: 'readonly',
@@ -76,9 +80,18 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/events.js', 'js/import.js', 'js/cloudSync.js', 'js/suggestionsReview.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
+    },
+  },
+  {
+    // The app-shell service worker: its own global scope, not the page's.
+    files: ['sw.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: { ...globals.serviceworker },
     },
   },
   {

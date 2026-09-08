@@ -49,6 +49,24 @@ const McBook = (function () {
     return at ? String(at).slice(0, 10) : null;
   }
 
+  // MC categories whose names read as glitches out of context. They're real
+  // estimating tools: the "$1 / 1 hr" units nudge a bid by a known amount,
+  // and TI Work holds per-sq-ft budget rates. Friendlier headers + a note.
+  const LEVEL1_DISPLAY = {
+    '1$ Mat & 1 Hr Labor': {
+      label: 'Adjustment units ($1 material · 1 hr labor)',
+      note: 'MC placeholders — add N of them to move a line by a known amount',
+    },
+    'TI Work': {
+      label: 'Tenant Improvement budget rates',
+      note: 'conceptual per-sq-ft and per-device rates for early budgets',
+    },
+    Grounding: {
+      label: 'Grounding',
+      note: 'ground rods and mast guy kits',
+    },
+  };
+
   // MC picker column order for top-level categories
   const LEVEL1_ORDER = [
     'Branch', 'Wire', 'Branch with Constants', 'Feeder', 'Feeder with Constants',
@@ -61,6 +79,100 @@ const McBook = (function () {
   function level1Rank(name) {
     const i = LEVEL1_ORDER.indexOf(name);
     return i === -1 ? LEVEL1_ORDER.length : i;
+  }
+
+  /**
+   * The shorthand on the screens this book feeds: the curated rows' fitting
+   * codes and the assembly tree's own section codes. The Abbreviation Key
+   * modal is generated from this list (js/views/laborBook.js), and
+   * decodeSectionName below builds the tree's tooltips from the same table, so
+   * the key can't drift from the words it is meant to decode.
+   */
+  const ABBREVIATIONS = [
+    {
+      group: 'Fittings',
+      items: [
+        ['SS', 'set screw'],
+        ['CP', 'compression'],
+        ['st', 'steel — next to a connector or coupling'],
+        ['cn', 'connector'],
+        ['insl.', 'insulated throat'],
+        ['CP.INSL', 'compression fitting, insulated throat'],
+        ['RGS', 'rigid steel'],
+        ['RT', 'raintight'],
+        ['D/S', 'die-cast body, set screw'],
+        ['S/S', 'steel body, set screw'],
+        ['D/C', 'die-cast body, compression'],
+        ['S/C', 'steel body, compression'],
+        ['(S)', 'set-screw fitting (curated rows)'],
+        ['(R)', 'raintight fitting (curated rows)'],
+        ['W/C', 'with clamp — e.g. a ground rod sold with its clamp'],
+        ['BC', 'beam clamp'],
+      ],
+    },
+    {
+      group: 'Enclosures and gear',
+      items: [
+        ['N1', 'indoor enclosure'],
+        ['N3R', 'raintight enclosure'],
+        ['N4R', 'dusttight enclosure'],
+        ['N4X', 'corrosion-resistant enclosure'],
+        ['MLO', 'main lugs only — no main breaker'],
+        ['1PH / 3PH', 'single phase / three phase'],
+      ],
+    },
+    {
+      group: 'In the assemblies tree',
+      items: [
+        ['encl cb', 'enclosed circuit breaker'],
+        ['seb', 'service-entrance breaker enclosure'],
+        ['gd / hd', 'general duty / heavy duty safety switch'],
+        ['nf / f', 'non-fused / fused'],
+        ['mtr h/u', 'motor hookup'],
+        ['d/s strap', 'strap run using die-cast set-screw fittings'],
+      ],
+    },
+  ];
+
+  // Codes worth decoding when they appear in an assembly section name, longest
+  // first so "encl cb" wins over "cb".
+  const SECTION_CODE_HINTS = [
+    ['encl cb', 'enclosed circuit breaker'],
+    ['mtr h/u', 'motor hookup'],
+    ['seb', 'service-entrance breaker enclosure'],
+    ['gd', 'general duty'],
+    ['hd', 'heavy duty'],
+    ['nf', 'non-fused'],
+    ['f', 'fused'],
+    ['n1', 'indoor enclosure'],
+    ['n3r', 'raintight enclosure'],
+    ['n4x', 'corrosion-resistant enclosure'],
+    ['d/s', 'die-cast, set screw'],
+    ['s/s', 'steel, set screw'],
+    ['d/c', 'die-cast, compression'],
+    ['s/c', 'steel, compression'],
+    ['w/c', 'with clamp'],
+    ['bc', 'beam clamp'],
+    ['mlo', 'main lugs only'],
+    ['rgs', 'rigid steel'],
+    ['1ph', 'single phase'],
+    ['3ph', 'three phase'],
+  ];
+
+  /** "switch gd 3ph n3r nf" → "gd = general duty · 3ph = three phase · ..." */
+  function decodeSectionName(name) {
+    const n = ` ${String(name || '').toLowerCase()} `;
+    const bits = [];
+    const used = new Set();
+    for (const [code, meaning] of SECTION_CODE_HINTS) {
+      if (used.has(code)) continue;
+      // whole word only: "f" must not decode every word holding an f
+      if (new RegExp(`[^a-z0-9/]${code.replace(/[/]/g, '\\/')}[^a-z0-9/]`).test(n)) {
+        used.add(code);
+        bits.push(`${code} = ${meaning}`);
+      }
+    }
+    return bits.join(' · ');
   }
 
   function fmtPrice(p) {
@@ -90,6 +202,8 @@ const McBook = (function () {
   /**
    * Component list for an assembly, with Elliot overlay prices applied.
    * Returns [{description, qty, labor, price}] or null if unavailable.
+   * An unpriced component carries price `null`, never 0 — the purchase list
+   * counts a 0 as a real price and stops flagging the gap.
    */
   async function getComposition(assmNum) {
     if (typeof McElliotState === 'undefined' || !assmNum) return null;
@@ -100,12 +214,45 @@ const McBook = (function () {
       const overlayPrices = McElliotState.getOverlay()?.itemPrices || {};
       return a.c.map(([num, qty]) => {
         const it = priceModel.items[num] || { n: `item #${num}`, p: 0, l: 0 };
-        const p = overlayPrices[num] !== undefined ? overlayPrices[num] : it.p;
-        return { description: it.n, qty, labor: it.l || 0, price: p };
+        const p = Number(overlayPrices[num] !== undefined ? overlayPrices[num] : it.p);
+        return { description: it.n, qty, labor: it.l || 0, price: p > 0 ? p : null };
       });
     } catch (_) {
       return null;
     }
+  }
+
+  // How far the components' own prices may sit from the book price and still
+  // be treated as the same number. Exploding is only honest when the parts add
+  // back up to the row the estimator clicked; across the whole book they often
+  // do not (median ratio 1.10, p90 18.7), and the bid then silently carries a
+  // price nobody was shown. Anything outside the band lands rolled up.
+  const PRICE_TOLERANCE = 0.10;
+
+  /** Sum of the components' extended prices, or null if any is unpriced. */
+  function componentsPrice(comps) {
+    if (!comps || !comps.length) return null;
+    let sum = 0;
+    for (const c of comps) {
+      if (!(Number(c.price) > 0)) return null;
+      sum += Number(c.price) * (Number(c.qty) || 0);
+    }
+    return sum;
+  }
+
+  function componentsLabor(comps) {
+    let sum = 0;
+    for (const c of comps || []) sum += (Number(c.labor) || 0) * (Number(c.qty) || 0);
+    return sum;
+  }
+
+  /** True when the components reconstruct the book price within tolerance. */
+  function compositionReconstructsBook(comps, entry) {
+    const bookPrice = Number(entry && entry.price) || 0;
+    if (!(bookPrice > 0)) return false;
+    const sum = componentsPrice(comps);
+    if (sum === null) return false;
+    return Math.abs(sum - bookPrice) <= bookPrice * PRICE_TOLERANCE;
   }
 
   function renderBom(comps, entry) {
@@ -115,24 +262,31 @@ const McBook = (function () {
     let unpriced = 0;
     const rows = comps
       .map((c) => {
-        totLabor += c.labor * c.qty;
-        totPrice += c.price * c.qty;
+        totLabor += (Number(c.labor) || 0) * c.qty;
+        totPrice += (Number(c.price) || 0) * c.qty;
         if (!(c.price > 0)) unpriced++;
         return `
         <tr>
           <td class="mc-book-bom-qty">${r2(c.qty)}</td>
           <td>${escapeHtml(c.description)}</td>
-          <td class="mc-book-entry-labor">${r2(c.labor)}</td>
-          <td class="mc-book-entry-price">${c.price > 0 ? '$' + c.price.toFixed(4) : '—'}</td>
+          <td class="mc-book-entry-labor">${r2(Number(c.labor) || 0)}</td>
+          <td class="mc-book-entry-price">${c.price > 0 ? '$' + Number(c.price).toFixed(4) : '—'}</td>
         </tr>`;
       })
       .join('');
     // A partly/fully unpriced component list can't compute a real unit price;
-    // showing "$0.26 vs book $57.34" reads like a bug. Say what's happening.
+    // showing "$0.26 vs book $57.34" reads like a bug. Say what's happening —
+    // and say which price Add will actually put on the bid.
     const priceCell = unpriced === 0 ? `$${totPrice.toFixed(2)}` : '—';
-    const label = unpriced === 0
-      ? `Computed per unit (book: ${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'})`
-      : `${unpriced === comps.length ? 'Components' : `${unpriced} of ${comps.length} components`} unpriced — using the book price (${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'})`;
+    const bookBits = `${entry.labor || 0} hrs, ${fmtPrice(entry.price) || '$0'}`;
+    let label;
+    if (unpriced > 0) {
+      label = `${unpriced === comps.length ? 'Components' : `${unpriced} of ${comps.length} components`} unpriced — Add uses the book price (${bookBits})`;
+    } else if (compositionReconstructsBook(comps, entry)) {
+      label = `Components add back up to the book price (${bookBits}) — Add explodes them`;
+    } else {
+      label = `Components total $${totPrice.toFixed(2)} against the book's ${bookBits} — Add uses the book price`;
+    }
     return `
       <table class="mc-book-bom">
         <thead><tr><th>Qty/unit</th><th>Component</th><th>hrs/ea</th><th>$/ea</th></tr></thead>
@@ -147,11 +301,15 @@ const McBook = (function () {
   }
 
   function renderSection(s, idx) {
+    // the tree is written in MC's shorthand; the same table the Abbreviation
+    // Key is built from decodes it on hover
+    const decoded = decodeSectionName(s.name);
+    const title = decoded ? ` title="${escapeHtml(decoded)}"` : '';
     return `
       <div class="mc-book-section" data-idx="${idx}">
         <div class="mc-book-section-header">
           <span class="labor-book-section-chevron"></span>
-          <span class="mc-book-section-name">${escapeHtml(s.name)}</span>
+          <span class="mc-book-section-name"${title}>${escapeHtml(s.name)}</span>
           ${sectionMeta(s)}
           <span class="mc-book-section-count">${s.entries.length}</span>
         </div>
@@ -167,14 +325,17 @@ const McBook = (function () {
 
     let html = '';
     if (term) {
-      const tokensMatch = TakeoffUtils.makeTokenMatcher(term);
-      const matches = [];
+      const rank = TakeoffUtils.makeSearchRanker(term);
+      const hits = [];
       for (const [s, i] of pairs) {
-        const inName = tokensMatch(`${s.name} ${s.section || ''}`);
-        const inEntries = !inName && s.entries.some((e) => tokensMatch(`${e.name} ${s.name}`));
-        if (inName || inEntries) matches.push([s, i]);
-        if (matches.length >= MAX_SEARCH_SECTIONS) break;
+        // a section whose own name matches outranks one that only holds a
+        // matching entry, and a literal-word match outranks an abbreviation
+        const nameScore = rank(`${s.name} ${s.section || ''}`);
+        const score = nameScore ? nameScore + 2 : (s.entries.some((e) => rank(`${e.name} ${s.name}`)) ? 1 : 0);
+        if (score) hits.push({ s, i, score });
+        if (hits.length >= MAX_SEARCH_SECTIONS) break;
       }
+      const matches = TakeoffUtils.rankedByScore(hits).map((h) => [h.s, h.i]);
       html = matches.map(([s, i]) => renderSection(s, i)).join('');
       html =
         `<div class="mc-book-result-count">${matches.length >= MAX_SEARCH_SECTIONS ? `First ${MAX_SEARCH_SECTIONS} matching sections` : `${matches.length} matching section${matches.length === 1 ? '' : 's'}`}</div>` +
@@ -209,9 +370,14 @@ const McBook = (function () {
             </div>
           </div>`;
         }
+        const display = LEVEL1_DISPLAY[l1];
+        // the note is its own line under the header, not a third thing running
+        // on after the label and the count
+        const l1Note = display && display.note ? `<div class="mc-book-group-note">${escapeHtml(display.note)}</div>` : '';
         html += `
         <div class="labor-book-group labor-book-group-collapsed mc-book-group">
-          <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>${escapeHtml(l1)} <span class="mc-book-section-count">${sectionTotal}</span></h2>
+          <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span><span class="mc-book-group-label">${escapeHtml(display ? display.label : l1)}</span> <span class="mc-book-section-count">${sectionTotal}</span></h2>
+          ${l1Note}
           <div class="labor-book-group-body">
             ${subsHtml}
           </div>
@@ -221,55 +387,84 @@ const McBook = (function () {
     container.innerHTML = html;
   }
 
+  const hrs = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+  function targetNote() {
+    const note = TakeoffLaborBookTargets.getLastTargetNote?.();
+    return note ? ` · ${note}` : '';
+  }
+
   /**
-   * Exploded add of one assembly entry: components land individually;
-   * falls back to the rolled-up entry when no composition exists.
+   * Add one assembly entry to the current target. It explodes into components
+   * only when those components add back up to the book price the row and the
+   * BOM footer just showed; otherwise the rolled-up entry lands at the book's
+   * own labor and price. Either way the flash says which price was used.
    * Resolves a status string (or null if the add failed/was blocked).
    */
   async function addAssemblyEntry(entry) {
-    // fill mode replaces one row: use the rolled-up assembly, not components
-    if (TakeoffLaborBookView.hasFillTarget && TakeoffLaborBookView.hasFillTarget()) {
-      const ok = TakeoffLaborBookView.addEntryToTarget({
+    const rolledUp = () =>
+      TakeoffLaborBookView.addEntryToTarget({
         description: entry.name,
         labor: entry.labor || 0,
         price: entry.price ? String(entry.price) : null,
       });
-      return ok ? `Filled the row with "${entry.name}".` : null;
+    const bookBits = `${hrs(entry.labor)} hrs — ${fmtPrice(entry.price) || '$0.00'}`;
+
+    // fill mode replaces one row: use the rolled-up assembly, not components
+    if (TakeoffLaborBookView.hasFillTarget && TakeoffLaborBookView.hasFillTarget()) {
+      const ok = rolledUp();
+      return ok ? `Filled the row with ${entry.name} — ${bookBits}, book price` : null;
     }
     const comps = await getComposition(entry.assmNum);
-    if (comps && comps.length) {
+    if (comps && comps.length && compositionReconstructsBook(comps, entry)) {
       const ok = TakeoffLaborBookView.addComponentsToTarget(comps);
-      return ok ? `Added ${comps.length} components of "${entry.name}" to the selected target.` : null;
+      if (!ok) return null;
+      const msg = `Added ${comps.length} components of ${entry.name} — ${hrs(componentsLabor(comps))} hrs — ${fmtPrice(componentsPrice(comps))}, from components${targetNote()}`;
+      TakeoffLaborBookTargets.flashTargetNote(msg);
+      return msg;
     }
-    const ok = TakeoffLaborBookView.addEntryToTarget({
-      description: entry.name,
-      labor: entry.labor || 0,
-      price: entry.price ? String(entry.price) : null,
-    });
-    return ok ? `Added "${entry.name}" to the selected target.` : null;
+    const ok = rolledUp();
+    if (!ok) return null;
+    const msg = `Added ${entry.name} — ${bookBits}, book price${targetNote()}`;
+    TakeoffLaborBookTargets.flashTargetNote(msg);
+    return msg;
+  }
+
+  // hits collected before ranking; the best `cap` of them are returned
+  const SEARCH_SCAN_CAP = 600;
+  let lastAssemblyTotal = 0;
+
+  /** How many assemblies the last searchAssemblies() matched (scan-capped). */
+  function lastSearchTotal() {
+    return lastAssemblyTotal;
   }
 
   /**
    * Search assembly entries across ALL tabs (Elliot part sections excluded).
-   * Returns [{tab, sectionName, entry}] capped at `cap`.
+   * Returns [{tab, sectionName, entry, score}] best-match-first, capped at
+   * `cap`. Ranking is what lets the abbreviation synonyms exist: a row holding
+   * the words the estimator typed comes before one reached through "cb".
    */
   function searchAssemblies(term, cap = 100) {
+    lastAssemblyTotal = 0;
     if (!(term || '').trim() || !book) return [];
     // every query token must match, in any order; section names carry
     // meaning for terse entry names, so they join the haystack
-    const matches = TakeoffUtils.makeTokenMatcher(term);
-    const out = [];
+    const rank = TakeoffUtils.makeSearchRanker(term);
+    const hits = [];
     for (const tab of TakeoffState.getLaborBookTabOrder()) {
       for (const [s] of assemblySectionsForTab(tab)) {
         for (const entry of s.entries) {
-          if (matches(`${entry.name} ${s.name}`)) {
-            out.push({ tab, sectionName: s.name, entry });
-            if (out.length >= cap) return out;
-          }
+          const score = rank(`${entry.name} ${s.name}`);
+          if (score) hits.push({ tab, sectionName: s.name, entry, score });
+          if (hits.length >= SEARCH_SCAN_CAP) break;
         }
+        if (hits.length >= SEARCH_SCAN_CAP) break;
       }
+      if (hits.length >= SEARCH_SCAN_CAP) break;
     }
-    return out;
+    lastAssemblyTotal = hits.length;
+    return TakeoffUtils.rankedByScore(hits).slice(0, cap);
   }
 
   function onTreeClick(e) {
@@ -277,12 +472,10 @@ const McBook = (function () {
     if (addBtn) {
       const s = sectionsForTab(currentTab())[Number(addBtn.dataset.idx)];
       const entry = s && s.entries[Number(addBtn.dataset.entry)];
-      if (entry) {
-        addAssemblyEntry(entry).then((msg) => {
-          const status = document.getElementById('mc-book-status');
-          if (msg && status) status.textContent = msg;
-        });
-      }
+      // addAssemblyEntry flashes the result under the "Add to" banner, which is
+      // visible from the Parts side and search too; the toolbar keeps saying
+      // how much of the book is loaded.
+      if (entry) addAssemblyEntry(entry);
       return;
     }
     const bomToggle = e.target.closest('.mc-book-bom-toggle');
@@ -360,7 +553,10 @@ const McBook = (function () {
           ' Expand a category, or search.';
       }
     } catch (err) {
-      if (status) status.textContent = 'Could not load mc-assemblies/mc-labor-book.json — serve the app locally.';
+      // Plain words: offline is the ordinary case on a job site, and the
+      // service worker keeps the book once it has been opened over a
+      // connection, so say that rather than naming a file (J11-F7).
+      if (status) status.textContent = 'The parts book is not available offline yet — connect once and it will be saved on this device.';
     }
   }
 
@@ -390,10 +586,9 @@ const McBook = (function () {
   }
 
   function init() {
+    // Escape is not handled here: laborBook.js's one document-level handler
+    // owns it for the whole modal (clear the filter, then close).
     document.getElementById('mc-book-search')?.addEventListener('input', onSearchInput);
-    document.getElementById('mc-book-search')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') TakeoffApp.hideLaborBookModal();
-    });
     document.getElementById('mc-book-tree')?.addEventListener('click', onTreeClick);
   }
 
@@ -403,5 +598,5 @@ const McBook = (function () {
     init();
   }
 
-  return { renderAssemblies, sectionCount, invalidate, ensureLoaded, elliotSectionsForTab, elliotImportDate, searchAssemblies, addAssemblyEntry, getComposition, renderBom };
+  return { renderAssemblies, sectionCount, invalidate, ensureLoaded, elliotSectionsForTab, elliotImportDate, searchAssemblies, lastSearchTotal, addAssemblyEntry, getComposition, renderBom, compositionReconstructsBook, componentsPrice, decodeSectionName, ABBREVIATIONS, PRICE_TOLERANCE };
 })();

@@ -6,8 +6,20 @@
   const mainContent = document.getElementById('main-content');
 
   function render() {
-    const view = TakeoffState.getCurrentView();
-    const itemId = TakeoffState.getCurrentItemId();
+    let view = TakeoffState.getCurrentView();
+    let itemId = TakeoffState.getCurrentItemId();
+
+    // A flow editor whose row is gone (project switched, row deleted) would
+    // render an empty page with no way out — fall back to the manifest.
+    if (view !== 'manifest' && (!itemId || !TakeoffState.getItemById(itemId))) {
+      TakeoffState.setFlowDirty(false);
+      TakeoffState.setCurrentView('manifest', null);
+      TakeoffState.clearConduitTempData();
+      TakeoffState.clearDeviceTempData();
+      TakeoffState.clearWireTempData();
+      view = 'manifest';
+      itemId = null;
+    }
 
     if (view === 'manifest') {
       mainContent.innerHTML = TakeoffManifestView.render();
@@ -26,6 +38,9 @@
     if (typeof TakeoffProjectsView !== 'undefined') TakeoffProjectsView.updateHeader();
   }
 
+  // Called at the tail of render(), and by the manifest view after every edit
+  // that deliberately skips a render (field edits, the quantity spinners):
+  // Undo used to sit disabled with a full stack exactly when it was reached for.
   function updateUndoRedoButtons() {
     const undoBtn = document.getElementById('undo-btn');
     const redoBtn = document.getElementById('redo-btn');
@@ -63,18 +78,13 @@
     modal.setAttribute('aria-hidden', 'false');
     TakeoffLaborBookView.render();
     TakeoffLaborBookView.attachListeners();
+    // every door primes the search, as the fill door already did — the book is
+    // opened to look something up
+    document.getElementById('labor-book-global-search')?.focus();
   }
 
-  function showLaborBookModalForDeviceRow(section, index) {
-    document.body.classList.add('lb-modal-open');
-    TakeoffState.setLaborBookPreselectedItemId(null);
-    TakeoffState.setLaborBookTargetDeviceRow({ section, index });
-    TakeoffState.clearLaborBookExpandGroup();
-    const modal = document.getElementById('labor-book-modal');
-    modal.setAttribute('aria-hidden', 'false');
-    TakeoffLaborBookView.render();
-    TakeoffLaborBookView.attachListeners();
-  }
+  // (The device flow's per-row book door is gone: it merged the pick into
+  // whatever the row already said. PB — fill mode — is the one door per row.)
 
   function showLaborBookModalForConduitFittings(itemId) {
     document.body.classList.add('lb-modal-open');
@@ -82,10 +92,14 @@
     TakeoffState.setLaborBookPreselectedItemId(itemId || null);
     TakeoffState.setActiveLaborBookTab('conduit');
     TakeoffState.setLaborBookExpandGroup('Fittings');
+    // A term left in the box from a PB fill hides the whole tree behind search
+    // results — this door promises the Fittings group, so show it.
+    TakeoffLaborBookSearch.clearTerm();
     const modal = document.getElementById('labor-book-modal');
     modal.setAttribute('aria-hidden', 'false');
     TakeoffLaborBookView.render();
     TakeoffLaborBookView.attachListeners();
+    document.getElementById('labor-book-global-search')?.focus();
   }
 
   function hideLaborBookModal() {
@@ -93,6 +107,11 @@
     if (modal?.contains(document.activeElement)) {
       document.activeElement?.blur();
     }
+    // closing drops the search too: a term that outlives the modal reopens it
+    // showing stale results with the tabs hidden
+    TakeoffLaborBookSearch.clearTerm();
+    const asmFilter = document.getElementById('mc-book-search');
+    if (asmFilter) asmFilter.value = '';
     TakeoffState.clearLaborBookPreselectedItemId();
     TakeoffState.clearLaborBookTargetDeviceRow();
     TakeoffState.clearLaborBookExpandGroup();
@@ -129,9 +148,11 @@
     const wire = children.filter((c) => c.type === 'wire');
     const screws = children.filter((c) => c.type === 'screws');
     const misc = children.filter((c) => c.type === 'misc');
-    const hasParentDesc = (item?.description || '').trim().length > 0;
-    const parentQty = hasParentDesc ? 1 : (item?.quantity ?? 0);
-    const toRows = (arr) => (arr.length ? arr.map((x) => ({ description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' })) : [{ description: '', quantity: parentQty, labor: 0, price: '' }]);
+    // An empty section starts with no rows at all: device.js renders it as a
+    // "+ Box"-style chip until the estimator asks for it, and the row that
+    // chip adds is seeded with the line's run count (component quantities are
+    // totals for the whole line — the column head says so).
+    const toRows = (arr) => arr.map((x) => ({ description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' }));
     TakeoffState.setDeviceTempData({
       outletsAndSwitches: toRows(outletsAndSwitches),
       boxes: toRows(boxes),
@@ -185,6 +206,9 @@
     if (trenchingAddons.length) {
       tempData.trenchingAddons = trenchingAddons.map((a) => ({
         description: a.description,
+        // which button group added it (rentals or fill); the wizard re-derives
+        // it from the description for rows saved before the split
+        group: a.meta?.addonGroup,
         quantity: a.quantity,
         labor: a.labor,
         price: a.price ?? '',
@@ -254,13 +278,85 @@
     openLaborBookFill({ kind: 'wire-mac', index });
   }
 
+  /**
+   * A one-line notice above the bid: what this project IS, and how to make the
+   * line go away. Lives outside #main-content, so a render() cannot wipe it,
+   * and it is never a dialog — nothing here is worth blocking the hands for.
+   *
+   * The split against TakeoffToast (js/toast.js), which is the app's channel
+   * for everything else: a notice bar states a standing fact about the open
+   * project ("this is your copy of a shared link") and waits to be dismissed;
+   * a toast reports what a click just did and leaves on its own. If a message
+   * would still be worth reading ten minutes from now, it belongs here.
+   */
+  function showAppNotice(text, kind) {
+    const host = document.getElementById('app');
+    const main = document.getElementById('main-content');
+    if (!host || !main) return null;
+    document.getElementById('app-notice')?.remove();
+    const bar = document.createElement('div');
+    bar.id = 'app-notice';
+    bar.className = 'app-notice' + (kind === 'warn' ? ' app-notice-warn' : '');
+    bar.setAttribute('role', 'status');
+    const message = document.createElement('span');
+    message.className = 'app-notice-text';
+    message.textContent = text;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'app-notice-dismiss';
+    close.id = 'app-notice-dismiss';
+    close.title = 'Dismiss';
+    close.textContent = '×';
+    close.addEventListener('click', () => bar.remove());
+    bar.append(message, close);
+    host.insertBefore(bar, main);
+    return bar;
+  }
+
+  // The share envelope: everything a second estimator needs to read this bid
+  // at the same numbers — the rows, the labor rate, and the job's own details.
+  function buildShareEnvelope() {
+    return {
+      v: 2,
+      app: 'takeoff-tooling',
+      exportedAt: new Date().toISOString(),
+      name: TakeoffState.getCurrentProject().name,
+      laborRate: TakeoffState.getLaborRate(),
+      taxRate: TakeoffState.getTaxRate(),
+      details: TakeoffState.getProjectDetails(),
+      manifest: TakeoffState.getManifest(),
+    };
+  }
+
+  // Copy share link (Print Options). Resolves true when the link is on the
+  // clipboard, so the button can say so where the hand already is.
+  async function copyShareLink() {
+    const json = JSON.stringify(buildShareEnvelope());
+    const base64 = btoa(unescape(encodeURIComponent(json)));
+    const url = window.location.origin + window.location.pathname + '#d=' + base64;
+    try {
+      await navigator.clipboard.writeText(url);
+      TakeoffEvents.log('share_link_created', { rows: TakeoffState.getTopLevelItems().length, hasRate: Number(TakeoffState.getLaborRate()) > 0 });
+      TakeoffToast.show('Share link copied — anyone who opens it gets their own copy at these numbers.', { kind: 'success' });
+      return true;
+    } catch (err) {
+      // a failed copy is news about the click, not about the bid: it goes in
+      // the toast region, not the notice bar that explains the open project
+      TakeoffToast.show('Could not reach the clipboard. Copy the link from the address bar after opening it.', { kind: 'warn', timeout: 9000 });
+      return false;
+    }
+  }
+
   // Expose for views
   window.TakeoffApp = {
+    copyShareLink,
+    buildShareEnvelope,
+    showAppNotice,
     render,
+    updateUndoRedoButtons,
     showTypeModal,
     hideTypeModal,
     showLaborBookModal,
-    showLaborBookModalForDeviceRow,
     showLaborBookModalForConduitFittings,
     hideLaborBookModal,
     showPartBookSearchForManifestItem,
@@ -283,7 +379,7 @@
     TakeoffImport.importFromClipboard();
   });
 
-  // Header overflow menu (New Takeoff / Export via link / Remove items / Hard reload)
+  // Header overflow menu (New project / Review / Manage users / Reload app)
   const headerMenuBtn = document.getElementById('header-menu-btn');
   const headerMenu = document.getElementById('header-menu');
   function setHeaderMenuOpen(open) {
@@ -301,39 +397,28 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') setHeaderMenuOpen(false);
   });
-  // any menu action closes the menu (the item's own listener still runs);
-  // export-link stays open so its "Link copied!" feedback is visible
+  // any menu action closes the menu (the item's own listener still runs)
   headerMenu?.addEventListener('click', (e) => {
-    if (e.target.closest('.header-menu-item') && !e.target.closest('#export-link-btn')) {
+    if (e.target.closest('.header-menu-item')) {
       setHeaderMenuOpen(false);
     }
   });
 
-  // Export via link (versioned envelope; import still accepts legacy bare arrays)
-  document.getElementById('export-link-btn')?.addEventListener('click', async () => {
-    const envelope = {
-      v: 2,
-      app: 'takeoff-tooling',
-      exportedAt: new Date().toISOString(),
-      name: TakeoffState.getCurrentProject().name,
-      manifest: TakeoffState.getManifest(),
-    };
-    const json = JSON.stringify(envelope);
-    const base64 = btoa(unescape(encodeURIComponent(json)));
-    const url = window.location.origin + window.location.pathname + '#d=' + base64;
-    try {
-      await navigator.clipboard.writeText(url);
-      const btn = document.getElementById('export-link-btn');
-      const orig = btn?.textContent;
-      if (btn) btn.textContent = 'Link copied!';
-      setTimeout(() => { if (btn) btn.textContent = orig || 'Export via link'; }, 2000);
-    } catch (err) {
-      alert('Could not copy link. Try selecting and copying manually.');
-    }
-  });
+  // Undo/Redo move the manifest under whatever is on screen, so an open editor
+  // with unsaved edits has to be settled BEFORE the manifest moves — asking
+  // afterwards (via navigateToManifest) left "Cancel" sitting in the editor
+  // over an already-changed bid, with no way back.
+  function confirmLeavingOpenFlow() {
+    if (!TakeoffState.getFlowDirty() || TakeoffState.getCurrentView() === 'manifest') return true;
+    if (!confirm('Discard unsaved changes in this editor?')) return false;
+    TakeoffState.setFlowDirty(false); // answered here; don't ask again on the way out
+    return true;
+  }
 
   // Undo
   document.getElementById('undo-btn')?.addEventListener('click', () => {
+    if (!confirmLeavingOpenFlow()) return;
+    TakeoffEvents.log('undo', { frames: TakeoffState.getUndoDepth(), fromView: TakeoffState.getCurrentView() });
     if (TakeoffState.undo()) {
       TakeoffApp.navigateToManifest();
     }
@@ -341,20 +426,36 @@
 
   // Redo
   document.getElementById('redo-btn')?.addEventListener('click', () => {
+    if (!confirmLeavingOpenFlow()) return;
     if (TakeoffState.redo()) {
       TakeoffApp.navigateToManifest();
     }
   });
 
-  // Header trash toggle
-  document.getElementById('remove-toggle-btn')?.addEventListener('click', () => {
-    TakeoffState.toggleShowRemoveIcons();
-    document.getElementById('remove-toggle-btn')?.setAttribute('aria-pressed', TakeoffState.getShowRemoveIcons());
-    document.getElementById('remove-toggle-btn')?.classList.toggle('active', TakeoffState.getShowRemoveIcons());
-    if (TakeoffState.getCurrentView() === 'manifest') {
-      render();
-    }
+  // Ctrl/Cmd-Z outside a field. Inside one, the browser's own per-field undo
+  // is already writing through to state via the input listener, so an
+  // app-level handler there would run two undo systems on one keystroke —
+  // and a keystroke aimed at a dialog is that dialog's business.
+  function keyboardUndoAllowed(e) {
+    const el = e.target;
+    if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return false;
+    return !document.querySelector('.modal[aria-hidden="false"]');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'z' && e.key !== 'Z') return;
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    if (!keyboardUndoAllowed(e)) return;
+    e.preventDefault();
+    if (!confirmLeavingOpenFlow()) return;
+    if (!e.shiftKey) TakeoffEvents.log('undo', { frames: TakeoffState.getUndoDepth(), fromView: TakeoffState.getCurrentView() });
+    const moved = e.shiftKey ? TakeoffState.redo() : TakeoffState.undo();
+    if (moved) TakeoffApp.navigateToManifest();
+    else updateUndoRedoButtons();
   });
+
+  // (X13) The "Remove items" mode is gone: the trash sits on every manifest
+  // row and appears on hover — always, at touch widths.
 
   // New Project: hand off to the Manage Projects modal's inline create row
   document.getElementById('new-takeoff-btn')?.addEventListener('click', () => {
@@ -366,17 +467,39 @@
 
   // Cache clear and hard reload (code caches only — never user data)
   document.getElementById('cache-clear-reload-btn')?.addEventListener('click', async () => {
-    TakeoffState.persistNow();
+    // location.replace unloads without firing the guard below, so a dirty
+    // editor is asked about here instead (J11-F2).
+    if (!confirmLeavingOpenFlow()) return;
+    TakeoffState.persistAllNow();
+    if (typeof TakeoffCloud !== 'undefined') TakeoffCloud.flushPending();
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
     }
+    // The offline service worker holds the shell too, so clearing the caches
+    // alone would still hand back the old code: unregister it, and the
+    // reload comes straight off the network and installs a fresh copy.
+    if ('serviceWorker' in navigator) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      } catch (err) { /* nothing registered, or blocked — reload anyway */ }
+    }
     window.location.replace(window.location.pathname + window.location.search);
   });
 
-  // Flush pending project + book saves before the page goes away
-  window.addEventListener('beforeunload', () => {
+  // Flush pending project + book saves before the page goes away — and, when
+  // an editor is holding unsaved work, let the browser ask first. Every
+  // in-app exit already asks; a Cmd-R or a tab close took the run silently.
+  window.addEventListener('beforeunload', (e) => {
     TakeoffState.persistAllNow();
+    if (typeof TakeoffCloud !== 'undefined') TakeoffCloud.flushPending();
+    if (TakeoffState.getFlowDirty() && TakeoffState.getCurrentView() !== 'manifest') {
+      e.preventDefault();
+      e.returnValue = ''; // the browser supplies its own wording
+      return '';
+    }
+    return undefined;
   });
 
   // One-time cleanup: retired features (old Import MC triage, standalone Part Book)
@@ -387,76 +510,123 @@
     }
   } catch (_) {}
 
-  // Form modal for Print with Form
-  document.getElementById('form-modal-cancel')?.addEventListener('click', () => {
-    const formModal = document.getElementById('form-modal');
-    if (formModal?.contains(document.activeElement)) document.activeElement?.blur();
-    formModal?.setAttribute('aria-hidden', 'true');
-  });
+  // (The Print-with-Form modal is retired — the five facts it asked for every
+  // time now live on the project, edited under Print Options → Job details.)
 
-  document.addEventListener('keydown', function formModalKeyHandler(e) {
-    const formModal = document.getElementById('form-modal');
-    if (!formModal || formModal.getAttribute('aria-hidden') !== 'false') return;
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      if (formModal.contains(document.activeElement)) document.activeElement?.blur();
-      formModal.setAttribute('aria-hidden', 'true');
-    }
-  });
-
-  document.getElementById('form-modal-print')?.addEventListener('click', () => {
-    const form = document.getElementById('form-details');
-    const data = {
-      address: form?.address?.value ?? '',
-      permitNo: form?.permitNo?.value ?? '',
-      builderOrOccupant: form?.builderOrOccupant?.value ?? '',
-      electricalCount: form?.electricalCount?.value ?? '',
-    };
-    TakeoffPDF.printWithForm(data);
-    const formModal = document.getElementById('form-modal');
-    if (formModal?.contains(document.activeElement)) document.activeElement?.blur();
-    formModal?.setAttribute('aria-hidden', 'true');
-  });
-
-  // Load from export link (hash)
-  const hash = window.location.hash;
-  if (hash && hash.startsWith('#d=')) {
-    try {
-      const base64 = hash.slice(3);
-      const json = decodeURIComponent(escape(atob(base64)));
-      const data = JSON.parse(json);
-      const list = Array.isArray(data) ? data : data && Array.isArray(data.manifest) ? data.manifest : null;
-      if (list) {
-        // shared links land in their own project — nothing gets replaced
-        const name = data && typeof data.name === 'string' && data.name.trim() ? data.name.trim() : 'Imported takeoff';
-        TakeoffState.createProject(name);
-        TakeoffState.loadManifestFromExport(data);
+  // Hash routes: #d= (a shared takeoff → lands in a NEW project) and
+  // #import= (structured count handoff → the import preview). Runs at boot
+  // and on hashchange, so a link pasted into a tab that already has the app
+  // open works instead of silently doing nothing. Returns true when a route
+  // was consumed.
+  function handleHashRoute({ atBoot } = {}) {
+    const hash = window.location.hash;
+    if (!hash || !(hash.startsWith('#d=') || hash.startsWith('#import='))) return false;
+    const stripHash = () => window.history.replaceState(null, '', window.location.pathname);
+    // at runtime a flow editor may hold unsaved edits — leave it first (asks)
+    if (!atBoot && TakeoffState.getCurrentView() !== 'manifest') {
+      navigateToManifest();
+      if (TakeoffState.getCurrentView() !== 'manifest') {
+        stripHash(); // the user kept their edits; the link is dropped
+        return false;
       }
-      window.history.replaceState(null, '', window.location.pathname);
-    } catch (err) {
-      alert('This shared link could not be loaded — it may be truncated or corrupted.');
     }
-  } else if (hash && hash.startsWith('#import=')) {
-    // Structured count handoff (from Count Tooling): #import= + base64 JSON
-    // {v:1, source, items:[{description, count, page, type?}]}. Items go
-    // through the normal import preview modal.
-    try {
-      const json = decodeURIComponent(escape(atob(hash.slice(8))));
-      const payload = JSON.parse(json);
-      window.history.replaceState(null, '', window.location.pathname);
-      if (!TakeoffImport.importFromPayload(payload)) {
-        alert('This import link contained no valid items.');
+    if (hash.startsWith('#d=')) {
+      try {
+        const json = decodeURIComponent(escape(atob(hash.slice(3))));
+        const data = JSON.parse(json);
+        const list = Array.isArray(data) ? data : data && Array.isArray(data.manifest) ? data.manifest : null;
+        stripHash();
+        if (!list) {
+          // shaped like a link but carrying no rows. Silence here read exactly
+          // like a working import that happened to produce nothing.
+          showAppNotice('That share link carried no takeoff rows — ask the sender to copy the link again.', 'warn');
+        } else {
+          TakeoffEvents.log('share_link_opened', { rows: list.length, hasRate: typeof data.laborRate === 'number' });
+          const base = data && typeof data.name === 'string' && data.name.trim() ? data.name.trim() : 'Imported takeoff';
+          // the day the SENDER made the link, not the day it was opened
+          const exportedAt = data && typeof data.exportedAt === 'string' ? data.exportedAt : '';
+          const stamp = Date.parse(exportedAt);
+          const when = new Date(isNaN(stamp) ? Date.now() : stamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          // The same link opened twice is one bid, not two: reopen the copy
+          // already here instead of making a byte-identical twin.
+          const existing = TakeoffState.findImportedProject(base, exportedAt);
+          if (existing) {
+            TakeoffState.switchProject(existing);
+            showAppNotice(`Reopened your copy of ${base}, shared ${when} by link — edits stay on this device.`);
+          } else {
+            // shared links land in their own project — nothing gets replaced
+            TakeoffState.createProject(TakeoffState.uniqueProjectName(base), {
+              details: data && data.details,
+              importedFrom: exportedAt ? { name: base, exportedAt } : null,
+            });
+            // the sender's rate travels with the bid, so both people read the
+            // same grand total; links made before v2 carried none, and those
+            // keep inheriting the recipient's own rate
+            if (data && typeof data.laborRate === 'number') TakeoffState.setLaborRate(data.laborRate);
+            // the jurisdiction's sales tax travels with the bid too; a link made
+            // before it was editable carries none and keeps the old 8.5%
+            if (data && typeof data.taxRate === 'number') TakeoffState.setTaxRate(data.taxRate);
+            TakeoffState.loadManifestFromExport(data);
+            showAppNotice(`Copy of ${base}, shared ${when} by link — edits stay on this device.`);
+          }
+        }
+      } catch (err) {
+        stripHash();
+        showAppNotice('That share link could not be opened — it may be truncated or corrupted.', 'warn');
       }
-    } catch (err) {
-      alert('This import link could not be loaded — it may be truncated or corrupted.');
+    } else {
+      // {v:1, source, items:[{description, count, page, type?}]} → preview modal
+      try {
+        const json = decodeURIComponent(escape(atob(hash.slice(8))));
+        const payload = JSON.parse(json);
+        stripHash();
+        // {count, message} — a wrong envelope version says so, instead of
+        // being reported as an empty link
+        const result = TakeoffImport.importFromPayload(payload);
+        if (!result.count) TakeoffToast.show(result.message, { kind: 'warn', timeout: 9000 });
+      } catch (err) {
+        stripHash();
+        TakeoffToast.show('This import link could not be loaded — it may be truncated or corrupted.', { kind: 'warn', timeout: 9000 });
+      }
     }
+    if (!atBoot) {
+      seedStarterRow();
+      render();
+    }
+    return true;
   }
+
+  // The starter row IS the empty table, not something the estimator did: it
+  // must not leave an undo frame, or a cold boot opens with Undo lit and one
+  // press empties the bid.
+  function seedStarterRow() {
+    if (TakeoffState.getTopLevelItems().length > 0) return;
+    TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
+    TakeoffState.clearManifestHistory();
+  }
+
+  handleHashRoute({ atBoot: true });
+  window.addEventListener('hashchange', () => handleHashRoute());
 
   // Ensure at least one row exists on load
-  if (TakeoffState.getTopLevelItems().length === 0) {
-    TakeoffState.addItem({ type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null });
-  }
+  seedStarterRow();
 
   // Initial render
   render();
+  TakeoffEvents.log('session_start', { vw: window.innerWidth, vh: window.innerHeight, coarsePointer: !!window.matchMedia?.('(pointer: coarse)').matches, standalone: !!window.matchMedia?.('(display-mode: standalone)').matches });
+
+  // Keep a copy of the app on the device, so a refresh with no signal opens
+  // the bid instead of the browser's error page (sw.js). Skipped under
+  // automation: every Playwright context is a fresh profile, and a worker
+  // installing itself mid-run only adds noise to specs that are about
+  // something else. The offline spec registers it by hand.
+  if ('serviceWorker' in navigator
+      && window.location.protocol !== 'file:'
+      && !navigator.webdriver) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        // No offline copy this time — the app itself is unaffected.
+      });
+    });
+  }
 })();

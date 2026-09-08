@@ -187,6 +187,160 @@ test('patchLaborBook patches prices, appends supplier sections, is idempotent', 
   assert.strictEqual(book.tabs.conduit[0].entries[0].price, 5);
 });
 
+// A book that already carries a committed supplier catalog, on two tabs.
+function bookWithCatalog() {
+  return {
+    meta: { elliot: { sourceFile: 'committed.csv', importedAt: '2026-07-18T00:00:00.000Z', newItems: 3 } },
+    tabs: {
+      conduit: [
+        { level1: 'X', section: 'S', name: 'S', entries: [{ name: 'e1', labor: 1, price: 5, assmNum: 100 }] },
+        { level1: 'Elliot', section: 'Fittings', name: 'Fittings', supplier: true, entries: [{ name: 'Old part', price: 1, partNumber: 'PN1' }, { name: 'Other', price: 2, partNumber: 'PN2' }] },
+      ],
+      wire: [{ level1: 'Elliot', section: 'Wire', name: 'Wire', supplier: true, entries: [{ name: 'Old wire', price: 0.1, partNumber: 'PN3' }] }],
+    },
+  };
+}
+
+test('countSupplierEntries counts supply-house parts across every tab', () => {
+  assert.strictEqual(core.countSupplierEntries(bookWithCatalog()), 3);
+  assert.strictEqual(core.countSupplierEntries({ tabs: {} }), 0);
+});
+
+test('patchLaborBook keeps the committed catalog when the overlay has no parts list', () => {
+  const overlay = { sourceFile: 'new.csv', importedAt: '2026-09-07T00:00:00.000Z', itemPrices: { 1: 2 }, newItems: [] };
+  const recompute = core.recomputeAssemblies(MODEL, { 1: 2 });
+  for (const variant of [overlay, { ...overlay, newItems: undefined }, { ...overlay, newItems: [['Fittings', 'x', 'PN9', 1]], newItemsTruncated: true }, { ...overlay, newItems: [['Fittings', 'x', 'PN9', 1]], newItemsIncomplete: true }]) {
+    const patched = core.patchLaborBook(bookWithCatalog(), recompute, variant, { Fittings: 'conduit' });
+    assert.strictEqual(core.countSupplierEntries(patched), 3, `catalog lost for ${JSON.stringify(Object.keys(variant))}`);
+    assert.strictEqual(patched.tabs.conduit.filter((s) => s.supplier).length, 1);
+    assert.strictEqual(patched.tabs.wire.filter((s) => s.supplier).length, 1);
+    // prices still applied, and the catalog is still dated by the committed file
+    assert.strictEqual(patched.tabs.conduit[0].entries[0].price, 40);
+    assert.strictEqual(patched.meta.elliot.newItems, 3);
+    assert.strictEqual(patched.meta.elliot.catalogSource, 'published');
+    assert.strictEqual(patched.meta.elliot.importedAt, '2026-07-18T00:00:00.000Z');
+    assert.strictEqual(patched.meta.elliot.pricesImportedAt, '2026-09-07T00:00:00.000Z');
+  }
+});
+
+test('patchLaborBook replaces the whole catalog when the overlay carries one', () => {
+  const overlay = {
+    sourceFile: 'new.csv',
+    importedAt: '2026-09-07T00:00:00.000Z',
+    enabledCategories: ['Fittings'],
+    itemPrices: {},
+    newItems: [['Fittings', 'Fresh part', 'PN9', 0.5]],
+  };
+  const patched = core.patchLaborBook(bookWithCatalog(), null, overlay, { Fittings: 'conduit' });
+  assert.strictEqual(core.countSupplierEntries(patched), 1);
+  // the stale wire section goes too — the overlay's catalog is the whole catalog
+  assert.strictEqual(patched.tabs.wire.filter((s) => s.supplier).length, 0);
+  assert.strictEqual(patched.meta.elliot.catalogSource, 'import');
+  assert.strictEqual(patched.meta.elliot.importedAt, '2026-09-07T00:00:00.000Z');
+});
+
+test('overlayReplacesCatalog is false for empty, truncated or incomplete parts lists', () => {
+  const items = [['Fittings', 'x', 'PN9', 1]];
+  assert.strictEqual(core.overlayReplacesCatalog({ newItems: items }), true);
+  assert.strictEqual(core.overlayReplacesCatalog({ newItems: [] }), false);
+  assert.strictEqual(core.overlayReplacesCatalog({}), false);
+  assert.strictEqual(core.overlayReplacesCatalog(null), false);
+  assert.strictEqual(core.overlayReplacesCatalog({ newItems: items, newItemsTruncated: true }), false);
+  assert.strictEqual(core.overlayReplacesCatalog({ newItems: items, newItemsIncomplete: true }), false);
+});
+
+const COLLIDE_ITEMS = {
+  8706: { n: '3/4 FLEX SQZ CONN DIE', p: 6.94 },
+  8732: { n: '3/4 FLEX SQZ CONN', p: 6.52 },
+  9000: { n: '2 EMT COUPLING', p: 3.0 },
+};
+const COLLIDE_ROWS = [{ partNumber: '1709', description: '3/4 SQUEEZE CONNECTOR', name: '', perEach: 4.3233 }];
+
+test('resolveMatchCollisions sends a guess at a saved part number to review, not to the mapping', () => {
+  const result = core.resolveMatchCollisions(
+    {
+      auto: {
+        8706: { partNumber: '1709', perEach: 4.3233, via: 'saved' },
+        8732: { partNumber: '1709', perEach: 4.3233, via: 'auto', score: 0.86 },
+      },
+      review: [],
+      mappedApplied: 1,
+    },
+    COLLIDE_ITEMS,
+    COLLIDE_ROWS
+  );
+  assert.strictEqual(result.heldBack, 1);
+  assert.deepStrictEqual(Object.keys(result.auto), ['8706']);
+  assert.strictEqual(result.auto[8706].via, 'saved');
+  assert.strictEqual(result.review.length, 1);
+  const row = result.review[0];
+  assert.strictEqual(row.itemNum, 8732);
+  assert.strictEqual(row.heldPartNumber, '1709');
+  assert.strictEqual(row.heldByItemNum, 8706);
+  assert.strictEqual(row.heldByItemName, '3/4 FLEX SQZ CONN DIE');
+  assert.strictEqual(row.candidates[0].pn, '1709');
+  assert.strictEqual(row.candidates[0].desc, '3/4 SQUEEZE CONNECTOR');
+});
+
+test('resolveMatchCollisions: one part number prices one MC item, best guess keeps it', () => {
+  const result = core.resolveMatchCollisions(
+    {
+      auto: {
+        8732: { partNumber: '1709', perEach: 4.3233, via: 'auto', score: 0.81 },
+        9000: { partNumber: '1709', perEach: 4.3233, via: 'auto', score: 0.93 },
+      },
+      review: [],
+      mappedApplied: 0,
+    },
+    COLLIDE_ITEMS,
+    COLLIDE_ROWS
+  );
+  assert.deepStrictEqual(Object.keys(result.auto), ['9000']);
+  assert.strictEqual(result.heldBack, 1);
+  assert.strictEqual(result.review[0].itemNum, 8732);
+  const pns = Object.values(result.auto).map((m) => m.partNumber);
+  assert.strictEqual(new Set(pns).size, pns.length);
+});
+
+test('resolveMatchCollisions puts held-back rows at the top of the review queue', () => {
+  const existing = [{ itemNum: 5, itemName: 'first in queue', oldPerEach: 1, candidates: [] }];
+  const result = core.resolveMatchCollisions(
+    {
+      auto: {
+        8706: { partNumber: '1709', perEach: 4.3233, via: 'saved' },
+        8732: { partNumber: '1709', perEach: 4.3233, via: 'auto', score: 0.86 },
+      },
+      review: existing,
+      mappedApplied: 1,
+    },
+    COLLIDE_ITEMS,
+    COLLIDE_ROWS
+  );
+  assert.strictEqual(result.review.length, 2);
+  assert.strictEqual(result.review[0].itemNum, 8732, 'the held-back row is not buried behind 2,500 others');
+  assert.strictEqual(result.review[1].itemNum, 5);
+});
+
+test('resolveMatchCollisions leaves non-colliding matches and the existing queue alone', () => {
+  const existing = [{ itemNum: 5, itemName: 'x', oldPerEach: 1, candidates: [] }];
+  const result = core.resolveMatchCollisions(
+    {
+      auto: {
+        8706: { partNumber: '1709', perEach: 4.32, via: 'saved' },
+        9000: { partNumber: '2200', perEach: 3.1, via: 'auto', score: 0.9 },
+      },
+      review: existing,
+      mappedApplied: 1,
+    },
+    COLLIDE_ITEMS,
+    COLLIDE_ROWS
+  );
+  assert.strictEqual(result.heldBack, 0);
+  assert.strictEqual(result.review.length, 1);
+  assert.deepStrictEqual(Object.keys(result.auto).sort(), ['8706', '9000']);
+  assert.strictEqual(existing.length, 1);
+});
+
 test('stampNewItemDates keeps prior dates for unchanged prices, restamps moved ones', () => {
   const prior = {
     importedAt: '2026-07-18T05:20:54.240Z',
@@ -223,4 +377,131 @@ test('patchLaborBook carries per-part pricedAt onto supplier entries', () => {
   const entries = patched.tabs.conduit.find((s) => s.supplier).entries;
   assert.strictEqual(entries[0].pricedAt, '2026-07-18');
   assert.strictEqual(entries[1].pricedAt, undefined);
+});
+
+// ---------- why a row is on the review list ----------
+
+const tie = (price, desc, score) => ({ row: { perEach: price, description: desc, name: desc, partNumber: desc }, score });
+
+test('a 100% tie at one price never reaches the review list — the matcher already takes it', () => {
+  // Ties that agree on price are the auto-accept case (classifyMatches lifts
+  // the margin to 1), so they are never up for review.
+  const cls = core.classifyMatches([tie(0.1334, 'THHN 14 SOL ORANGE', 1), tie(0.1334, 'THHN 14 SOL BLACK', 1)], 0.5767);
+  assert.strictEqual(cls.kind, 'auto');
+});
+
+test('one near-tied rival at a different price sends the row to review', () => {
+  const cls = core.classifyMatches(
+    [tie(0.1334, 'THHN 14 SOL ORANGE', 1), tie(0.1334, 'THHN 14 SOL BLACK', 1), tie(0.1541, 'THHN 14 STR ORANGE', 0.95)],
+    0.5767
+  );
+  assert.strictEqual(cls.kind, 'review');
+    assert.strictEqual(cls.reason.code, 'near-tie');
+  // the rival that kept it out is named even though the row only shows three candidates
+  assert.match(cls.reason.text, /THHN 14 STR ORANGE at \$0\.1541/);
+  assert.strictEqual(cls.candidates.length, 3);
+});
+
+test('the disagreeing rival is named even when it is past the three candidates a row shows', () => {
+  const cands = [
+    tie(0.1334, 'A', 1), tie(0.1334, 'B', 1), tie(0.1334, 'C', 1), tie(0.1334, 'D', 1), tie(0.9, 'ODD ONE OUT', 0.97),
+  ];
+  const cls = core.classifyMatches(cands, 0.5);
+  assert.strictEqual(cls.kind, 'review');
+  assert.match(cls.reason.text, /ODD ONE OUT/);
+  assert.deepStrictEqual(cls.candidates.map((c) => c.row.description), ['A', 'B', 'C', 'D'].slice(0, 3));
+});
+
+test('review reasons: a price too far from the book, and a name that only half matches', () => {
+  const jump = core.classifyMatches([tie(10, 'X', 1)], 0.5);
+  assert.strictEqual(jump.reason.code, 'price-jump');
+  assert.match(jump.reason.text, /20\.0× higher/);
+  const cheap = core.classifyMatches([tie(0.5, 'X', 1)], 10);
+  assert.match(cheap.reason.text, /20\.0× lower/);
+  const weak = core.classifyMatches([tie(1, 'Y', 0.6)], 1);
+  assert.strictEqual(weak.reason.code, 'partial-name');
+  assert.match(weak.reason.text, /60%/);
+});
+
+
+test('withoutSkipped drops the rows the maintainer already passed on', () => {
+  const review = [{ itemNum: 5 }, { itemNum: 8 }, { itemNum: 13 }];
+  assert.deepStrictEqual(core.withoutSkipped(review, new Set([8])).map((q) => q.itemNum), [5, 13]);
+  assert.deepStrictEqual(core.withoutSkipped(review, [5, 13]).map((q) => q.itemNum), [8]);
+  assert.deepStrictEqual(core.withoutSkipped(review, { 5: 1, 8: 1 }).map((q) => q.itemNum), [13]);
+  assert.strictEqual(core.withoutSkipped(review, null), review);
+  assert.strictEqual(core.withoutSkipped(review, new Set()), review);
+});
+
+test('formatUnitPrice: cents above a dollar, four places below', () => {
+  assert.strictEqual(core.formatUnitPrice(1.5), '1.50');
+  assert.strictEqual(core.formatUnitPrice(0.13341999), '0.1334');
+  assert.strictEqual(core.formatUnitPrice(null), '0.0000');
+});
+
+// ---------- provenance dates survive a re-import (J13 finding 9) ----------
+
+test('re-loading a file that moved no prices leaves every part date and the book date alone', () => {
+  const published = {
+    importedAt: '2026-07-18T05:20:54.240Z',
+    newItems: [
+      ['Wire', "TFFN 16 STR BLACK 2500'", 'TFFN16STBK2500', 0.1267], // 4-tuple, as committed
+      ['Fittings', 'ALF 3/4 CONN', 'ALF34500', 1.2172],
+    ],
+  };
+  const reimported = [
+    ['Wire', "TFFN 16 STR BLACK 2500'", 'TFFN16STBK2500', 0.1267],
+    ['Fittings', 'ALF 3/4 CONN', 'ALF34500', 1.2172],
+  ];
+  const stamped = core.stampNewItemDates(reimported, published, '2026-09-07');
+  assert.deepStrictEqual(stamped.map((r) => r[4]), ['2026-07-18', '2026-07-18']);
+  assert.strictEqual(core.newestPartDate(stamped), '2026-07-18');
+
+  const patched = core.patchLaborBook(
+    { meta: {}, tabs: { wire: [], conduit: [] } },
+    null,
+    { sourceFile: 'HCP_1272501.csv', importedAt: '2026-09-07T00:00:00.000Z', enabledCategories: [], itemPrices: {}, newItems: stamped },
+    { Wire: 'wire', Fittings: 'conduit' }
+  );
+  // the book's date is when the catalog was last priced, not when the file was re-read
+  assert.strictEqual(patched.meta.elliot.importedAt, '2026-07-18');
+  assert.strictEqual(patched.meta.elliot.pricesImportedAt, '2026-09-07T00:00:00.000Z');
+  assert.strictEqual(patched.tabs.wire.find((s) => s.supplier).entries[0].pricedAt, '2026-07-18');
+});
+
+test('a price that actually moved carries today, and moves the book date with it', () => {
+  const published = { importedAt: '2026-07-18T05:20:54.240Z', newItems: [['Wire', 'W', 'PN1', 1.0]] };
+  const stamped = core.stampNewItemDates([['Wire', 'W', 'PN1', 1.25]], published, '2026-09-07');
+  assert.strictEqual(stamped[0][4], '2026-09-07');
+  const patched = core.patchLaborBook(
+    { meta: {}, tabs: { wire: [] } },
+    null,
+    { sourceFile: 'f.csv', importedAt: '2026-09-07T00:00:00.000Z', enabledCategories: [], itemPrices: {}, newItems: stamped },
+    { Wire: 'wire' }
+  );
+  assert.strictEqual(patched.meta.elliot.importedAt, '2026-09-07');
+});
+
+test('newestPartDate ignores parts with no date and reports null when none have one', () => {
+  assert.strictEqual(core.newestPartDate([['a', 'b', 'c', 1], ['a', 'b', 'c', 1, '2026-01-02']]), '2026-01-02');
+  assert.strictEqual(core.newestPartDate([['a', 'b', 'c', 1]]), null);
+  assert.strictEqual(core.newestPartDate(null), null);
+});
+
+// ---------- downloads carry the artifact, not this browser's bookkeeping ----------
+
+test('sanitizeOverlayForDownload strips every local-only field and keeps the rest', () => {
+  const out = core.sanitizeOverlayForDownload({
+    version: 1,
+    sourceFile: 'f.csv',
+    itemPrices: { 5: 1 },
+    newItems: [['a', 'b', 'c', 1]],
+    newItemsCount: 1,
+    categoryCounts: { a: 1 },
+    newItemsIncomplete: true,
+    newItemsTruncated: true,
+    allCats: true,
+  });
+  assert.deepStrictEqual(Object.keys(out).sort(), ['itemPrices', 'newItems', 'sourceFile', 'version']);
+  assert.strictEqual(core.sanitizeOverlayForDownload(null).newItems, undefined);
 });
