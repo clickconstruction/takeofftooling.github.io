@@ -71,6 +71,39 @@ test('organize view opens from the book, boards render, drawer and place mode wo
   expect(errors).toEqual([]);
 });
 
+test('renaming a name with attached supplier parts warns before detaching', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#labor-book-open-btn').click();
+  await page.locator('#labor-book-organize-btn').click();
+  await expect(page.locator('.org-lane')).toHaveCount(6);
+
+  // wait for the supplier catalog (the view's own load registered first, so
+  // by the time this resolves the warning lookup is populated)
+  await page.evaluate(async () => { await McBook.ensureLoaded(); });
+
+  const conduitLane = page.locator('.org-lane', { has: page.locator('.org-lane-name', { hasText: 'Conduit' }) });
+  const fittingsName = conduitLane.locator('.org-gname', { hasText: 'Fittings' });
+
+  // dismissing the warning keeps the name and stages nothing
+  let dialogMessage = '';
+  page.once('dialog', (d) => { dialogMessage = d.message(); return d.dismiss(); });
+  await fittingsName.dblclick();
+  await conduitLane.locator('.org-gname-input').fill('Raceway');
+  await page.keyboard.press('Enter');
+  await expect(conduitLane.locator('.org-gname', { hasText: 'Fittings' })).toBeVisible();
+  expect(dialogMessage).toContain('supplier catalog part');
+  await expect(page.locator('#org-summary')).toContainText('No pending changes');
+
+  // accepting it renames and stages the change
+  page.once('dialog', (d) => d.accept());
+  await fittingsName.dblclick();
+  await conduitLane.locator('.org-gname-input').fill('Raceway');
+  await page.keyboard.press('Enter');
+  await expect(conduitLane.locator('.org-gname', { hasText: 'Raceway' })).toBeVisible();
+  await expect(page.locator('#org-summary')).toContainText('1 pending change');
+  await page.locator('#org-discard-btn').click();
+});
+
 test('apply persists a reorganization (with a user group) across reload; unapplied changes warn', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
