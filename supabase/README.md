@@ -34,8 +34,9 @@ All four Edge Functions are deployed.
       current `supabase/functions/takeoff-admin/index.ts` — redeploy again after
       any edit to that file.
 - [ ] **Auth → URL Configuration → Redirect URLs** — add
-      `https://takeofftooling.github.io/` and every dev origin you use
-      (`http://localhost:4173/`). Without it "Forgot your password?" silently
+      `https://takeofftooling.com/` — the app's real origin, the custom domain on
+      the Pages CNAME, **not** the `*.github.io` address — and every dev origin you
+      use (`http://localhost:4173/`). Without it "Forgot your password?" silently
       sends people to the Site URL and the new-password form never appears.
 - [ ] **Auth → Email Templates → Reset Password** — leave it as the default
       link template (`{{ .ConfirmationURL }}`). The app expects a link back to
@@ -75,7 +76,7 @@ app cannot set them itself.
 
 | Where | Setting | Why |
 |---|---|---|
-| Authentication → URL Configuration → **Redirect URLs** | Add `https://takeofftooling.github.io/` **and** `http://localhost:4173/` (any dev port you use) | "Forgot your password?" calls `resetPasswordForEmail` with `redirectTo` = the app's own address (origin + path, no hash). Supabase only honours an address on this allow-list; anything else silently sends the user to the Site URL, and the "choose a new password" form never appears. Sign-in itself still needs no redirect URL — the 6-digit code path is unchanged. |
+| Authentication → URL Configuration → **Redirect URLs** | Add `https://takeofftooling.com/` — the live origin (Pages CNAME), not the `*.github.io` host, which 404s — **and** `http://localhost:4173/` (any dev port you use) | "Forgot your password?" calls `resetPasswordForEmail` with `redirectTo` = the app's own address (origin + path, no hash). Supabase only honours an address on this allow-list; anything else silently sends the user to the Site URL, and the "choose a new password" form never appears. Sign-in itself still needs no redirect URL — the 6-digit code path is unchanged. |
 | Authentication → Email Templates → **Reset Password** | Leave it as the default link template (`{{ .ConfirmationURL }}`) | The app expects a link back to itself, not a code. It arrives with a recovery session in the URL hash; `js/cloud.js` catches the `PASSWORD_RECOVERY` event and shows the new-password form. (The **Magic Link / OTP** template is the one edited to send `{{ .Token }}`.) |
 
 Accounts created from Manage Users carry **no password** (the `takeoff-admin`
