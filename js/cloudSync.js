@@ -309,7 +309,7 @@ const TakeoffCloudSync = (function () {
    * Upsert semantics match the ordinary path exactly: store rows go up as a
    * merge-duplicates upsert on the table's primary key, and a project goes
    * through the same `takeoff_upsert_project` guard, so a lid-close can never
-   * overwrite work another device did. Without that function (003 unapplied)
+   * overwrite work another device did. Without that function (005 unapplied)
    * projects are deferred rather than blind-upserted.
    *
    * @param {object} opts

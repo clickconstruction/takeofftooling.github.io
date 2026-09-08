@@ -1,4 +1,4 @@
--- 003 — takeoff_upsert_project (conditional project write)
+-- 005 — takeoff_upsert_project (conditional project write)
 --
 -- APPLY THIS BEFORE DEPLOYING the conflict-safe project sync. The app works
 -- either way: js/cloud.js calls this function when it exists and falls back to

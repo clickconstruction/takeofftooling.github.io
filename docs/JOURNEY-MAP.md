@@ -112,7 +112,7 @@ J11 there), which spans both.
 > node:test units** across 8 `*.test.js` files — and the full Playwright suite green at
 > **199 passing / 2 skipped** across 21 `*.spec.js` files. The two skips are the cloud
 > round trips (`cloud-sync.spec.js`), which need a non-admin test account in
-> `.env.local` and migrations 001/003/004 applied; they skip cleanly without one.
+> `.env.local` and migrations 001/004/005 applied; they skip cleanly without one.
 > That is what **X16** ("no spec drives any of this") now means: it was three specs,
 > none of which set a viewport, when the row was written. **X17** is the one row marked
 > `◐ partial` — the telemetry code is in (`js/events.js`, sanitized props, Do-Not-Track

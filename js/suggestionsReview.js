@@ -22,6 +22,7 @@ const TakeoffSuggestionsReview = (function () {
   }
 
   let groups = []; // aggregated pending suggestions
+  let layouts = []; // pending layout suggestions (one per user; 003 migration)
   let acceptedGroupCount = 0;
 
   // A proposed number this far off the shipped one is a fat finger, not a
@@ -119,12 +120,59 @@ const TakeoffSuggestionsReview = (function () {
     return '<span class="sugg-badge sugg-badge-single">1 user</span>';
   }
 
+  // Where each default section lives, for spotting cross-tab moves in a
+  // shared layout ({sectionName: tab}; names are unique across tabs today).
+  function defaultsHomeMap() {
+    const home = {};
+    for (const tab of Object.keys(LABOR_BOOK_DEFAULTS)) {
+      for (const section of Object.keys(LABOR_BOOK_DEFAULTS[tab])) home[section] = tab;
+    }
+    return home;
+  }
+
+  function layoutMoves(value) {
+    const home = defaultsHomeMap();
+    const moves = [];
+    for (const tab of Object.keys(value.order || {})) {
+      for (const section of value.order[tab]) {
+        if (home[section] && home[section] !== tab) moves.push({ section, from: home[section], to: tab });
+      }
+    }
+    return moves;
+  }
+
+  function layoutHtml(row, i) {
+    const value = row.value || {};
+    const tabs = Object.keys(value.groups || {}).filter((t) => (value.groups[t] || []).length);
+    const groupsSummary = tabs
+      .map((t) => `${escapeHtml(t)}: ${value.groups[t].map((g) => `${escapeHtml(g.name)} (${g.sections.length})`).join(', ')}`)
+      .join(' · ') || 'no custom groups';
+    const moves = layoutMoves(value);
+    const movesSummary = moves.length
+      ? `<div class="sugg-layout-moves">moved: ${moves.map((m) => `${escapeHtml(m.section)} (${escapeHtml(m.from)} → ${escapeHtml(m.to)})`).join(', ')}</div>`
+      : '';
+    const when = row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '';
+    return `
+      <div class="sugg-row sugg-layout-row" data-layout-index="${i}">
+        <div class="sugg-part">
+          <div class="sugg-name">Category layout</div>
+          <div class="sugg-where">${escapeHtml(row.email || row.user_id)}${when ? ' · ' + escapeHtml(when) : ''}</div>
+        </div>
+        <div class="sugg-change">${groupsSummary}${movesSummary}</div>
+        <div class="sugg-actions">
+          <button type="button" class="btn btn-small sugg-layout-copy-btn" data-layout-index="${i}" title="Copy as a LABOR_BOOK_DEFAULT_GROUPS literal to hard-code into js/data/laborBookDefaults.js">Copy as code</button>
+          <button type="button" class="btn btn-small sugg-accept-btn sugg-layout-accept-btn" data-layout-index="${i}">Accept</button>
+          <button type="button" class="btn btn-small btn-secondary sugg-layout-dismiss-btn" data-layout-index="${i}">Dismiss</button>
+        </div>
+      </div>`;
+  }
+
   function render() {
     const body = document.getElementById('suggestions-modal-body');
     if (!body) return;
     const countEl = document.getElementById('suggestions-pending-count');
     if (countEl) {
-      countEl.textContent = `${groups.length} pending`;
+      countEl.textContent = `${groups.length + layouts.length} pending`;
       countEl.hidden = false;
     }
     const dlBtn = document.getElementById('suggestions-download-btn');
@@ -132,11 +180,14 @@ const TakeoffSuggestionsReview = (function () {
       dlBtn.textContent = `Download accepted (${acceptedGroupCount}) as defaults patch`;
       dlBtn.disabled = acceptedGroupCount === 0;
     }
-    if (!groups.length) {
+    if (!groups.length && !layouts.length) {
       body.innerHTML = '<p class="sugg-empty">No pending suggestions. As users share corrections they show up here.</p>';
       return;
     }
-    body.innerHTML = groups
+    const layoutBlock = layouts.length
+      ? `<h3 class="sugg-section-title">Layout suggestions</h3>${layouts.map(layoutHtml).join('')}${groups.length ? '<h3 class="sugg-section-title">Part corrections</h3>' : ''}`
+      : '';
+    body.innerHTML = layoutBlock + groups
       .map((g, i) => {
         const change =
           g.kind === 'edit'
@@ -165,17 +216,66 @@ const TakeoffSuggestionsReview = (function () {
   async function load() {
     const body = document.getElementById('suggestions-modal-body');
     if (body) body.innerHTML = '<p class="sugg-empty">Loading…</p>';
-    const [pending, accepted] = await Promise.all([
+    const [pending, accepted, pendingLayouts] = await Promise.all([
       TakeoffCloud.fetchSuggestions('pending'),
       TakeoffCloud.fetchSuggestions('accepted'),
+      TakeoffCloud.fetchLayoutSuggestions('pending'),
     ]);
     if (pending.error) {
       if (body) body.innerHTML = `<p class="sugg-empty">Could not load suggestions: ${escapeHtml(pending.error)}</p>`;
       return;
     }
     groups = aggregate(pending.data);
+    layouts = pendingLayouts.data || [];
     acceptedGroupCount = aggregate(accepted.data || []).length;
     render();
+  }
+
+  async function resolveLayout(index, status) {
+    const row = layouts[index];
+    if (!row) return;
+    const err = await TakeoffCloud.setLayoutSuggestionStatus([row.user_id], status);
+    if (err) {
+      TakeoffUtils.toast('Could not update: ' + err, { kind: 'error' });
+      return;
+    }
+    layouts.splice(index, 1);
+    render();
+  }
+
+  // The hard-code artifact: a LABOR_BOOK_DEFAULT_GROUPS literal (tabs with
+  // named groups only) plus comments for the moves/order the config can't
+  // express — those need edits to LABOR_BOOK_DEFAULTS itself.
+  async function copyLayoutCode(index) {
+    const row = layouts[index];
+    if (!row) return;
+    const value = row.value || {};
+    const groupsObj = {};
+    for (const tab of Object.keys(value.groups || {})) {
+      if ((value.groups[tab] || []).length) groupsObj[tab] = value.groups[tab];
+    }
+    const lines = [
+      `// Category layout suggested by ${row.email || row.user_id}${row.updated_at ? ' on ' + row.updated_at.slice(0, 10) : ''}`,
+      '// Paste into js/data/laborBookDefaults.js and bump LABOR_BOOK_DEFAULTS_VERSION.',
+    ];
+    const moves = layoutMoves(value);
+    if (moves.length) {
+      lines.push('// Cross-tab moves — relocate these sections inside LABOR_BOOK_DEFAULTS:');
+      for (const m of moves) lines.push(`//   - ${JSON.stringify(m.section)}: ${m.from} → ${m.to}`);
+    }
+    lines.push(`const LABOR_BOOK_DEFAULT_GROUPS = ${JSON.stringify(groupsObj, null, 2)};`);
+    if (value.order) {
+      lines.push('// Section order per tab (reorder LABOR_BOOK_DEFAULTS keys to match):');
+      for (const tab of Object.keys(value.order)) {
+        if (value.order[tab].length) lines.push(`//   ${tab}: ${value.order[tab].join(' | ')}`);
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      TakeoffUtils.toast('Layout copied as code');
+    } catch (err) {
+      TakeoffUtils.toast('Could not copy: ' + (err.message || 'clipboard unavailable'), { kind: 'error' });
+    }
   }
 
   async function resolveGroup(index, status) {
@@ -285,6 +385,21 @@ const TakeoffSuggestionsReview = (function () {
   document.getElementById('suggestions-modal')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) {
       closeModal();
+      return;
+    }
+    const layoutCopy = e.target.closest('.sugg-layout-copy-btn');
+    if (layoutCopy) {
+      copyLayoutCode(Number(layoutCopy.dataset.layoutIndex));
+      return;
+    }
+    const layoutAccept = e.target.closest('.sugg-layout-accept-btn');
+    if (layoutAccept) {
+      resolveLayout(Number(layoutAccept.dataset.layoutIndex), 'accepted');
+      return;
+    }
+    const layoutDismiss = e.target.closest('.sugg-layout-dismiss-btn');
+    if (layoutDismiss) {
+      resolveLayout(Number(layoutDismiss.dataset.layoutIndex), 'dismissed');
       return;
     }
     const accept = e.target.closest('.sugg-accept-btn');

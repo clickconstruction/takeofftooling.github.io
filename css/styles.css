@@ -3564,6 +3564,20 @@ body.lb-modal-open {
   min-height: 8rem;
 }
 
+.sugg-section-title {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+}
+
+.sugg-layout-moves {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--accent2);
+}
+
 .sugg-empty {
   color: var(--text2);
   padding: 1rem 0;

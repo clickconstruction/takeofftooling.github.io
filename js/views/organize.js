@@ -88,7 +88,7 @@ const TakeoffOrganizeView = (function () {
       </div>
       <div class="org-place-banner" id="org-place-banner" hidden>
         <span>Placing <b id="org-place-name"></b></span>
-        <span class="org-place-hint">scroll anywhere, then click a destination &mdash; edges of a section = before/after, center = merge &middot; Esc cancels</span>
+        <span class="org-place-hint">scroll anywhere, then click a destination &mdash; edges of a section or group = before/after, center = merge &middot; Esc cancels</span>
         <button type="button" id="org-place-cancel">Cancel (Esc)</button>
       </div>
       <div class="org-board" id="org-board"></div>
@@ -209,8 +209,10 @@ const TakeoffOrganizeView = (function () {
     }
     if (ghead) {
       const r = ghead.getBoundingClientRect();
+      const y = (e.clientY - r.top) / r.height;
       return { el: ghead, type: 'group', t: +ghead.dataset.t, g: +ghead.dataset.g,
-               half: (e.clientY - r.top) / r.height < 0.5 ? 'before' : 'after' };
+               half: y < 0.5 ? 'before' : 'after',
+               zone: y < 0.3 ? 'before' : y > 0.7 ? 'after' : 'merge' };
     }
     if (looseEmpty) return { el: looseEmpty, type: 'loose', t: +looseEmpty.dataset.t, g: +looseEmpty.dataset.g };
     if (lane) return { el: lane, type: 'lane', t: +lane.dataset.t };
@@ -231,8 +233,13 @@ const TakeoffOrganizeView = (function () {
       else if (tgt.type === 'merge') tgt.el.classList.add('org-drop-merge');
       else tgt.el.classList.add('org-drop-into');
     } else if (src.kind === 'group') {
-      if (tgt.type === 'group') tgt.el.classList.add(tgt.half === 'before' ? 'org-drop-before' : 'org-drop-after');
-      else if (tgt.type === 'lane') tgt.el.classList.add('org-drop-into');
+      if (tgt.type === 'group') {
+        // a group's own head can't be a target; center = merge into it
+        const self = tgt.t === src.t && tgt.g === src.g;
+        if (self) return;
+        if (tgt.zone === 'merge') tgt.el.classList.add('org-drop-merge');
+        else tgt.el.classList.add(tgt.zone === 'before' ? 'org-drop-before' : 'org-drop-after');
+      } else if (tgt.type === 'lane') tgt.el.classList.add('org-drop-into');
     }
   }
 
@@ -254,8 +261,10 @@ const TakeoffOrganizeView = (function () {
       }
     } else if (src.kind === 'group') {
       if (tgt.type === 'group') {
+        if (tgt.t === src.t && tgt.g === src.g) return;
+        if (tgt.zone === 'merge') return promptMergeGroups(src, tgt);
         const dstIsLoose = model.tabs[tgt.t].groups[tgt.g].name === null;
-        const at = dstIsLoose ? tgt.g : tgt.g + (tgt.half === 'after' ? 1 : 0);
+        const at = dstIsLoose ? tgt.g : tgt.g + (tgt.zone === 'after' ? 1 : 0);
         return moveGroup(src, tgt.t, at);
       }
       if (tgt.type === 'lane') return moveGroup(src, tgt.t, Infinity);
@@ -333,6 +342,43 @@ const TakeoffOrganizeView = (function () {
       if (drawerSec === s) drawerSec = null;
       takeSection(src);
       logChange(`Merge "${s.name}" into "${d.name}"`);
+      refresh();
+    });
+  }
+
+  // Merge one group into another: sections append to the target (or the
+  // Ungrouped bucket — dissolving the group) and the source group is removed.
+  function promptMergeGroups(src, dst) {
+    const sg = model.tabs[src.t].groups[src.g];
+    const dg = model.tabs[dst.t].groups[dst.g];
+    if (!sg || !dg || sg.name === null) return; // the Ungrouped bucket can't be merged away
+    // cross-tab: every carried section must be new to the destination tab
+    if (dst.t !== src.t) {
+      const clash = sg.sections.find((s) =>
+        model.tabs[dst.t].groups.some((g) => g.sections.some((x) => x.name === s.name)));
+      if (clash) {
+        toast(`"${clash.name}" already exists in ${model.tabs[dst.t].label} — rename it first`);
+        return;
+      }
+    }
+    const dstLabel = dg.name || 'Ungrouped';
+    removeConfirmBar();
+    const bar = document.createElement('div');
+    bar.className = 'org-confirm-bar';
+    bar.innerHTML = `
+      <span>Merge group <b>${escapeHtml(sg.name)}</b> (${sg.sections.length} section${sg.sections.length === 1 ? '' : 's'})
+      into <b>${escapeHtml(dstLabel)}</b>? Its sections move over and the empty group is removed.</span>
+      <button type="button" class="btn org-apply-btn" data-mg="yes">Merge</button>
+      <button type="button" class="btn btn-secondary" data-mg="no">Cancel</button>`;
+    document.body.appendChild(bar);
+    bar.querySelector('[data-mg="no"]').addEventListener('click', removeConfirmBar);
+    bar.querySelector('[data-mg="yes"]').addEventListener('click', () => {
+      removeConfirmBar();
+      dg.sections = dg.sections.concat(sg.sections);
+      model.tabs[src.t].groups.splice(model.tabs[src.t].groups.indexOf(sg), 1);
+      logChange(dst.t === src.t
+        ? `Merge group "${sg.name}" into "${dstLabel}"`
+        : `Merge group "${sg.name}" into ${model.tabs[dst.t].label} / ${dstLabel}`);
       refresh();
     });
   }

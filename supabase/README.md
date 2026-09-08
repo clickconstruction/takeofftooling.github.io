@@ -15,7 +15,7 @@ works without every one of them — that is deliberate, and each row says what
 stays dormant until it is done. This is the only list; the tables below carry
 the detail behind each row.
 
-- [ ] **`003_takeoff_project_upsert.sql`** — SQL Editor. Without it, project
+- [ ] **`005_takeoff_project_upsert.sql`** — SQL Editor. Without it, project
       sync falls back to read-compare-then-upsert: the same decisions, but not
       atomic, so two devices saving one bid can race.
 - [ ] **`004_takeoff_events.sql`** — SQL Editor. Without it no telemetry is
@@ -40,10 +40,11 @@ are live.
 
 | File | What |
 |---|---|
+| `003_takeoff_layout_suggestions.sql` | Shared Organize Categories layouts: one row per consenting user (their group config + section order), RLS owner-managed with admin review via `is_takeoff_admin()`. Until applied, the app detects the missing table and skips layout sharing; corrections sharing is unaffected. |
 | `002_takeoff_profiles.sql` | Roles (`user` < `admin` < `dev`): profile table + signup trigger (seed emails get their roles automatically: robert@douglasmining.com → dev, stephen@pipetexas.com → admin), `takeoff_role()`/`is_takeoff_admin()` helpers (the latter replaces the old email-match version), and the dev-only RPCs `takeoff_list_users` / `takeoff_set_user_role`. Pairs with the `takeoff-admin` Edge Function (`supabase/functions/takeoff-admin/`, deployed via `supabase functions deploy takeoff-admin --project-ref awjcdxqhvgnqsrlnoyxr --use-api`) which creates/deletes accounts for dev callers. |
 | `001_takeoff_projects.sql` | **Applied 2026-08-17.** Per-user project rows (schema-aligned with Count Tooling's `projects` table for the future merge). Until applied, project cloud sync is dormant — the app detects the missing table, keeps projects local-only, and logs a console note. Book/assemblies sync via `takeoff_store` is unaffected. |
 | `004_takeoff_events.sql` | *(on the checklist above.)* `takeoff_events` — product telemetry: an event name, a small jsonb props bag (counts, booleans, short enums), the viewport width, whether the pointer is coarse, an anonymous per-install id, and a `user_id` only when the sender was signed in. RLS: insert for anon **and** authenticated (the app must keep working signed out) with a CHECK that the row is anonymous or the caller's own; select for the `dev` role via 002's `takeoff_role()`; no update/delete. Until it is applied, js/events.js posts once, reads the 404 / `42P01`, and stays silent for the session — the app is unaffected. No bid content is ever sent (js/events.js `sanitizeProps`; see docs/ARCHITECTURE.md → Telemetry). |
-| `003_takeoff_project_upsert.sql` | *(on the checklist above.)* `takeoff_upsert_project(...)` writes a project row only when the caller's `updated_at` matches the row's — so two devices saving the same bid cannot silently overwrite each other. The app works either way: js/cloud.js calls the function when it exists and otherwise falls back to read-compare-then-upsert, which makes the same decisions but is not atomic. |
+| `005_takeoff_project_upsert.sql` | *(on the checklist above.)* `takeoff_upsert_project(...)` writes a project row only when the caller's `updated_at` matches the row's — so two devices saving the same bid cannot silently overwrite each other. The app works either way: js/cloud.js calls the function when it exists and otherwise falls back to read-compare-then-upsert, which makes the same decisions but is not atomic. |
 
 ## Dashboard settings the app depends on
 

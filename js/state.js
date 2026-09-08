@@ -1343,6 +1343,17 @@ const TakeoffState = (function () {
     return u;
   }
 
+  // The layout a consenting user shares alongside corrections: their applied
+  // group config plus each tab's section order. null until the user has
+  // actually reorganized (laborBookGroups is only set by an Apply) — a
+  // default-shaped book shares nothing.
+  function getBookLayout() {
+    if (!laborBookGroups) return null;
+    const order = {};
+    for (const tab of LABOR_BOOK_TAB_ORDER) order[tab] = Object.keys(laborBook[tab] || {});
+    return JSON.parse(JSON.stringify({ v: 1, groups: laborBookGroups, order }));
+  }
+
   // --- Computed views (pure logic lives in TakeoffSelectors) ---
 
   function getTotalLabor() {
@@ -1426,6 +1437,7 @@ const TakeoffState = (function () {
     refreshSupplierOffers,
     getBookCorrections,
     takeBookUpdate,
+    getBookLayout,
     getProjects,
     getCurrentProject,
     setProjectName,
