@@ -24,6 +24,11 @@ const TakeoffOrganizeView = (function () {
   let drag = null;    // {kind:'section'|'group', t, g, s} — native drag in progress
   let placing = null; // same shape — click-and-place armed
   let drawerSec = null; // object reference to the section open in the drawer
+  // Supplier catalog section names per tab ({tabKey: Map<lowername, {name, count}>}),
+  // loaded async from McBook on enter. Supplier parts attach to curated
+  // sections/groups by NAME — renaming or moving away detaches them, so we
+  // warn. null until loaded; warnings simply don't fire before then.
+  let supplierNames = null;
 
   // Build the working model from the real book: groups come from the
   // defaults group config; sections not covered by a group land in the
@@ -37,6 +42,7 @@ const TakeoffOrganizeView = (function () {
     drag = null;
     placing = null;
     drawerSec = null;
+    loadSupplierNames();
     for (const key of TakeoffState.getLaborBookTabOrder()) {
       const label = TakeoffState.LABOR_BOOK_TYPE_LABELS[key] || key;
       const sections = book[key] || {};
@@ -62,6 +68,33 @@ const TakeoffOrganizeView = (function () {
       groups.push(loose);
       model.tabs.push({ key, label, groups });
     }
+  }
+
+  function loadSupplierNames() {
+    if (typeof McBook === 'undefined') return;
+    McBook.ensureLoaded()
+      .then(() => {
+        supplierNames = {};
+        for (const tab of TakeoffState.getLaborBookTabOrder()) {
+          const m = new Map();
+          for (const s of McBook.elliotSectionsForTab(tab) || []) {
+            m.set(s.name.trim().toLowerCase(), { name: s.name, count: s.entries.length });
+          }
+          supplierNames[tab] = m;
+        }
+      })
+      .catch(() => { /* catalog unavailable — detach warnings just don't fire */ });
+  }
+
+  function supplierAttachment(tabKey, name) {
+    if (!supplierNames || !supplierNames[tabKey]) return null;
+    return supplierNames[tabKey].get(String(name || '').trim().toLowerCase()) || null;
+  }
+
+  // True when the user confirms (or no supplier parts ride on the name).
+  function confirmSupplierDetach(att, action) {
+    if (!att) return true;
+    return confirm(`${att.count.toLocaleString()} supplier catalog part${att.count === 1 ? '' : 's'} attach to "${att.name}" by name. ${action} will detach them — they'll show as a standalone catalog section instead. Continue?`);
   }
 
   function ensureLoose(tab) {
@@ -289,6 +322,12 @@ const TakeoffOrganizeView = (function () {
       toast(`"${sec.name}" already exists in ${dstTab.label} — rename one of them first, or merge instead`);
       return;
     }
+    // moving to a tab whose supplier catalog has no matching section detaches
+    // the supplier parts riding on this name in the source tab
+    if (dt !== src.t && !supplierAttachment(dstTab.key, sec.name)) {
+      const att = supplierAttachment(srcTab.key, sec.name);
+      if (!confirmSupplierDetach(att, `Moving to ${dstTab.label}`)) return;
+    }
     const same = (src.t === dt && dstGroup === model.tabs[src.t].groups[src.g]);
     takeSection(src);
     let at = Math.min(ds === Infinity ? dstGroup.sections.length : ds, dstGroup.sections.length);
@@ -488,6 +527,14 @@ const TakeoffOrganizeView = (function () {
         toast(`"${v}" already exists in ${model.tabs[l.t].label}`);
         renderDrawer();
         return;
+      }
+      // a case-only rename keeps the (case-insensitive) supplier attachment
+      if (l && v.toLowerCase() !== drawerSec.name.trim().toLowerCase()) {
+        const att = supplierAttachment(model.tabs[l.t].key, drawerSec.name);
+        if (!confirmSupplierDetach(att, 'Renaming')) {
+          renderDrawer();
+          return;
+        }
       }
       logChange(`Rename "${drawerSec.name}" → "${v}"`);
       drawerSec.name = v;
@@ -729,6 +776,13 @@ const TakeoffOrganizeView = (function () {
       const commit = () => {
         const v = input.value.trim();
         if (v && v !== old) {
+          if (v.toLowerCase() !== old.trim().toLowerCase()) {
+            const att = supplierAttachment(model.tabs[+holder.dataset.t].key, old);
+            if (!confirmSupplierDetach(att, 'Renaming')) {
+              refresh();
+              return;
+            }
+          }
           target.name = v;
           logChange(`Rename group "${old}" → "${v}"`);
         }
