@@ -15,16 +15,24 @@ works without every one of them — that is deliberate, and each row says what
 stays dormant until it is done. This is the only list; the tables below carry
 the detail behind each row.
 
+**Verified against the live project on 2026-09-08** (probed through PostgREST with
+the publishable key): `001`, `002`, `003` and `006` are applied — `takeoff_projects`,
+`takeoff_profiles` (with `is_digital_twin`), `takeoff_layout_suggestions`,
+`twin_credentials` and `takeoff_list_users` all answer. `004` and `005` are not.
+All four Edge Functions are deployed.
+
 - [ ] **`005_takeoff_project_upsert.sql`** — SQL Editor. Without it, project
       sync falls back to read-compare-then-upsert: the same decisions, but not
       atomic, so two devices saving one bid can race.
 - [ ] **`004_takeoff_events.sql`** — SQL Editor. Without it no telemetry is
       recorded at all: `js/events.js` posts once, reads the 404 / `42P01`, and
       stays silent for the session.
-- [ ] **Redeploy the `takeoff-admin` Edge Function** —
+- [x] **Redeploy the `takeoff-admin` Edge Function** — done 2026-09-08, from
+      `main` at `5402fd6`:
       `supabase functions deploy takeoff-admin --project-ref awjcdxqhvgnqsrlnoyxr --use-api`.
       Manage Users (create / delete accounts) calls it; it must be running the
-      current `supabase/functions/takeoff-admin/index.ts`.
+      current `supabase/functions/takeoff-admin/index.ts` — redeploy again after
+      any edit to that file.
 - [ ] **Auth → URL Configuration → Redirect URLs** — add
       `https://takeofftooling.github.io/` and every dev origin you use
       (`http://localhost:4173/`). Without it "Forgot your password?" silently
@@ -34,9 +42,21 @@ the detail behind each row.
       itself, not a code. (The **Magic Link / OTP** template is the separate one
       that is edited to send `{{ .Token }}`.)
 
-`001` is recorded below as applied (2026-08-17). `002` carries no applied date
-here — check the dashboard for a `takeoff_profiles` table before assuming roles
-are live.
+`001` was applied 2026-08-17; `002`, `003` and `006` are applied (verified
+2026-09-08, above).
+
+The remaining migrations and the redirect-URL entry can be done in one command
+instead of three dashboard trips. It reads the schema first and applies only what
+is missing; every migration is idempotent and the redirect list is merged, never
+replaced, so it is safe to re-run:
+
+```bash
+bash supabase/apply-pending.sh
+```
+
+It authenticates with your own Supabase access token — from `supabase login`, or
+`SUPABASE_ACCESS_TOKEN` — and writes nothing to disk. The dashboard route below
+still works if you prefer it.
 
 | File | What |
 |---|---|
