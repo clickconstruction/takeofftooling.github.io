@@ -22,14 +22,14 @@ cd "$(git rev-parse --show-toplevel)"
 # The CLI stopped logging the token under --debug (checked on 2.72.7), so the
 # keychain is the only place to get it without minting a new one.
 export SB_TOKEN="${SUPABASE_ACCESS_TOKEN:-$(security find-generic-password -s 'Supabase CLI' -a supabase -w 2>/dev/null || true)}"
-case "${SB_TOKEN:-}" in
-  sbp_*) ;;
-  *) echo "No access token."
-     echo "  - macOS: run 'supabase login' first; if the keychain prompt appeared, click Allow and re-run."
-     echo "  - Otherwise: SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh"
-     echo "    (mint one at https://supabase.com/dashboard/account/tokens)"
-     exit 1 ;;
-esac
+if [ -z "${SB_TOKEN:-}" ]; then
+  echo "No access token."
+  echo "  - macOS: run 'supabase login' first. Reading the keychain pops an"
+  echo "    'allow access' prompt — click Allow, then run this again."
+  echo "  - Or pass one: SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh"
+  echo "    (mint one at https://supabase.com/dashboard/account/tokens)"
+  exit 1
+fi
 
 python3 - <<'PY'
 import json, os, urllib.request, urllib.error
@@ -46,6 +46,14 @@ def api(path, method='GET', body=None):
         return e.code, e.read().decode()[:400]
 
 sql = lambda q: api('/database/query', 'POST', {'query': q})
+
+code, who = api('')          # cheapest call that proves the token is good
+if code == 401:
+    raise SystemExit('That access token was rejected. Run `supabase login` again, or mint a\n'
+                     'fresh one at https://supabase.com/dashboard/account/tokens and pass it as\n'
+                     'SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh')
+if code != 200:
+    raise SystemExit('Could not reach the project: [%s] %s' % (code, who))
 
 # What is already there? (to_regclass / to_regproc are null when absent)
 code, state = sql("""select
