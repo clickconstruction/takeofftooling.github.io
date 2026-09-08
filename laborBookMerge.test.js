@@ -552,3 +552,23 @@ test('mergeDefaults does not resurrect a fully removed/relocated section', () =>
   Merge.mergeDefaults(book, next, removed);
   assert.deepEqual(book.wire.Terminations, [{ name: '# 4-1', labor: 0.3, price: '' }]);
 });
+
+test('a price reverted to the default prunes the correction, whatever it is spelled like', () => {
+  // parseMoney stores a typed price as its numeric string ("95"), while the
+  // shipped defaults carry "95.00" — the same price, so no correction.
+  const book = clone(defaults());
+  const removed = Merge.bootstrap(book, defaults());
+  const row = book.wire['THHN CU'][0];
+  row.price = '111.11';
+  row.edited = true;
+  assert.equal(Merge.computeCorrections(book, defaults(), removed).length, 1);
+
+  row.price = '95'; // reverted — default is "95.00"
+  assert.deepEqual(Merge.computeCorrections(book, defaults(), removed), []);
+  assert.equal(Merge.rowsEqual({ name: '14', labor: 0.003, price: '95' }, { name: '14', labor: 0.003, price: '95.00' }), true);
+});
+
+test('an unpriced row is never equal to a priced one', () => {
+  assert.equal(Merge.rowsEqual({ name: 'x', labor: 0, price: '' }, { name: 'x', labor: 0, price: '0' }), false);
+  assert.equal(Merge.rowsEqual({ name: 'x', labor: 0, price: '' }, { name: 'x', labor: 0, price: '' }), true);
+});

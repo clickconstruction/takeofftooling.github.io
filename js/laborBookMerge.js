@@ -35,11 +35,29 @@
  * `book` is mutated in place by bootstrap/merge; callers persist it.
  */
 const TakeoffLaborBookMerge = (function () {
+  /**
+   * Two prices are the same price, whatever they are spelled like: the shipped
+   * defaults carry "95.00" while a price the estimator types is stored as the
+   * numeric string parseMoney gives back ("95"). Comparing those as strings
+   * made reverting a price to the default look like a live edit forever — a
+   * phantom "$95.00 → $95.00" in the maintainer's review queue. An unpriced
+   * row is never equal to a priced one, so "" never matches "0".
+   */
+  function pricesEqual(a, b) {
+    const as = String(a ?? '').trim();
+    const bs = String(b ?? '').trim();
+    if (as === bs) return true;
+    if (as === '' || bs === '') return false;
+    const an = Number(as);
+    const bn = Number(bs);
+    return Number.isFinite(an) && Number.isFinite(bn) && an === bn;
+  }
+
   function rowsEqual(a, b) {
     return (
       (a.name || '') === (b.name || '') &&
       (Number(a.labor) || 0) === (Number(b.labor) || 0) &&
-      String(a.price ?? '') === String(b.price ?? '')
+      pricesEqual(a.price, b.price)
     );
   }
 
