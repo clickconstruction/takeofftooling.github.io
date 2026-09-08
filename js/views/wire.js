@@ -66,7 +66,7 @@ const TakeoffWireView = (function () {
         </div>
         <div class="flow-actions">
           <button type="button" class="btn btn-secondary" id="wire-cancel-btn">Cancel</button>
-          <button type="button" class="btn btn-success" id="wire-save-btn">Save and Back to Manifest</button>
+          <button type="button" class="btn btn-success" id="wire-save-btn">Save parts to the bid</button>
         </div>
       </div>
     `;
@@ -184,6 +184,8 @@ const TakeoffWireView = (function () {
             labor: m.labor || 0,
             price: m.price !== '' && m.price != null && !isNaN(parseFloat(m.price)) ? parseFloat(m.price) : null,
             parentId: itemId,
+            // a MAC adapter filled from the book watches that book row (X1)
+            meta: m.book ? { book: m.book } : null,
           });
         }
       }

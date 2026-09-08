@@ -148,7 +148,7 @@ test('Review PDF: no text run overruns its column or the page', async ({ page })
   expect(texts).toContain('0.01'); // 0.006 hrs/ft, which used to print 0.0
   expect(texts).toContain('18.00'); // extended: 3,000 ft x 0.006
   // display labels, not internal keys
-  expect(texts).toContain('POWER CO. CHARGES');
+  expect(texts).toContain('Power co. charges');
   expect(texts.some((t) => t === 'powerCoC' || t === 'powerCoCharges')).toBe(false);
   expect(texts).toContain('Box'); // the child type label, not "box"
 });

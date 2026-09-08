@@ -30,26 +30,62 @@ const childrenOf = (page, id) =>
     description: c.description, quantity: c.quantity, price: c.price, labor: c.labor,
   })), id);
 
-test('T1-13(c) — a book row is described by its section, whatever the name length', async ({ page }) => {
+test('T1-13(c) — a book row keeps the section only when the section tells it apart', async ({ page }) => {
   await page.goto('/');
   const out = await page.evaluate(() => {
     const d = TakeoffLaborBookTargets.describeBookRow;
+    const conduit = TakeoffState.getLaborBookType('conduit');
+    const devices = TakeoffState.getLaborBookType('devices');
+    const gear = TakeoffState.getLaborBookType('gear');
     return {
-      // 11 characters: used to lose its section, so an elbow and a coupling
-      // both landed as '1/2" EMT(S)' and merged into one unorderable line
-      long: d('1/2" EMT(S)', 'EMT fittings (SS) - Couplings'),
-      short: d('1" EMT(R)', 'EMT fittings (RT) - Connectors'),
-      elbow: d('1/2" EMT(S)', 'EMT fittings (SS) Elbows'),
-      panel: d('600a', 'Panels.3PH'),
+      // '1/2" EMT(S)' lives in Couplings AND Elbows: without the section an
+      // elbow and a coupling merge into one unorderable purchase-list line
+      long: d('1/2" EMT(S)', 'EMT fittings (SS) - Couplings', conduit),
+      short: d('1" EMT(R)', 'EMT fittings (RT) - Connectors', conduit),
+      elbow: d('1/2" EMT(S)', 'EMT fittings (SS) Elbows', conduit),
+      // unique on its tab: the name stands alone. It used to be stamped with
+      // its section — '4" Square Box, 1-1/2" deep Boxes & Rings'
+      unique: d('4" Square Box, 1-1/2" deep', 'Boxes & Rings', devices),
+      // a section that carries the whole meaning of a terse name always joins
+      panel: d('600a', 'Panels.3PH', gear),
+      // no tab context: nothing is ambiguous, the bare name stands
+      noTab: d('1/2" EMT(S)', 'EMT fittings (SS) Elbows'),
       none: d('Something', ''),
     };
   });
-  expect(out.long).toBe('1/2" EMT(S) EMT fittings (SS) - Couplings');
-  expect(out.short).toBe('1" EMT(R) EMT fittings (RT) - Connectors');
-  expect(out.elbow).toBe('1/2" EMT(S) EMT fittings (SS) Elbows');
+  expect(out.long).toBe('1/2" EMT(S) — EMT fittings (SS) - Couplings');
+  expect(out.short).toBe('1" EMT(R) — EMT fittings (RT) - Connectors');
+  expect(out.elbow).toBe('1/2" EMT(S) — EMT fittings (SS) Elbows');
   expect(out.long).not.toBe(out.elbow);
+  expect(out.unique).toBe('4" Square Box, 1-1/2" deep');
   expect(out.panel).toBe('600a Panel (3PH)');
+  expect(out.noTab).toBe('1/2" EMT(S)');
   expect(out.none).toBe('Something');
+});
+
+// Every path that writes a description writes the SAME string, or the X1
+// reverse lookup (meta.book) stops resolving.
+test('T1-13(c) — a unique curated name fills a flow row with no section suffix', async ({ page }) => {
+  await page.goto('/');
+  const filled = await page.evaluate(() => {
+    const it = TakeoffState.addItem({ type: 'devices', description: 'Office receptacles', quantity: 4, parentId: null });
+    TakeoffApp.navigateToDevice(it.id);
+    TakeoffState.setDeviceTempData({ boxes: [{ description: '', quantity: 0, labor: 0, price: '' }] });
+    TakeoffApp.showPartBookSearchForDeviceRow('boxes', 0);
+    // the row the estimator would click: a devices name that is unique on its tab
+    const section = 'Boxes & Rings';
+    const rows = TakeoffState.getLaborBookType('devices')[section];
+    TakeoffLaborBookTargets.addEntryToTarget({
+      description: TakeoffLaborBookTargets.describeBookRowIn('devices', section, rows[0].name),
+      labor: rows[0].labor,
+      price: String(rows[0].price),
+    });
+    return { row: TakeoffState.getDeviceTempData().boxes[0], name: rows[0].name };
+  });
+  expect(filled.row.description).toBe(filled.name);
+  expect(filled.row.description).not.toContain('Boxes & Rings');
+  // and it resolved back to the book row it came from
+  expect(filled.row.book).toMatchObject({ type: 'devices', section: 'Boxes & Rings', name: filled.name });
 });
 
 test('T1-03 — a conduit run gets one part, a counted fixture gets its count', async ({ page }) => {

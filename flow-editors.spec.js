@@ -466,3 +466,48 @@ test('wire MAC adapters carry a price, like conduit fittings', async ({ page }) 
   await expect(page.locator('.wire-flow table tbody tr').first().locator('input[data-field="price"]'))
     .toHaveValue('206.45');
 });
+
+// B7, extended: one save, one wording. The devices editor already said "Save
+// parts to the bid" while conduit and wire said "Save and Back to Manifest".
+test('every flow editor says the same thing on its Save button', async ({ page }) => {
+  await page.goto('/');
+  const id = await openConduitRun(page, { quantity: 100, price: 1.1 });
+  // the wizard's Save is on its last step
+  await page.locator('#conduit-next-fittings').click();
+  await page.locator('#conduit-next-overage').click();
+  await expect(page.locator('#conduit-save-btn')).toHaveText('Save parts to the bid');
+
+  await page.evaluate((i) => {
+    const item = TakeoffState.getItemById(i);
+    TakeoffState.updateItem(i, { type: 'wire' });
+    TakeoffApp.navigateToWire(item.id);
+  }, id);
+  await expect(page.locator('#wire-save-btn')).toHaveText('Save parts to the bid');
+});
+
+// The pressed % must be read from the DOM after the click — the click
+// re-renders, so a node captured beforehand is a different button.
+test('conduit: exactly one overage % reads as pressed, and a custom % clears them', async ({ page }) => {
+  await page.goto('/');
+  await openConduitRun(page, { quantity: 200, price: 1.1 });
+  await page.locator('#conduit-next-fittings').click();
+  await page.locator('#conduit-next-overage').click();
+
+  const active = () => page.locator('.overage-buttons button.active');
+  await expect(active()).toHaveCount(0);
+
+  await page.locator('.overage-buttons button[data-percent="10"]').click();
+  await expect(active()).toHaveCount(1);
+  await expect(active()).toHaveText('10%');
+  await expect(active()).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('.overage-buttons button[data-percent="20"]').click();
+  await expect(active()).toHaveCount(1);
+  await expect(active()).toHaveText('20%');
+
+  // 12% belongs to no button: the pressed state clears rather than sitting on 20
+  await page.locator('#overage-percent').fill('12');
+  await expect(active()).toHaveCount(0);
+  await expect(page.locator('.overage-buttons button[aria-pressed="true"]')).toHaveCount(0);
+  await expect(page.locator('#overage-percent-total')).toContainText('200 + 24 additional = 224');
+});

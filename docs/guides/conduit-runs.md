@@ -80,7 +80,7 @@ are buying material, not pulling it. There is one overage line per run: change
 the percentage and Save and it is replaced, never duplicated. Clear the
 percentage and it goes away.
 
-Press **Save and Back to Manifest** and everything from all three steps lands
+Press **Save parts to the bid** and everything from all three steps lands
 together.
 
 ## Wire runs

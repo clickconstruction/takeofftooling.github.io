@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#0f0f11">
   <!-- Installable, and able to survive a reload with no signal (sw.js) -->
   <link rel="manifest" href="manifest.webmanifest">
+  <!-- the unsized link answers the browser's default /favicon.ico probe, which
+       404'd on every load; the sized one is what the tab and the PWA use -->
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,9 +93,9 @@
             <span class="modal-other-chevron"></span>
           </button>
           <div id="modal-other-content" class="modal-other-content modal-other-collapsed" role="region" aria-labelledby="modal-other-toggle">
-            <button type="button" data-type="permits">PERMITS</button>
-            <button type="button" data-type="powerCoCharges">POWER CO. CHARGES</button>
-            <button type="button" data-type="temporaryPower">TEMPORARY POWER</button>
+            <button type="button" data-type="permits">Permits</button>
+            <button type="button" data-type="powerCoCharges">Power co. charges</button>
+            <button type="button" data-type="temporaryPower">Temporary power</button>
           </div>
         </div>
         <div class="modal-type-option modal-type-none">

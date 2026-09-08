@@ -6177,5 +6177,21 @@ tr.row-unscaled input[data-field="price"], tr.row-unscaled input[data-field="lab
   background: rgba(139,92,246,0.18);
   color: #a78bfa;
 }
-.explode-btn { color: var(--accent); }
-.explode-btn:hover { color: var(--accent2); }
+/* Explode ⚡: one of the row's icon buttons, so it wears their clothes —
+   transparent, no border, 16 px glyph in currentColor, accent on hover. It
+   used to keep the browser's default button chrome (a white block) because
+   nothing in this sheet styled a bare .icon-btn. */
+.explode-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.explode-btn.icon-btn:hover { color: var(--accent); background: rgba(232, 197, 71, 0.15); }
+.explode-btn .explode-icon { width: 16px; height: 16px; fill: currentColor; }

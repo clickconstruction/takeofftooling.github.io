@@ -41,7 +41,7 @@ underneath. It moves as you type; there is nothing to press.
    > there is nothing left to hunt for. A type with hours on one side only shows
    > the bare number.
 
-4. **Other charges.** `PERMITS`, `POWER CO. CHARGES`, `TEMPORARY POWER`, and
+4. **Other charges.** `Permits`, `Power co. charges`, `Temporary power`, and
    **Site work & rentals** — a trenching line and anything from a conduit run's
    **Rentals** group (backhoe, saw cutting, haul-off). Site work is hired work,
    not stock: it is not taxed and it is not on the purchase list, because nobody

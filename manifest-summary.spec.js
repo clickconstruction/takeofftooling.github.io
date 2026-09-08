@@ -265,6 +265,14 @@ test('hours typed on a permit row count in the labor total the screen shows', as
   ]);
   await expect(page.locator('[data-summary="lab.other"]')).toHaveText('3.00');
   await expect(page.locator('[data-summary="laborTotal"]')).toHaveText('9.50');
+  // B3: the other-charge rows are sentence case, like Lighting and Gear beside
+  // them — they used to shout PERMITS / POWER CO. CHARGES / TEMPORARY POWER
+  const otherLabels = await page.evaluate(() =>
+    ['permits', 'powerCoCharges', 'temporaryPower'].map((k) =>
+      document.querySelector(`[data-summary="oth.${k}"]`).closest('tr').firstElementChild.textContent));
+  expect(otherLabels).toEqual(['Permits', 'Power co. charges', 'Temporary power']);
+  // and the row's own type chip says it the same way
+  await expect(page.locator('.type-badge.permits')).toHaveText('Permits');
   // the screen's total and the number the PDF reads are the same by construction
   expect(await page.evaluate(() => TakeoffState.getTotalLabor())).toBe(9.5);
   expect(await page.evaluate(() => TakeoffState.getSummaryBreakdown().laborTotal)).toBe(9.5);

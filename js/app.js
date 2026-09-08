@@ -155,7 +155,12 @@
     // "+ Box"-style chip until the estimator asks for it, and the row that
     // chip adds is seeded with the line's run count (component quantities are
     // totals for the whole line — the column head says so).
-    const toRows = (arr) => arr.map((x) => ({ description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' }));
+    // `book`: the book row this part was filled from (X1) — it rides in the
+    // buffer so re-opening and re-saving the editor doesn't drop the link.
+    const toRows = (arr) => arr.map((x) => Object.assign(
+      { description: x.description, quantity: x.quantity, labor: x.labor, price: x.price ?? '' },
+      x.meta && x.meta.book ? { book: x.meta.book } : null
+    ));
     TakeoffState.setDeviceTempData({
       outletsAndSwitches: toRows(outletsAndSwitches),
       boxes: toRows(boxes),
@@ -218,7 +223,10 @@
       }));
     }
     if (fittings.length) {
-      tempData.fittings = fittings.map((f) => ({ description: f.description, quantity: f.quantity, labor: f.labor, price: f.price ?? '' }));
+      tempData.fittings = fittings.map((f) => Object.assign(
+        { description: f.description, quantity: f.quantity, labor: f.labor, price: f.price ?? '' },
+        f.meta && f.meta.book ? { book: f.meta.book } : null
+      ));
       step = 2;
     } else if (step === 2 || trenching) {
       tempData.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
@@ -250,7 +258,10 @@
     TakeoffState.setWireTempData({
       overagePercent: overage ? overagePercentFrom(overage) : null,
       macAdapters: macAdapters.length
-        ? macAdapters.map((m) => ({ description: m.description, quantity: m.quantity, labor: m.labor, price: m.price ?? '' }))
+        ? macAdapters.map((m) => Object.assign(
+          { description: m.description, quantity: m.quantity, labor: m.labor, price: m.price ?? '' },
+          m.meta && m.meta.book ? { book: m.meta.book } : null
+        ))
         : [{ description: '', quantity: 0, labor: 0 }],
     });
     render();

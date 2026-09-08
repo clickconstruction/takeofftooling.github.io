@@ -15,10 +15,22 @@ test('Explode fills a receptacle row with its assembly, priced from the book', a
 
   // a typed, named, counted receptacle row (via the import path — same shape as the door)
   await page.evaluate(() => TakeoffImport.importText('Duplex Receptacle\t6\t1\n'));
-  await page.locator('#import-preview-all-btn').click();
+  await page.locator('#import-preview-add-btn').click();
   const explode = page.locator('.explode-btn');
   await expect(explode).toHaveCount(1);
   await expect(explode).toHaveAttribute('title', /Receptacle assembly/);
+  // it is one of the row's icon buttons, not a browser-default block: same
+  // colour and box as the book icon beside it (it used to be a white square)
+  const boxes = await page.evaluate(() => {
+    const pick = (sel) => {
+      const el = document.querySelector(sel);
+      const c = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return { bg: c.backgroundColor, color: c.color, border: c.borderStyle, w: Math.round(r.width), h: Math.round(r.height) };
+    };
+    return { explode: pick('.explode-btn'), book: pick('.labor-book-icon-btn') };
+  });
+  expect(boxes.explode).toEqual(boxes.book);
   await explode.click();
 
   const kids = await page.evaluate(() => {
