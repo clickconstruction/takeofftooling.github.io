@@ -36,6 +36,7 @@ const TakeoffCloud = (function () {
   const TABLE = 'takeoff_store';
   const PROJECTS_TABLE = 'takeoff_projects';
   const SUGGESTIONS_TABLE = 'takeoff_suggestions';
+  const LAYOUT_TABLE = 'takeoff_layout_suggestions'; // 003 migration; sharing skips gracefully until applied
   const ADMIN_EMAIL = 'stephen@pipetexas.com'; // legacy fallback while takeoff_profiles is unapplied; RLS enforces the real access
   const SHARE_KEY = 'takeoff-share-corrections'; // '1' when the user opted into sharing book corrections
   const PUSH_DEBOUNCE_MS = 1200;
@@ -434,8 +435,13 @@ const TakeoffCloud = (function () {
     if (on) {
       await pushSuggestions();
     } else if (client && session) {
-      // stop sharing = withdraw what was shared
+      // stop sharing = withdraw what was shared (corrections AND layout)
       await client.from(SUGGESTIONS_TABLE).delete().eq('user_id', session.user.id);
+      if (layoutTableAvailable) {
+        await client.from(LAYOUT_TABLE).delete().eq('user_id', session.user.id).then(({ error }) => {
+          if (error && error.code === '42P01') layoutTableAvailable = false;
+        });
+      }
     }
     updateUi();
   }
@@ -474,6 +480,60 @@ const TakeoffCloud = (function () {
     } catch (err) {
       console.warn('Takeoff: sharing corrections failed', err);
     }
+    await pushLayoutSuggestion();
+  }
+
+  // Share the user's applied Organize Categories layout (one row, upserted)
+  // so an admin can review member reorganizations and hard-code the good
+  // ones into the shipped defaults. Same consent as corrections; a book
+  // back on the default layout (or opting out) withdraws the row. Skips
+  // silently until the 003 migration creates the table.
+  let layoutTableAvailable = true;
+
+  async function pushLayoutSuggestion() {
+    if (!client || !session || !isSharing() || !layoutTableAvailable) return;
+    if (typeof TakeoffState === 'undefined' || !TakeoffState.getBookLayout) return;
+    try {
+      const layout = TakeoffState.getBookLayout();
+      const { error } = layout
+        ? await client.from(LAYOUT_TABLE).upsert({
+            user_id: session.user.id,
+            email: getEmail(),
+            value: layout,
+            status: 'pending',
+            updated_at: new Date().toISOString(),
+          })
+        : await client.from(LAYOUT_TABLE).delete().eq('user_id', session.user.id);
+      if (error) {
+        if (error.code === '42P01') layoutTableAvailable = false; // table not migrated yet
+        else console.warn('Takeoff: sharing layout failed', error.message);
+      }
+    } catch (err) {
+      console.warn('Takeoff: sharing layout failed', err);
+    }
+  }
+
+  // Review-panel IO for layouts (RLS: only admins see rows beyond their own).
+  async function fetchLayoutSuggestions(status) {
+    if (!client || !session) return { data: [], error: 'Not signed in' };
+    if (!layoutTableAvailable) return { data: [], error: null };
+    const { data, error } = await client
+      .from(LAYOUT_TABLE)
+      .select('user_id,email,value,status,updated_at')
+      .eq('status', status)
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (error && error.code === '42P01') {
+      layoutTableAvailable = false;
+      return { data: [], error: null };
+    }
+    return { data: data || [], error: error ? error.message : null };
+  }
+
+  async function setLayoutSuggestionStatus(userIds, status) {
+    if (!client || !session || !userIds.length) return null;
+    const { error } = await client.from(LAYOUT_TABLE).update({ status }).in('user_id', userIds);
+    return error ? error.message : null;
   }
 
   // Review-panel IO (RLS: only the admin sees rows beyond their own).
@@ -598,7 +658,7 @@ const TakeoffCloud = (function () {
       '<div class="cloud-share-section">',
       '<div class="cloud-share-head"><strong>Improve the shared book</strong>',
       `<label class="cloud-share-toggle"><input type="checkbox" id="cloud-share-toggle" ${sharing ? 'checked' : ''} /> <span>${sharing ? 'On' : 'Off'}</span></label></div>`,
-      '<p class="cloud-hint">Share your price and labor corrections so the shared parts book gets more accurate for everyone. Only book edits are shared — never your takeoffs or job data.</p>',
+      '<p class="cloud-hint">Share your price and labor corrections — and how you organize the book\'s categories — so the shared parts book gets more accurate for everyone. Only book edits and layout are shared — never your takeoffs or job data.</p>',
       sharing
         ? `<p class="cloud-hint cloud-share-status">${n} correction${n === 1 ? '' : 's'} shared${n ? ' · <button type="button" id="cloud-share-view-btn" class="btn-link cloud-share-view-btn">see what’s shared</button>' : ''}</p><div id="cloud-share-list" class="cloud-share-list" hidden></div>`
         : '',
@@ -749,5 +809,5 @@ const TakeoffCloud = (function () {
   });
   updateUi();
 
-  return { isSignedIn, getEmail, isAdmin, isDev, getRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus };
+  return { isSignedIn, getEmail, isAdmin, isDev, getRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus, fetchLayoutSuggestions, setLayoutSuggestionStatus };
 })();
