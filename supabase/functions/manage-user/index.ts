@@ -71,7 +71,20 @@ function shareUrl(project: { name: string; data: Record<string, unknown> }): str
   return `https://takeofftooling.com/#d=${b64}`
 }
 
-const projectSelect = 'id, name, external_ref, review_status, review_note, review_requested_at, reviewed_at, agent_import, updated_at, data'
+// The bid stamp, review lane and agent-door provenance live INSIDE data (the
+// 005 compare-and-swap RPC carries data whole; no columns) — read them from there.
+const projectSelect = 'id, name, updated_at, data'
+const fieldsOf = (p: Record<string, unknown>) => {
+  const d = (p.data as Record<string, unknown>) ?? {}
+  return {
+    external_ref: typeof d.externalRef === 'string' ? d.externalRef : null,
+    review_status: typeof d.reviewStatus === 'string' ? d.reviewStatus : 'draft',
+    review_note: typeof d.reviewNote === 'string' ? d.reviewNote : null,
+    review_requested_at: typeof d.reviewRequestedAt === 'string' ? d.reviewRequestedAt : null,
+    reviewed_at: typeof d.reviewedAt === 'string' ? d.reviewedAt : null,
+    agent_import: d.agentImport ?? null,
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -152,10 +165,8 @@ Deno.serve(async (req) => {
             const manifest = ((p.data as Record<string, unknown>)?.manifest as unknown[]) ?? []
             const summary = TakeoffHandoff.buildPipeToolingText(manifest, {})
             return {
-              id: p.id, name: p.name, external_ref: p.external_ref, updated_at: p.updated_at,
-              review_status: p.review_status, review_note: p.review_note, review_requested_at: p.review_requested_at, reviewed_at: p.reviewed_at,
+              id: p.id, name: p.name, updated_at: p.updated_at, ...fieldsOf(p),
               rows: summary.rows, counts: summary.counts, line_types: summary.feet, unscaled: summary.unscaled,
-              agent_import: p.agent_import ?? null,
             }
           }),
         })
@@ -169,18 +180,19 @@ Deno.serve(async (req) => {
         const ref = String(body.external_ref ?? '').trim()
         if (!projectId && !ref) return json(400, { error: 'project_id or external_ref required' })
         let q = admin.from('takeoff_projects').select(projectSelect).eq('user_id', u.id)
-        q = projectId ? q.eq('id', projectId) : q.eq('external_ref', ref)
+        q = projectId ? q.eq('id', projectId) : q.eq('data->>externalRef', ref)
         const { data: proj, error } = await q.order('updated_at', { ascending: false }).limit(1).maybeSingle()
         if (error) return json(500, { error: `project read failed: ${error.message}` })
         if (!proj) return json(404, { error: 'no such project for this twin' })
         const data = (proj.data as Record<string, unknown>) ?? {}
         const manifest = (data.manifest as unknown[]) ?? []
         const project = { plansUrl: typeof data.plansUrl === 'string' ? data.plansUrl : '' }
+        const f = fieldsOf(proj)
         return json(200, {
           project: {
-            id: proj.id, name: proj.name, external_ref: proj.external_ref, review_status: proj.review_status, review_note: proj.review_note,
+            id: proj.id, name: proj.name, external_ref: f.external_ref, review_status: f.review_status, review_note: f.review_note,
             updated_at: proj.updated_at, plans_url: project.plansUrl || null, labor_rate: data.laborRate ?? null, tax_rate: data.taxRate ?? null,
-            agent_import: proj.agent_import ?? null,
+            agent_import: f.agent_import,
           },
           rows: TakeoffHandoff.buildPipeToolingRows(manifest, project),
           counts_text: TakeoffHandoff.buildPipeToolingText(manifest, project).text,
@@ -193,18 +205,23 @@ Deno.serve(async (req) => {
         const note = typeof body.note === 'string' ? body.note.slice(0, 500) : null
         if (!projectId) return json(400, { error: 'project_id required' })
         if (!['reviewed', 'ready', 'changes'].includes(status)) return json(400, { error: "status must be 'reviewed', 'ready', or 'changes'" })
-        const { data: proj, error: projErr } = await admin.from('takeoff_projects').select('id, user_id, review_status').eq('id', projectId).maybeSingle()
+        const { data: proj, error: projErr } = await admin.from('takeoff_projects').select('id, user_id, data').eq('id', projectId).maybeSingle()
         if (projErr) return json(500, { error: `project read failed: ${projErr.message}` })
         if (!proj) return json(404, { error: 'no such project' })
         if (!(await twinProfile(admin, proj.user_id))) return json(400, { error: 'set_twin_project_review is twin-scoped — project is not twin-owned' })
-        const patch: Record<string, unknown> = { review_status: status }
-        if (status === 'ready') patch.review_requested_at = new Date().toISOString()
-        if (status === 'reviewed') patch.reviewed_at = new Date().toISOString()
-        if (note != null) patch.review_note = note
-        const { error } = await admin.from('takeoff_projects').update(patch).eq('id', projectId)
+        // the lane lives inside data: read-modify-write the document, bump updated_at so
+        // a device holding an older copy sees the newer row on its next pull
+        const cur = ((proj.data as Record<string, unknown>) ?? {})
+        const previous = typeof cur.reviewStatus === 'string' ? cur.reviewStatus : 'draft'
+        const next: Record<string, unknown> = { ...cur, reviewStatus: status }
+        const now = new Date().toISOString()
+        if (status === 'ready') next.reviewRequestedAt = now
+        if (status === 'reviewed') next.reviewedAt = now
+        if (note != null) next.reviewNote = note
+        const { error } = await admin.from('takeoff_projects').update({ data: next, updated_at: now }).eq('id', projectId)
         if (error) return json(500, { error: `review update failed: ${error.message}` })
         console.log(`manage-user set_twin_project_review: ${projectId} → ${status}`)
-        return json(200, { ok: true, previous: proj.review_status, status })
+        return json(200, { ok: true, previous, status })
       }
       default:
         return json(400, { error: `Unknown verb: ${verb}` })

@@ -1,4 +1,4 @@
--- 004 — digital twins: the TakeoffTooling seat
+-- 006 — digital twins: the TakeoffTooling seat
 --
 -- Mirrors CountTooling's twin identity (PipeTooling docs/DIGITAL_TWINS_PLAN.md,
 -- Phase E) so one per-twin token signs into all three apps:
@@ -13,7 +13,7 @@
 --     imports is a reviewable fact PipeTooling can read over the bridge.
 --   * takeoff_list_users returns the twin flag so Manage Users can badge twins.
 --
--- Apply after 003 (Supabase Dashboard → SQL Editor, whole file). Idempotent.
+-- Apply after 005 (Supabase Dashboard → SQL Editor, whole file). Idempotent.
 
 alter table public.takeoff_profiles
   add column if not exists is_digital_twin boolean not null default false;
@@ -30,17 +30,8 @@ create table if not exists public.twin_credentials (
 alter table public.twin_credentials enable row level security;
 create index if not exists twin_credentials_user_id_idx on public.twin_credentials(user_id);
 
-alter table public.takeoff_projects
-  add column if not exists external_ref text,
-  add column if not exists review_status text not null default 'draft'
-    check (review_status in ('draft', 'ready', 'changes', 'reviewed')),
-  add column if not exists review_note text,
-  add column if not exists review_requested_at timestamptz,
-  add column if not exists reviewed_at timestamptz,
-  add column if not exists agent_import jsonb;
-
 create index if not exists takeoff_projects_user_external_ref_idx
-  on public.takeoff_projects(user_id, external_ref);
+  on public.takeoff_projects(user_id, (data->>'externalRef'));
 
 -- dev-only: list every account with role, twin flag, and activity
 drop function if exists public.takeoff_list_users();

@@ -7,22 +7,73 @@ const TakeoffConduitView = (function () {
   const TRASH_SVG = TakeoffViewShared.TRASH_SVG;
 
   const TRENCHING_QUICK_ADD = [
-    { label: 'Dirt to 24in - $15', material: 'Dirt', depth: '24in', price: 15 },
-    { label: 'Dirt to 36in - $30', material: 'Dirt', depth: '36in', price: 30 },
-    { label: 'Dirt to 48in - $45', material: 'Dirt', depth: '48in', price: 45 },
-    { label: 'Rock to 24in - $150', material: 'Rock', depth: '24in', price: 150 },
-    { label: 'Rock to 36in - $175', material: 'Rock', depth: '36in', price: 175 },
-    { label: 'Asphalt/Concrete to 24in - $200', material: 'Asphalt/Concrete', depth: '24in', price: 200 },
-    { label: 'Asphalt/Concrete to 36in - $250', material: 'Asphalt/Concrete', depth: '36in', price: 250 },
+    { material: 'Dirt', depth: '24in', price: 15 },
+    { material: 'Dirt', depth: '36in', price: 30 },
+    { material: 'Dirt', depth: '48in', price: 45 },
+    { material: 'Rock', depth: '24in', price: 150 },
+    { material: 'Rock', depth: '36in', price: 175 },
+    { material: 'Asphalt/Concrete', depth: '24in', price: 200 },
+    { material: 'Asphalt/Concrete', depth: '36in', price: 250 },
   ];
+
+  // The two kinds of add-on the estimator can put on a trench. They are priced
+  // in different units — a backhoe by the hour or day, sand by the unit — so
+  // each group gets its own buttons, its own table and its own column labels,
+  // and the group is recorded on the child (meta.addonGroup) because the
+  // summary taxes them differently: fill is stock, a rental is not.
+  const ADDON_GROUPS = [
+    {
+      group: 'rental',
+      title: 'Rentals',
+      qtyHead: 'Hours or days',
+      priceHead: 'Rate',
+      priceSub: '($ per hour or day)',
+      options: ['BACKHOE', 'SAW CUTTING', 'DRILLING', 'HAUL-OFF', 'MANLIFT'],
+    },
+    {
+      group: 'fill',
+      title: 'Fill & site',
+      qtyHead: 'Quantity',
+      priceHead: 'Unit price',
+      priceSub: '($ each)',
+      options: ['ASPHALT PATCH', 'TRENCHING SAND', 'POLE BASES', 'CONCRETE PADS', 'MANHOLES'],
+    },
+  ];
+  const RENTAL_DESCRIPTIONS = new Set(ADDON_GROUPS[0].options);
+
+  // Which button group a row came from. Rows saved before the split carry no
+  // group, so fall back to the button that could have produced them; anything
+  // unrecognised stays 'fill', which is what every add-on used to be.
+  function addonGroupOf(row) {
+    if (row?.group === 'rental' || row?.group === 'fill') return row.group;
+    return RENTAL_DESCRIPTIONS.has((row?.description || '').trim().toUpperCase()) ? 'rental' : 'fill';
+  }
 
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
   }
 
+  // Money and hours in the flow read the way they read everywhere else (2
+  // places at or above $1, 4 below), minus the thousands separators a
+  // type=number field would reject. Blank stays blank — it means "not priced".
+  function moneyValue(v) {
+    if (v === '' || v == null) return '';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    return TakeoffUtils.formatMoney(n).replace(/,/g, '');
+  }
+  function hoursValue(v) {
+    if (v === '' || v == null) return '';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    return TakeoffUtils.formatHours(n).replace(/,/g, '');
+  }
+
+  const BLANK_FITTING = () => ({ description: '', quantity: 0, labor: 0, price: '' });
+
   // "Conduit:" + the three wizard steps, the current one boxed in accent.
-  // Pills are clickable: jumping forward commits the intermediate steps
-  // (same as the Next buttons); jumping back just switches (same as Back).
+  // Pills are clickable and, like Next and Back, are pure navigation: nothing
+  // reaches the bid until Save.
   function renderStepHeader(activeStep) {
     const steps = [[1, 'Trenching'], [2, 'Fittings'], [3, 'Overage']];
     const pills = steps
@@ -31,49 +82,68 @@ const TakeoffConduitView = (function () {
     return `<h2 class="conduit-step-title">Conduit: ${pills}</h2>`;
   }
 
-  // Commit step 1 (trenching + addons) to parent.children. Reads the step-1
-  // fields from the DOM, so only call while step 1 is rendered.
-  function commitStep1(itemId) {
-    const qty = document.getElementById('trench-qty')?.value;
-    const material = document.getElementById('trench-material')?.value;
-    const depth = document.getElementById('trench-depth')?.value;
-    const pricePerFoot = document.getElementById('trench-price-per-foot')?.value;
-    const desc = `Trenching: ${qty || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}`;
-    const trenchData = { description: desc, quantity: parseFloat(qty) || 0, labor: 0 };
+  // The step-1 fields are plain inputs; keep the buffer in step with them so
+  // leaving step 1 never loses a value (the input listeners do this too — this
+  // is the belt for anything set without firing an event).
+  function captureStep1Fields() {
+    const qtyEl = document.getElementById('trench-qty');
+    if (!qtyEl) return; // step 1 is not on screen
     const temp = TakeoffState.getConduitTempData();
-    temp.trenching = trenchData;
-    temp.trenchQty = qty;
-    temp.trenchMaterial = material;
-    temp.trenchDepth = depth;
-    temp.trenchPricePerFoot = pricePerFoot;
-    if (!temp.fittings || temp.fittings.length === 0) {
-      temp.fittings = [{ description: '', quantity: 0, labor: 0, price: '' }];
+    temp.trenchQty = qtyEl.value;
+    temp.trenchMaterial = document.getElementById('trench-material')?.value ?? '';
+    temp.trenchDepth = document.getElementById('trench-depth')?.value ?? '';
+    temp.trenchPricePerFoot = document.getElementById('trench-price-per-foot')?.value ?? '';
+  }
+
+  // Move the wizard. Pure navigation in both directions: the buffer is the
+  // wizard's working copy and only Save writes it to the bid, so Back really
+  // does go back and Cancel really does cancel.
+  function goToStep(target) {
+    const current = TakeoffState.getConduitStep();
+    if (target === current) return;
+    captureStep1Fields();
+    // seed a row so step 2 opens on an editable line. Mutating the live buffer
+    // object rather than going through the setter keeps this off the dirty
+    // flag — nothing the estimator did.
+    const temp = TakeoffState.getConduitTempData();
+    if (target === 2 && (!temp.fittings || temp.fittings.length === 0)) {
+      temp.fittings = [BLANK_FITTING()];
     }
-    TakeoffState.setConduitTempData(temp);
-    TakeoffState.beginBatch(); // one undo frame per step transition
-    const parent = TakeoffState.getItemById(itemId);
-    if (parent) {
-      const trenchIdx = (parent.children || []).findIndex((c) => c.type === 'trenching');
-      if (trenchIdx >= 0) parent.children.splice(trenchIdx, 1);
+    TakeoffState.setConduitStep(target);
+    TakeoffApp.render();
+  }
+
+  // Everything the wizard collected, written to parent.children in one batch:
+  // one undo frame per run, and nothing on the bid until this runs.
+  function saveAll(itemId) {
+    const item = TakeoffState.getItemById(itemId);
+    if (!item) return;
+    const temp = TakeoffState.getConduitTempData();
+
+    const feet = parseFloat(temp.trenchQty) || 0;
+    const material = (temp.trenchMaterial || '').trim();
+    const depth = (temp.trenchDepth || '').trim();
+    const pricePerFoot = parseFloat(temp.trenchPricePerFoot) || 0;
+    const hasTrenching = feet > 0 || !!material || !!depth || pricePerFoot > 0;
+
+    TakeoffState.beginBatch(); // one undo frame per save
+    item.children = (item.children || []).filter(
+      (c) => c.type !== 'trenching' && c.type !== 'trenchingAddon' && c.type !== 'fitting' && c.type !== 'overage'
+    );
+
+    if (hasTrenching) {
+      TakeoffState.addItem({
+        id: TakeoffState.generateId(),
+        type: 'trenching',
+        description: TakeoffViewShared.trenchDescription(feet, material, depth),
+        quantity: feet,
+        labor: 0,
+        price: pricePerFoot > 0 ? pricePerFoot : null,
+        parentId: itemId,
+        meta: { feet, material, depth, pricePerFoot },
+      });
     }
-    TakeoffState.addItem({
-      id: TakeoffState.generateId(),
-      type: 'trenching',
-      description: trenchData.description,
-      quantity: trenchData.quantity,
-      labor: trenchData.labor,
-      price: parseFloat(pricePerFoot) || undefined,
-      parentId: itemId,
-      meta: {
-        feet: parseFloat(qty) || 0,
-        material: material || '',
-        depth: depth || '',
-        pricePerFoot: parseFloat(pricePerFoot) || 0,
-      },
-    });
-    if (parent) {
-      parent.children = (parent.children || []).filter((c) => c.type !== 'trenchingAddon');
-    }
+
     for (const a of temp.trenchingAddons || []) {
       if (a.description) {
         TakeoffState.addItem({
@@ -84,20 +154,12 @@ const TakeoffConduitView = (function () {
           labor: parseFloat(a.labor) || 0,
           price: parseFloat(a.price) || null,
           parentId: itemId,
+          // the summary reads this: rentals are not stock, fill is
+          meta: { addonGroup: addonGroupOf(a) },
         });
       }
     }
-    TakeoffState.endBatch();
-  }
 
-  // Commit step 2 (fittings) to parent.children — works from temp data.
-  function commitStep2(itemId) {
-    const temp = TakeoffState.getConduitTempData();
-    TakeoffState.beginBatch(); // one undo frame per step transition
-    const parent = TakeoffState.getItemById(itemId);
-    if (parent) {
-      parent.children = (parent.children || []).filter((c) => c.type !== 'fitting');
-    }
     for (const f of temp.fittings || []) {
       if (f.description) {
         TakeoffState.addItem({
@@ -111,44 +173,88 @@ const TakeoffConduitView = (function () {
         });
       }
     }
+
+    const baseLength = item.quantity || 0;
+    const overagePercent = temp.overagePercent ?? 0;
+    const { additional } = TakeoffViewShared.computeOverage(baseLength, overagePercent);
+    if (additional > 0) {
+      // extra footage is bought at the parent's unit price (material
+      // waste — no install labor)
+      const unitPrice = Number(item.price);
+      TakeoffState.addItem({
+        id: TakeoffState.generateId(),
+        type: 'overage',
+        description: `Conduit overage (${overagePercent}%)`,
+        quantity: additional,
+        labor: 0,
+        price: !isNaN(unitPrice) && unitPrice > 0 ? unitPrice : null,
+        parentId: itemId,
+        meta: { overagePercent },
+      });
+    }
+
     TakeoffState.endBatch();
+    TakeoffEvents.log('flow_saved', { kind: 'conduit', rows: (item.children || []).length, componentPrice: (item.children || []).some((c) => c.price != null) });
+    TakeoffState.setFlowDirty(false);
+    TakeoffApp.navigateToManifest();
   }
 
-  // Move the wizard: forward commits each step it passes; backward just switches.
-  function goToStep(target, itemId) {
-    const current = TakeoffState.getConduitStep();
-    if (target === current) return;
-    if (target > current) {
-      if (current === 1) commitStep1(itemId);
-      if (target === 3 && current <= 2) commitStep2(itemId);
-    }
-    TakeoffState.setConduitStep(target);
-    TakeoffState.setFlowDirty(false);
-    TakeoffApp.render();
+  // One group's buttons and, under them, the rows that came from them. The
+  // index carried on each input is the row's index in the single buffer array,
+  // so splitting the table changes nothing about how a row is edited.
+  function renderAddonSection(spec, addons) {
+    const rows = addons
+      .map((a, i) => ({ a, i }))
+      .filter(({ a }) => addonGroupOf(a) === spec.group);
+
+    const buttons = spec.options
+      .map(
+        (d) =>
+          `<button type="button" class="btn btn-secondary trenching-addon-btn" data-group="${spec.group}" data-description="${escapeHtml(d)}">+ ${escapeHtml(d)}</button>`
+      )
+      .join('');
+
+    const table = rows.length === 0 ? '' : `
+              <div class="flow-table-scroll"><table class="trenching-addons-table" data-group="${spec.group}">
+                <thead><tr><th>Description</th><th>${spec.qtyHead}</th><th>Added labor<br><span class="th-sub">(hrs)</span></th><th>${spec.priceHead}<br><span class="th-sub">${escapeHtml(spec.priceSub)}</span></th><th></th></tr></thead>
+                <tbody>${rows.map(({ a, i }) => `
+                  <tr>
+                    <td>${escapeHtml(a.description || '')}</td>
+                    <td><input type="number" inputmode="decimal" data-addon-index="${i}" data-field="quantity" value="${escapeHtml(a.quantity ?? '')}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
+                    <td><input type="number" inputmode="decimal" data-addon-index="${i}" data-field="labor" value="${escapeHtml(hoursValue(a.labor))}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
+                    <td><input type="number" inputmode="decimal" data-addon-index="${i}" data-field="price" value="${escapeHtml(moneyValue(a.price))}" min="0" step="0.01" dir="ltr" placeholder="0" /></td>
+                    <td><button type="button" class="remove-addon-btn icon-btn" data-addon-index="${i}" title="Remove">${TRASH_SVG}</button></td>
+                  </tr>
+                `).join('')}</tbody>
+              </table></div>`;
+
+    return `
+            <div class="trenching-addon-section" data-group="${spec.group}">
+              <p class="trenching-addon-section-title">${escapeHtml(spec.title)}</p>
+              <div class="trenching-addon-buttons">${buttons}</div>
+              ${table}
+            </div>`;
   }
 
   function renderStep1(itemId) {
     const item = TakeoffState.getItemById(itemId);
     if (!item) return '';
     const temp = TakeoffState.getConduitTempData();
+    const addons = temp.trenchingAddons || [];
 
     return `
       <div class="flow-page conduit-flow">
         ${renderStepHeader(1)}
-        <div class="parent-summary">
-          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
-          <div class="parent-summary-line">Quantity: ${item.quantity}</div>
-          <div class="parent-summary-line">Length: ${item.quantity}</div>
-        </div>
+        ${TakeoffViewShared.renderParentSummary(item)}
         <div class="flow-section">
           <h3>Trenching</h3>
           <p class="trenching-intro">How much trenching (feet)? Through what material? At what depth?</p>
           <div class="trenching-row">
             <div class="trenching-fields">
-              <label>Quantity (Feet Of Trenching) <input type="number" id="trench-qty" value="${temp.trenchQty ?? ''}" min="0" placeholder="0" /></label>
+              <label>Quantity (Feet Of Trenching) <input type="number" inputmode="decimal" id="trench-qty" value="${escapeHtml(temp.trenchQty ?? '')}" min="0" placeholder="0" /></label>
               <label>Material to Dig Through <input type="text" id="trench-material" value="${escapeHtml(temp.trenchMaterial || '')}" placeholder="e.g. asphalt, concrete" /></label>
               <label>Depth <input type="text" id="trench-depth" value="${escapeHtml(temp.trenchDepth || '')}" placeholder="e.g. 18 inches" /></label>
-              <label>Price per Foot of Trenching ($) <input type="number" id="trench-price-per-foot" value="${temp.trenchPricePerFoot ?? ''}" min="0" step="0.01" placeholder="0" /></label>
+              <label>Price per Foot of Trenching ($) <input type="number" inputmode="decimal" id="trench-price-per-foot" value="${escapeHtml(moneyValue(temp.trenchPricePerFoot))}" min="0" step="0.01" placeholder="0" /></label>
             </div>
             <div class="trenching-quick-add">
               <p class="trenching-quick-add-title">Quick Add:</p>
@@ -157,7 +263,7 @@ const TakeoffConduitView = (function () {
                   ${TRENCHING_QUICK_ADD.map(
                     (p) => `
                   <tr class="trenching-quick-add-row" data-material="${escapeHtml(p.material)}" data-depth="${escapeHtml(p.depth)}" data-price="${p.price}" role="button" tabindex="0">
-                    <td>${escapeHtml(p.label)}</td>
+                    <td>${escapeHtml(`${p.material} to ${p.depth} - $${TakeoffUtils.formatMoney(p.price)}`)}</td>
                   </tr>
                 `
                   ).join('')}
@@ -166,40 +272,7 @@ const TakeoffConduitView = (function () {
             </div>
           </div>
           <div class="trenching-addons">
-            <div class="trenching-addon-section">
-              <p class="trenching-addon-section-title">Rentals</p>
-              <div class="trenching-addon-buttons">
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="BACKHOE">+ BACKHOE</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="SAW CUTTING">+ SAW CUTTING</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="DRILLING">+ DRILLING</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="HAUL-OFF">+ HAUL-OFF</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="MANLIFT">+ MANLIFT</button>
-              </div>
-            </div>
-            <div class="trenching-addon-section">
-              <p class="trenching-addon-section-title">Fill Materials</p>
-              <div class="trenching-addon-buttons">
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="ASPHALT PATCH">+ ASPHALT PATCH</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="TRENCHING SAND">+ TRENCHING SAND</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="POLE BASES">+ POLE BASES</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="CONCRETE PADS">+ CONCRETE PADS</button>
-                <button type="button" class="btn btn-secondary trenching-addon-btn" data-description="MANHOLES">+ MANHOLES</button>
-              </div>
-            </div>
-            ${(temp.trenchingAddons || []).length > 0 ? `
-            <div class="flow-table-scroll"><table class="trenching-addons-table">
-              <thead><tr><th>Description</th><th>Quantity<br><span class="th-sub">(Hours or Days)</span></th><th>Additional Labor</th><th>Charge<br><span class="th-sub">(per Hour or Day)</span></th><th></th></tr></thead>
-              <tbody>${(temp.trenchingAddons || []).map((a, i) => `
-      <tr>
-        <td>${escapeHtml(a.description || '')}</td>
-        <td><input type="number" data-addon-index="${i}" data-field="quantity" value="${a.quantity ?? ''}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
-        <td><input type="number" data-addon-index="${i}" data-field="labor" value="${a.labor ?? ''}" min="0" step="0.1" dir="ltr" placeholder="0" /></td>
-        <td><input type="number" data-addon-index="${i}" data-field="price" value="${a.price ?? ''}" min="0" step="0.01" dir="ltr" placeholder="0" /></td>
-        <td><button type="button" class="remove-addon-btn icon-btn" data-addon-index="${i}" title="Remove">${TRASH_SVG}</button></td>
-      </tr>
-    `).join('')}</tbody>
-            </table></div>
-            ` : ''}
+            ${ADDON_GROUPS.map((spec) => renderAddonSection(spec, addons)).join('')}
           </div>
         </div>
         <div class="flow-actions">
@@ -220,11 +293,11 @@ const TakeoffConduitView = (function () {
       .map(
         (f, i) => `
       <tr>
-        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-fittings-index="${i}" title="Part Book Search">PB</button></td>
+        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-fittings-index="${i}" title="Fill this row from the Labor and Price Book">Book</button></td>
         <td><input type="text" data-fittings-index="${i}" data-field="description" value="${escapeHtml(f.description || '')}" placeholder="Description" /></td>
-        <td><input type="number" data-fittings-index="${i}" data-field="quantity" value="${f.quantity ?? ''}" min="0" /></td>
-        <td><input type="number" data-fittings-index="${i}" data-field="labor" value="${f.labor !== undefined ? f.labor : ''}" min="0" step="0.1" /></td>
-        <td><input type="number" data-fittings-index="${i}" data-field="price" value="${f.price ?? ''}" min="0" step="0.01" dir="ltr" placeholder="Price" /></td>
+        <td><input type="number" inputmode="decimal" data-fittings-index="${i}" data-field="quantity" value="${escapeHtml(f.quantity ?? '')}" min="0" /></td>
+        <td><input type="number" inputmode="decimal" data-fittings-index="${i}" data-field="labor" value="${escapeHtml(hoursValue(f.labor))}" min="0" step="0.1" /></td>
+        <td><input type="number" inputmode="decimal" data-fittings-index="${i}" data-field="price" value="${escapeHtml(moneyValue(f.price))}" min="0" step="0.01" dir="ltr" placeholder="Price" /></td>
         <td><button type="button" class="remove-fitting-btn icon-btn" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
@@ -243,10 +316,7 @@ const TakeoffConduitView = (function () {
     return `
       <div class="flow-page conduit-flow">
         ${renderStepHeader(2)}
-        <div class="parent-summary">
-          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
-          <div class="parent-summary-line">Quantity: ${item.quantity}</div>
-        </div>
+        ${TakeoffViewShared.renderParentSummary(item)}
         <div class="flow-section">
           <h3 class="fittings-section-header">Fittings <button type="button" class="labor-book-icon-btn icon-btn" id="conduit-fittings-labor-book-btn" title="Open Labor and Price Book - Conduit Fittings">${BOOK_SVG}</button></h3>
           <p>Add items manually or select from list:</p>
@@ -261,6 +331,7 @@ const TakeoffConduitView = (function () {
           <button type="button" class="btn add-fitting-btn">Add Fitting Row</button>
         </div>
         <div class="flow-actions">
+          <button type="button" class="btn btn-secondary" id="conduit-cancel-btn">Cancel</button>
           <button type="button" class="btn btn-secondary" id="conduit-back-trench">Back</button>
           <button type="button" class="btn" id="conduit-next-overage">Next: Overage</button>
         </div>
@@ -278,12 +349,10 @@ const TakeoffConduitView = (function () {
     return `
       <div class="flow-page conduit-flow">
         ${renderStepHeader(3)}
-        <div class="parent-summary">
-          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
-          <div class="parent-summary-line">Current length: ${baseLength}</div>
-        </div>
+        ${TakeoffViewShared.renderParentSummary(item)}
         ${TakeoffViewShared.renderOverageSection({ inputId: 'overage-percent', noun: 'Conduit', baseLength, overagePercent })}
         <div class="flow-actions">
+          <button type="button" class="btn btn-secondary" id="conduit-cancel-btn">Cancel</button>
           <button type="button" class="btn btn-secondary" id="conduit-back-fittings">Back</button>
           <button type="button" class="btn btn-success" id="conduit-save-btn">Save and Back to Manifest</button>
         </div>
@@ -292,6 +361,9 @@ const TakeoffConduitView = (function () {
   }
 
   function render(itemId) {
+    // the buffer is hydrated before this first render; from here on every
+    // write to it — the labor book's included — counts as an edit
+    TakeoffState.endFlowHydration();
     const step = TakeoffState.getConduitStep();
     if (step === 1) return renderStep1(itemId);
     if (step === 2) return renderStep2(itemId);
@@ -301,22 +373,30 @@ const TakeoffConduitView = (function () {
   function attachListeners(itemId) {
     const step = TakeoffState.getConduitStep();
 
-    // step pills jump directly to a step (forward commits, backward switches)
+    // step pills jump directly to a step — navigation only, like Next and Back
     document.querySelectorAll('.conduit-step-pill').forEach((btn) => {
       btn.addEventListener('click', () => {
-        goToStep(Number(btn.dataset.step), itemId);
+        goToStep(Number(btn.dataset.step));
       });
     });
 
-    if (step === 1) {
-      document.getElementById('conduit-cancel-btn')?.addEventListener('click', () => {
-        TakeoffApp.navigateToManifest();
-      });
+    // Cancel sits on every step; navigateToManifest runs the discard guard
+    document.getElementById('conduit-cancel-btn')?.addEventListener('click', () => {
+      TakeoffApp.navigateToManifest();
+    });
 
-      // the trench fields are read from the DOM at commit time; edits still
-      // need to arm the discard guard
-      ['trench-qty', 'trench-material', 'trench-depth', 'trench-price-per-foot'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('input', () => TakeoffState.setFlowDirty(true));
+    if (step === 1) {
+      // keep the buffer in step with the fields, and arm the discard guard
+      [
+        ['trench-qty', 'trenchQty'],
+        ['trench-material', 'trenchMaterial'],
+        ['trench-depth', 'trenchDepth'],
+        ['trench-price-per-foot', 'trenchPricePerFoot'],
+      ].forEach(([id, key]) => {
+        document.getElementById(id)?.addEventListener('input', (e) => {
+          TakeoffState.setConduitTempData({ [key]: e.target.value });
+          TakeoffState.setFlowDirty(true);
+        });
       });
 
       document.querySelectorAll('.trenching-quick-add-row').forEach((row) => {
@@ -361,9 +441,11 @@ const TakeoffConduitView = (function () {
         btn.addEventListener('click', (e) => {
           const description = e.currentTarget.dataset.description || '';
           if (!description) return;
+          // the button group is the row's group from here to the saved child
+          const group = e.currentTarget.dataset.group === 'rental' ? 'rental' : 'fill';
           const temp = TakeoffState.getConduitTempData();
           temp.trenchingAddons = temp.trenchingAddons || [];
-          temp.trenchingAddons.push({ description, quantity: '', labor: '', price: '' });
+          temp.trenchingAddons.push({ description, group, quantity: '', labor: '', price: '' });
           TakeoffState.setConduitTempData(temp);
           TakeoffState.setFlowDirty(true);
           TakeoffApp.render();
@@ -398,13 +480,13 @@ const TakeoffConduitView = (function () {
       });
 
       document.getElementById('conduit-next-fittings')?.addEventListener('click', () => {
-        goToStep(2, itemId);
+        goToStep(2);
       });
     }
 
     if (step === 2) {
       document.getElementById('conduit-back-trench')?.addEventListener('click', () => {
-        goToStep(1, itemId);
+        goToStep(1);
       });
 
       document.getElementById('conduit-fittings-labor-book-btn')?.addEventListener('click', () => {
@@ -416,7 +498,14 @@ const TakeoffConduitView = (function () {
         if (!val) return;
         const temp = TakeoffState.getConduitTempData();
         temp.fittings = temp.fittings || [];
-        temp.fittings.push({ description: val, quantity: 1, labor: 0, price: '' });
+        // the step opens on a blank row; fill that one rather than leaving it
+        // above the pick for the estimator to trash
+        const blank = temp.fittings.findIndex((f) => !(f.description || '').trim());
+        if (blank >= 0) {
+          temp.fittings[blank] = { ...temp.fittings[blank], description: val, quantity: temp.fittings[blank].quantity || 1 };
+        } else {
+          temp.fittings.push({ description: val, quantity: 1, labor: 0, price: '' });
+        }
         TakeoffState.setConduitTempData(temp);
         TakeoffState.setFlowDirty(true);
         e.target.value = '';
@@ -426,7 +515,7 @@ const TakeoffConduitView = (function () {
       document.querySelector('.add-fitting-btn')?.addEventListener('click', () => {
         const temp = TakeoffState.getConduitTempData();
         temp.fittings = temp.fittings || [];
-        temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
+        temp.fittings.push(BLANK_FITTING());
         TakeoffState.setConduitTempData(temp);
         TakeoffState.setFlowDirty(true);
         TakeoffApp.render();
@@ -446,7 +535,7 @@ const TakeoffConduitView = (function () {
           temp.fittings = temp.fittings || [];
           temp.fittings.splice(index, 1);
           if (temp.fittings.length === 0) {
-            temp.fittings.push({ description: '', quantity: 0, labor: 0, price: '' });
+            temp.fittings.push(BLANK_FITTING());
           }
           TakeoffState.setConduitTempData(temp);
           TakeoffState.setFlowDirty(true);
@@ -469,13 +558,13 @@ const TakeoffConduitView = (function () {
       });
 
       document.getElementById('conduit-next-overage')?.addEventListener('click', () => {
-        goToStep(3, itemId);
+        goToStep(3);
       });
     }
 
     if (step === 3) {
       document.getElementById('conduit-back-fittings')?.addEventListener('click', () => {
-        goToStep(2, itemId);
+        goToStep(2);
       });
 
       document.querySelectorAll('.overage-buttons button').forEach((btn) => {
@@ -488,46 +577,18 @@ const TakeoffConduitView = (function () {
         });
       });
 
+      // typing a custom %: update the buffer and patch the total line in place
+      // (a re-render here would steal focus after the first digit)
       document.getElementById('overage-percent')?.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        TakeoffState.setConduitTempData({ overagePercent: isNaN(val) ? null : val });
+        const percent = isNaN(val) ? null : val;
+        TakeoffState.setConduitTempData({ overagePercent: percent });
         TakeoffState.setFlowDirty(true);
-        TakeoffApp.render();
+        TakeoffViewShared.updateOverageTotal('overage-percent', 'Conduit', TakeoffState.getItemById(itemId)?.quantity || 0, percent);
       });
 
       document.getElementById('conduit-save-btn')?.addEventListener('click', () => {
-        const item = TakeoffState.getItemById(itemId);
-        if (!item) return;
-
-        const temp = TakeoffState.getConduitTempData();
-        TakeoffState.beginBatch(); // one undo frame per save
-        const parent = TakeoffState.getItemById(itemId);
-        if (parent) {
-          parent.children = (parent.children || []).filter((c) => c.type !== 'overage');
-        }
-        const baseLength = item.quantity || 0;
-        const overagePercent = temp.overagePercent ?? 0;
-        const { additional } = TakeoffViewShared.computeOverage(baseLength, overagePercent);
-
-        if (additional > 0) {
-          // extra footage is bought at the parent's unit price (material
-          // waste — no install labor)
-          const unitPrice = Number(item.price);
-          TakeoffState.addItem({
-            id: TakeoffState.generateId(),
-            type: 'overage',
-            description: `Conduit overage (${overagePercent}%)`,
-            quantity: additional,
-            labor: 0,
-            price: !isNaN(unitPrice) && unitPrice > 0 ? unitPrice : null,
-            parentId: itemId,
-            meta: { overagePercent },
-          });
-        }
-
-        TakeoffState.endBatch();
-        TakeoffState.setFlowDirty(false);
-        TakeoffApp.navigateToManifest();
+        saveAll(itemId);
       });
     }
   }

@@ -58,9 +58,12 @@ async function main() {
     let matchStats = null;
     if (doMatch) {
       const matcher = require('../js/mcElliotMatch.js');
-      const result = await matcher.runMatching(model.items, deduped, mappings, (done, total) => {
+      const matched = await matcher.runMatching(model.items, deduped, mappings, (done, total) => {
         if (done % 2000 === 0 || done === total) console.log(`  matched ${done}/${total} items`);
       });
+      // one supplier part number prices one MC item: guesses that would take a
+      // part number already in use go to the review queue instead
+      const result = core.resolveMatchCollisions(matched, model.items, deduped);
       let newAuto = 0;
       for (const [itemNum, m] of Object.entries(result.auto)) {
         applyMatch(itemNum, m.partNumber, m.perEach);
@@ -78,6 +81,7 @@ async function main() {
       matchStats = {
         savedMappingsApplied: result.mappedApplied,
         autoMatched: newAuto,
+        heldBackPartNumberInUse: result.heldBack,
         needsReview: result.review.length,
         reviewQueueWrittenTo: 'source-data/elliot-review-queue.json',
       };

@@ -129,6 +129,11 @@ const McElliotMatch = (function () {
               itemNum: Number(itemNum),
               itemName: item.n,
               oldPerEach: item.p,
+              // the supplier category the best guess came from: what the
+              // review list groups by, so one trade is reviewed at a time
+              category: (cls.best && cls.best.row.category) || '',
+              reason: cls.reason ? cls.reason.text : '',
+              reasonCode: cls.reason ? cls.reason.code : '',
               candidates: cls.candidates.map((c) => ({
                 pn: c.row.partNumber,
                 desc: c.row.description || c.row.name,

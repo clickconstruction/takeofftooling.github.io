@@ -158,15 +158,18 @@ Deno.serve(async (req) => {
     // --- the project document (cloud row shape; the app's rowToProject reads it) ---
     const now = new Date().toISOString()
     const agentImport = { imported_at: now, source: 'manifest v2', note, book: bookSource, exploded, unpriced, rows: summary.rows }
-    const data: Record<string, unknown> = { manifest: finalManifest, laborRate: laborRate ?? 0, agentImport }
+    // the bid stamp, review lane and provenance live INSIDE data (the app's 005
+    // compare-and-swap RPC carries data whole; no columns) — a re-import resets the lane
+    const data: Record<string, unknown> = { manifest: finalManifest, laborRate: laborRate ?? 0, agentImport, reviewStatus: 'draft' }
+    if (externalRef) data.externalRef = externalRef
     if (taxRate != null) data.taxRate = taxRate
     if (plansUrl) data.plansUrl = plansUrl
 
     // idempotent: by (owner, external_ref) when stamped, else by (owner, name)
     let existingQ = admin.from('takeoff_projects').select('id').eq('user_id', user.id)
-    existingQ = externalRef ? existingQ.eq('external_ref', externalRef) : existingQ.eq('name', name)
+    existingQ = externalRef ? existingQ.eq('data->>externalRef', externalRef) : existingQ.eq('name', name)
     const { data: existing } = await existingQ.order('updated_at', { ascending: false }).limit(1).maybeSingle()
-    const row = { name, data, external_ref: externalRef, review_status: 'draft', review_note: null, review_requested_at: null, reviewed_at: null, agent_import: agentImport, updated_at: now }
+    const row = { name, data, updated_at: now }
     let projectId: string
     if (existing?.id) {
       const { error } = await admin.from('takeoff_projects').update(row).eq('id', existing.id)

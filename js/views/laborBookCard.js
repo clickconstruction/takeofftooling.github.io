@@ -23,25 +23,30 @@ const TakeoffLaborBookCard = (function () {
     return TakeoffState.getLaborBookType(current.type)?.[current.section]?.[current.index] || null;
   }
 
+  // A change log with a date on every line reads as a trail only in date
+  // order; back-dated quotes and import lines otherwise interleave. Undated
+  // entries sort last, and same-day lines keep the order they happened in.
+  function inDateOrder(history) {
+    return (history || [])
+      .map((h, i) => ({ h, i }))
+      .sort((a, b) => String(b.h.at || '').localeCompare(String(a.h.at || '')) || a.i - b.i)
+      .map((x) => x.h);
+  }
+
   function viewModel() {
     if (current.mode === 'book') {
       const row = bookRow();
       if (!row) return null;
-      let offers = row.offers || [];
-      let synthetic = false;
-      if (!offers.length && row.price !== '' && row.price != null && row.priceSource) {
-        // a price set inline before any quotes were recorded
-        offers = [{ supplier: row.priceSource, price: Number(row.price), at: row.pricedAt, by: null }];
-        synthetic = true;
-      }
+      // No synthetic offer: a hand-typed price is a real offer on the row now
+      // (TakeoffState.noteHandPrice), so nothing here has to invent one — and
+      // the first real quote no longer replaces a row that was never recorded.
       return {
         name: row.name || '(unnamed part)',
         partNumber: row.partNumber || '',
         labor: row.labor ?? '',
-        offers,
-        synthetic,
+        offers: row.offers || [],
         inUse: (row.priceSource || '').toLowerCase(),
-        history: row.history || [],
+        history: inDateOrder(row.history),
         editable: true,
       };
     }
@@ -51,11 +56,30 @@ const TakeoffLaborBookCard = (function () {
       partNumber: e.partNumber || '',
       labor: '',
       offers: e.price ? [{ supplier: current.vendor, price: Number(e.price), at: e.pricedAt, by: 'import' }] : [],
-      synthetic: false,
       inUse: current.vendor.toLowerCase(),
       history: [],
       editable: true, // editing promotes into the book
     };
+  }
+
+  // 'You' is the source of a price somebody typed in. It is not a supply
+  // house, and the offers table is a list of supply houses.
+  function supplierLabel(supplier) {
+    return supplier === TakeoffState.HAND_PRICED ? 'Hand-priced' : supplier;
+  }
+
+  // The date cell is editable now, so the freshness tier the row badge shows
+  // rides on the date's own colour rather than a separate badge.
+  function whenTier(at) {
+    const days = TakeoffViewShared.priceAgeDays(at);
+    if (days === null) return '';
+    return days < 30 ? 'pc-when-fresh' : days <= 90 ? 'pc-when-aging' : 'pc-when-stale';
+  }
+
+  function whenTitle(at) {
+    const days = TakeoffViewShared.priceAgeDays(at);
+    if (days === null) return "No date recorded — type one, or leave it blank if you don't know";
+    return `${days === 0 ? 'Quoted today' : `${days} days old`} — correct the date here without re-recording the price`;
   }
 
   function supplierSuggestions() {
@@ -64,8 +88,11 @@ const TakeoffLaborBookCard = (function () {
     for (const tab of Object.keys(book)) {
       for (const section of Object.keys(book[tab] || {})) {
         for (const row of book[tab][section]) {
-          if (row.priceSource && row.priceSource !== 'You') names.add(row.priceSource);
-          for (const o of row.offers || []) names.add(o.supplier);
+          // a hand-typed price is not a supply house — keep it out of the list
+          if (row.priceSource && row.priceSource !== TakeoffState.HAND_PRICED) names.add(row.priceSource);
+          for (const o of row.offers || []) {
+            if (o.supplier !== TakeoffState.HAND_PRICED) names.add(o.supplier);
+          }
         }
       }
     }
@@ -87,16 +114,15 @@ const TakeoffLaborBookCard = (function () {
     const body = document.getElementById('part-card-body');
     const vm = current && viewModel();
     if (!body || !vm) return;
-    const badge = (at) => TakeoffViewShared.renderPriceProvenance(null, at);
     const offersHtml = vm.offers.length
       ? vm.offers
           .map((o) => {
             const active = o.supplier.toLowerCase() === vm.inUse;
             return `
             <tr>
-              <td>${escapeHtml(o.supplier)}</td>
-              <td class="pc-num">$${Number(o.price).toFixed(2)}</td>
-              <td>${badge(o.at)}</td>
+              <td>${escapeHtml(supplierLabel(o.supplier))}</td>
+              <td class="pc-num">$${TakeoffUtils.formatMoney(o.price)}</td>
+              <td class="pc-when-cell"><input type="date" class="pc-offer-date ${whenTier(o.at)}" value="${escapeHtml(o.at || '')}" data-supplier="${escapeHtml(o.supplier)}" title="${escapeHtml(whenTitle(o.at))}" /></td>
               <td class="pc-who">${escapeHtml(o.by || '—')}</td>
               <td class="pc-use-cell"><button type="button" class="pc-use-btn${active ? ' active' : ''}" data-supplier="${escapeHtml(o.supplier)}" ${active ? 'disabled' : ''}>${active ? 'In use' : 'Use'}</button></td>
             </tr>`;
@@ -106,8 +132,11 @@ const TakeoffLaborBookCard = (function () {
     const historyHtml = vm.history.length
       ? vm.history
           .map((h) => {
-            const what = h.kind === 'labor' ? `labor ${h.value}` : `$${Number(h.value).toFixed(2)} ${escapeHtml(h.supplier || '')}`;
-            return `<li><span class="pc-hist-date">${escapeHtml(h.at || '')}</span> ${what} — <span class="pc-hist-by">${escapeHtml(h.by || '')}</span></li>`;
+            const what =
+              h.kind === 'labor'
+                ? `labor ${TakeoffUtils.formatHours(h.value)}`
+                : `$${TakeoffUtils.formatMoney(h.value)} ${escapeHtml(supplierLabel(h.supplier || ''))}`;
+            return `<li><span class="pc-hist-date">${escapeHtml(h.at || 'no date')}</span> ${what} — <span class="pc-hist-by">${escapeHtml(h.by || '')}</span></li>`;
           })
           .join('')
       : '<li class="pc-empty">No changes recorded yet.</li>';
@@ -130,13 +159,15 @@ const TakeoffLaborBookCard = (function () {
           <thead><tr><th>Supplier</th><th class="pc-num">Price</th><th>When</th><th>By</th><th></th></tr></thead>
           <tbody>${offersHtml}</tbody>
         </table>
+        <p class="pc-note">In use is the price this book row carries. Parts already on a bid keep the price they were added with.</p>
         <div class="pc-record">
-          <input type="text" id="part-card-supplier" list="part-card-suppliers" placeholder="Supplier" autocomplete="off" />
+          <input type="text" id="part-card-supplier" list="part-card-suppliers" placeholder="Supply house" autocomplete="off" />
           <datalist id="part-card-suppliers">${supplierSuggestions().map((s) => `<option value="${escapeHtml(s)}"></option>`).join('')}</datalist>
-          <input type="number" id="part-card-price" min="0" step="0.01" placeholder="Price" />
-          <input type="date" id="part-card-date" value="${TakeoffViewShared.todayISO()}" />
+          <input type="text" inputmode="decimal" id="part-card-price" placeholder="Price" />
+          <input type="date" id="part-card-date" value="${TakeoffViewShared.todayISO()}" title="Leave blank if you don't know the date" />
           <button type="button" class="btn btn-primary" id="part-card-record-btn">Record price</button>
         </div>
+        <p class="pc-error" id="part-card-error" hidden></p>
         <h4>History</h4>
         <ul class="pc-history">${historyHtml}</ul>
       </div>`;
@@ -159,11 +190,39 @@ const TakeoffLaborBookCard = (function () {
         refresh();
       });
     });
+    // Correcting where a price came from is not the same as re-quoting it:
+    // the date can be fixed — or cleared, for a quote whose date nobody
+    // remembers — without touching the number.
+    body.querySelectorAll('.pc-offer-date').forEach((input) => {
+      input.addEventListener('change', () => {
+        const target = ensureBookTarget();
+        TakeoffState.updatePartOffer(target.type, target.section, target.index, input.dataset.supplier, { at: input.value });
+        refresh();
+      });
+    });
     body.querySelector('#part-card-record-btn').addEventListener('click', () => {
-      const supplier = body.querySelector('#part-card-supplier').value.trim();
-      const price = parseFloat(body.querySelector('#part-card-price').value);
+      const supplierEl = body.querySelector('#part-card-supplier');
+      const supplier = supplierEl.value.trim();
+      const priceEl = body.querySelector('#part-card-price');
+      // quotes get typed the way they're written: '$21,450.75', '1,975'
+      const price = TakeoffUtils.parseMoney(priceEl.value);
+      // a blank date is an answer, not an omission: "last month sometime"
       const at = body.querySelector('#part-card-date').value;
-      if (!supplier || Number.isNaN(price)) return;
+      const badPrice = price == null || Number.isNaN(price);
+      priceEl.classList.toggle('lb-price-invalid', badPrice);
+      priceEl.setAttribute('aria-invalid', badPrice ? 'true' : 'false');
+      supplierEl.classList.toggle('lb-price-invalid', !supplier);
+      supplierEl.setAttribute('aria-invalid', supplier ? 'false' : 'true');
+      const errEl = body.querySelector('#part-card-error');
+      // the button used to do nothing at all, with no message anywhere
+      const problem = !supplier
+        ? 'Which supply house quoted this? Type their name first.'
+        : badPrice
+          ? 'Type the price as money — 1,975 or $19.75.'
+          : '';
+      errEl.textContent = problem;
+      errEl.hidden = !problem;
+      if (problem) return;
       const target = ensureBookTarget();
       TakeoffState.recordPartPrice(target.type, target.section, target.index, { supplier, price, at });
       refresh();
@@ -176,6 +235,9 @@ const TakeoffLaborBookCard = (function () {
     if (current.mode === 'book') return current;
     const { tab, sectionName, vendor, entry } = current;
     const { section, index } = TakeoffState.promoteCatalogPart(tab, sectionName, vendor, entry);
+    // the book underneath re-renders on the next refresh: open the section the
+    // part just landed in, so closing the card doesn't hide it
+    if (typeof TakeoffLaborBookView !== 'undefined') TakeoffLaborBookView.markSectionOpen(section);
     current = { mode: 'book', type: tab, section, index };
     return current;
   }

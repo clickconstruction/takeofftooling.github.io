@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 5,
  "laborBook": {
   "gear": {
    "Switchboards": [
@@ -277,6 +277,188 @@
      "price": ""
     }
    ],
+   "Disconnects": [
+    {
+     "name": "Disconnect 30A 1PH non-fused NEMA 1",
+     "labor": 0.95,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 1PH non-fused NEMA 1",
+     "labor": 1.35,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 3PH non-fused NEMA 1",
+     "labor": 1.15,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 3PH non-fused NEMA 1",
+     "labor": 1.6,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 3PH non-fused NEMA 1",
+     "labor": 2.3,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 3PH non-fused NEMA 1",
+     "labor": 3.4,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 400A 3PH non-fused NEMA 1",
+     "labor": 5.2,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 600A 3PH non-fused NEMA 1",
+     "labor": 8.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 3PH non-fused NEMA 3R",
+     "labor": 1.3,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 3PH non-fused NEMA 3R",
+     "labor": 1.9,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 3PH non-fused NEMA 3R",
+     "labor": 2.75,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 3PH non-fused NEMA 3R",
+     "labor": 4,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 1PH fused NEMA 1",
+     "labor": 1.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 1PH fused NEMA 1",
+     "labor": 1.5,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 1PH fused NEMA 1",
+     "labor": 2.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 1PH fused NEMA 1",
+     "labor": 3.3,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 400A 1PH fused NEMA 1",
+     "labor": 4.8,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 600A 1PH fused NEMA 1",
+     "labor": 7.2,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 3PH fused NEMA 1",
+     "labor": 1.39,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 3PH fused NEMA 1",
+     "labor": 1.9,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 3PH fused NEMA 1",
+     "labor": 2.7,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 3PH fused NEMA 1",
+     "labor": 4.4,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 400A 3PH fused NEMA 1",
+     "labor": 6.6,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 600A 3PH fused NEMA 1",
+     "labor": 8.8,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 1PH fused NEMA 3R",
+     "labor": 1.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 1PH fused NEMA 3R",
+     "labor": 1.5,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 1PH fused NEMA 3R",
+     "labor": 2.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 1PH fused NEMA 3R",
+     "labor": 3.3,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 400A 1PH fused NEMA 3R",
+     "labor": 4.8,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 600A 1PH fused NEMA 3R",
+     "labor": 7.2,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 30A 3PH fused NEMA 3R",
+     "labor": 1.5,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 60A 3PH fused NEMA 3R",
+     "labor": 2.1,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 100A 3PH fused NEMA 3R",
+     "labor": 3,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 200A 3PH fused NEMA 3R",
+     "labor": 4.9,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 400A 3PH fused NEMA 3R",
+     "labor": 7.2,
+     "price": ""
+    },
+    {
+     "name": "Disconnect 600A 3PH fused NEMA 3R",
+     "labor": 9.4,
+     "price": ""
+    }
+   ],
    "Transformers.3PH": [
     {
      "name": "3KVA",
@@ -446,6 +628,18 @@
      "priceSource": "MC book",
      "pricedAt": "2026-07-17"
     }
+   ],
+   "Photocells": [
+    {
+     "name": "Photocell 120V",
+     "labor": 1,
+     "price": ""
+    },
+    {
+     "name": "Photocell 208/277V",
+     "labor": 1,
+     "price": ""
+    }
    ]
   },
   "devices": {
@@ -549,6 +743,93 @@
      "price": 44.11,
      "priceSource": "MC book",
      "pricedAt": "2026-07-17"
+    },
+    {
+     "name": "Single pole toggle switch 15A",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "Single pole toggle switch 20A",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "3-way toggle switch 15A",
+     "labor": 0.25,
+     "price": ""
+    },
+    {
+     "name": "3-way toggle switch 20A",
+     "labor": 0.25,
+     "price": ""
+    },
+    {
+     "name": "4-way toggle switch 15A",
+     "labor": 0.3,
+     "price": ""
+    },
+    {
+     "name": "4-way toggle switch 20A",
+     "labor": 0.3,
+     "price": ""
+    },
+    {
+     "name": "Single pole key switch 20A",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "3-way key switch 20A",
+     "labor": 0.25,
+     "price": ""
+    },
+    {
+     "name": "Single pole weatherproof switch 20A",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "3-way weatherproof switch 20A",
+     "labor": 0.25,
+     "price": ""
+    },
+    {
+     "name": "Momentary switch 20A",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "Dimmer switch 600W",
+     "labor": 0.25,
+     "price": ""
+    }
+   ],
+   "Occupancy Sensors": [
+    {
+     "name": "Occupancy sensor, wall switch",
+     "labor": 0.3,
+     "price": ""
+    },
+    {
+     "name": "Occupancy sensor, wall switch with dimmer",
+     "labor": 0.3,
+     "price": ""
+    },
+    {
+     "name": "Occupancy sensor, ceiling dual technology",
+     "labor": 0.4,
+     "price": ""
+    },
+    {
+     "name": "Occupancy sensor, ceiling with relay",
+     "labor": 0.4,
+     "price": ""
+    },
+    {
+     "name": "Motion sensor, wall",
+     "labor": 0.5,
+     "price": ""
     }
    ],
    "Boxes & Rings": [
@@ -600,6 +881,171 @@
      "price": 4.5,
      "priceSource": "MC book",
      "pricedAt": "2026-07-17"
+    },
+    {
+     "name": "1900 box (4\" square, 1-1/2\" deep)",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "4\" square box, 2-1/8\" deep",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "4\" square box with bracket, 1-1/2\" deep",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "4-11/16\" square box, 1-1/2\" deep",
+     "labor": 0.12,
+     "price": ""
+    },
+    {
+     "name": "Octagon box 4\", 1-1/2\" deep",
+     "labor": 0.166,
+     "price": ""
+    },
+    {
+     "name": "Octagon box 4\", 2-1/8\" deep",
+     "labor": 0.166,
+     "price": ""
+    },
+    {
+     "name": "Octagon box 3\", 1-1/2\" deep",
+     "labor": 0.166,
+     "price": ""
+    },
+    {
+     "name": "Handy box, 1-7/8\" deep",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "Switch box 1 gang, plastic",
+     "labor": 0.19,
+     "price": ""
+    },
+    {
+     "name": "Switch box 2 gang, plastic",
+     "labor": 0.19,
+     "price": ""
+    },
+    {
+     "name": "Switch box 3 gang, plastic",
+     "labor": 0.19,
+     "price": ""
+    },
+    {
+     "name": "Gang box 3 gang, 1-5/8\" deep",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "Gang box 4 gang, 1-5/8\" deep",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "Gang box 5 gang, 1-5/8\" deep",
+     "labor": 0.183,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 1 gang, 1/2\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 1 gang, 5/8\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 1 gang, 3/4\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 2 gang, 1/2\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 2 gang, 5/8\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square mud ring 2 gang, 3/4\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square blank cover",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square extension ring",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4\" square raised cover, 1-19/32\" deep",
+     "labor": 0.07,
+     "price": ""
+    },
+    {
+     "name": "4\" square raised cover, 2-5/32\" deep",
+     "labor": 0.09,
+     "price": ""
+    },
+    {
+     "name": "4-11/16\" mud ring 1 gang, 1/2\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4-11/16\" mud ring 2 gang, 1/2\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "4-11/16\" flat blank cover",
+     "labor": 0.03,
+     "price": ""
+    },
+    {
+     "name": "4-11/16\" raised cover, 2-5/32\" deep",
+     "labor": 0.09,
+     "price": ""
+    },
+    {
+     "name": "Octagon box mud ring, 1/2\" deep",
+     "labor": 0.083,
+     "price": ""
+    },
+    {
+     "name": "Mud ring 3 gang, 15/16\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "Mud ring 4 gang, 15/16\" deep",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "Mud ring 5 gang, 15/16\" deep",
+     "labor": 0.083,
+     "price": ""
+    },
+    {
+     "name": "Mud ring 6 gang, 15/16\" deep",
+     "labor": 0.083,
+     "price": ""
     }
    ],
    "Covers & Plates": [
@@ -644,6 +1090,138 @@
      "price": 18,
      "priceSource": "MC book",
      "pricedAt": "2026-07-17"
+    },
+    {
+     "name": "Switch plate 1 gang, plastic",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 2 gang, plastic",
+     "labor": 0.06,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 3 gang, plastic",
+     "labor": 0.07,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 4 gang, plastic",
+     "labor": 0.0825,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 5 gang, plastic",
+     "labor": 0.095,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 6 gang, plastic",
+     "labor": 0.133,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 1 gang, stainless steel",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 2 gang, stainless steel",
+     "labor": 0.06,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 3 gang, stainless steel",
+     "labor": 0.07,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 4 gang, stainless steel",
+     "labor": 0.0825,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 5 gang, stainless steel",
+     "labor": 0.095,
+     "price": ""
+    },
+    {
+     "name": "Switch plate 6 gang, stainless steel",
+     "labor": 0.133,
+     "price": ""
+    }
+   ],
+   "MC and NM Connectors": [
+    {
+     "name": "MC connector 3/8\" snap-in",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "MC connector 3/8\" snap-in, 4 wire",
+     "labor": 0.05,
+     "price": ""
+    },
+    {
+     "name": "MC connector 3/8\" duplex (two cables)",
+     "labor": 0.07,
+     "price": ""
+    },
+    {
+     "name": "MC connector 1/2\"",
+     "labor": 0.06,
+     "price": ""
+    },
+    {
+     "name": "MC connector 3/4\"",
+     "labor": 0.08,
+     "price": ""
+    },
+    {
+     "name": "MC connector 1\"",
+     "labor": 0.1,
+     "price": ""
+    },
+    {
+     "name": "MC connector 1-1/2\"",
+     "labor": 0.15,
+     "price": ""
+    },
+    {
+     "name": "MC connector 2\"",
+     "labor": 0.2,
+     "price": ""
+    },
+    {
+     "name": "MC connector 3\"",
+     "labor": 0.3,
+     "price": ""
+    },
+    {
+     "name": "Romex connector 3/8\"",
+     "labor": 0.03,
+     "price": ""
+    },
+    {
+     "name": "Romex connector 3/4\"",
+     "labor": 0.03,
+     "price": ""
+    },
+    {
+     "name": "Romex connector 1\"",
+     "labor": 0.03,
+     "price": ""
+    },
+    {
+     "name": "Romex connector 1-1/4\"",
+     "labor": 0.03,
+     "price": ""
+    },
+    {
+     "name": "NM/SE cable connector 1\"",
+     "labor": 0.055,
+     "price": ""
     }
    ]
   },
@@ -2388,6 +2966,23 @@
      "price": ""
     }
    ],
+   "Pull String and Rope": [
+    {
+     "name": "Pull string (jet line), per foot",
+     "labor": 0.002,
+     "price": ""
+    },
+    {
+     "name": "Mule tape 1250 lb, per foot",
+     "labor": 0.004,
+     "price": ""
+    },
+    {
+     "name": "Pull rope 1/4\", per foot",
+     "labor": 0.005,
+     "price": ""
+    }
+   ],
    "Grounding rod": [
     {
      "name": "1/2\" X 8'",
@@ -2790,6 +3385,130 @@
      "name": "PW",
      "labor": 0.005,
      "price": "0.03"
+    }
+   ],
+   "NM-B (Romex)": [
+    {
+     "name": "14/2 NM-B Romex with ground",
+     "labor": 0.015,
+     "price": ""
+    },
+    {
+     "name": "14/3 NM-B Romex with ground",
+     "labor": 0.018,
+     "price": ""
+    },
+    {
+     "name": "14/4 NM-B Romex with ground",
+     "labor": 0.019,
+     "price": ""
+    },
+    {
+     "name": "12/2 NM-B Romex with ground",
+     "labor": 0.018,
+     "price": ""
+    },
+    {
+     "name": "12/3 NM-B Romex with ground",
+     "labor": 0.019,
+     "price": ""
+    },
+    {
+     "name": "12/4 NM-B Romex with ground",
+     "labor": 0.023,
+     "price": ""
+    },
+    {
+     "name": "10/2 NM-B Romex with ground",
+     "labor": 0.019,
+     "price": ""
+    },
+    {
+     "name": "10/3 NM-B Romex with ground",
+     "labor": 0.022,
+     "price": ""
+    },
+    {
+     "name": "10/4 NM-B Romex with ground",
+     "labor": 0.024,
+     "price": ""
+    },
+    {
+     "name": "8/2 NM-B Romex with ground",
+     "labor": 0.021,
+     "price": ""
+    },
+    {
+     "name": "8/3 NM-B Romex with ground",
+     "labor": 0.024,
+     "price": ""
+    },
+    {
+     "name": "6/2 NM-B Romex with ground",
+     "labor": 0.025,
+     "price": ""
+    },
+    {
+     "name": "6/3 NM-B Romex with ground",
+     "labor": 0.028,
+     "price": ""
+    },
+    {
+     "name": "4/3 NM-B Romex with ground",
+     "labor": 0.032,
+     "price": ""
+    }
+   ],
+   "MC Cable": [
+    {
+     "name": "14/2 MC cable, copper",
+     "labor": 0.02,
+     "price": ""
+    },
+    {
+     "name": "14/3 MC cable, copper",
+     "labor": 0.022,
+     "price": ""
+    },
+    {
+     "name": "12/2 MC cable, copper",
+     "labor": 0.022,
+     "price": ""
+    },
+    {
+     "name": "12/3 MC cable, copper",
+     "labor": 0.025,
+     "price": ""
+    },
+    {
+     "name": "10/2 MC cable, copper",
+     "labor": 0.025,
+     "price": ""
+    },
+    {
+     "name": "10/3 MC cable, copper",
+     "labor": 0.028,
+     "price": ""
+    },
+    {
+     "name": "8/2 MC cable, copper",
+     "labor": 0.028,
+     "price": ""
+    },
+    {
+     "name": "8/3 MC cable, copper",
+     "labor": 0.032,
+     "price": ""
+    },
+    {
+     "name": "6/2 MC cable, copper",
+     "labor": 0.032,
+     "price": ""
+    },
+    {
+     "name": "6/3 MC cable, copper",
+     "labor": 0.038,
+     "price": ""
     }
    ],
    "Wire Terminations": [

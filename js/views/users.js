@@ -4,6 +4,11 @@
  * takeoff_set_user_role), and add/delete accounts (takeoff-admin Edge
  * Function). The menu entry is shown by cloud.js when the signed-in
  * profile's role is 'dev'; every operation is re-checked server-side.
+ *
+ * This is a directory, not a gate: the emailed sign-in code creates an
+ * account for any address, so adding one here is about giving it a role and
+ * seeing it in the list. It sets no password — there is no safe way to hand
+ * one over — and passwords are the account's own business (Cloud Sync).
  */
 
 const TakeoffUsersView = (function () {
@@ -101,6 +106,9 @@ const TakeoffUsersView = (function () {
       load();
     } else {
       setStatus(`Role saved: ${sel.value}`);
+      // The role this session runs on is read once at sign-in; re-read it so
+      // a role change is not waiting on a sign-out to take effect.
+      TakeoffCloud.refreshRole?.();
     }
   });
 
@@ -117,20 +125,21 @@ const TakeoffUsersView = (function () {
 
   document.getElementById('users-add-btn')?.addEventListener('click', async () => {
     const email = document.getElementById('users-add-email')?.value.trim();
-    const password = document.getElementById('users-add-password')?.value;
-    if (!email || !password) {
-      setStatus('Email and password are required.', true);
+    if (!email || !email.includes('@')) {
+      setStatus('Enter the email address for the account.', true);
       return;
     }
     setStatus('Creating account...');
-    const result = await TakeoffCloud.adminCreateUser(email, password);
+    const result = await TakeoffCloud.adminCreateUser(email);
     if (result.error) {
       setStatus(result.error, true);
       return;
     }
     document.getElementById('users-add-email').value = '';
-    document.getElementById('users-add-password').value = '';
-    setStatus(`Account created: ${email}`);
+    // No password is set here: there is no safe way to hand one over and the
+    // app sends no mail. They sign in with the emailed code and set their own
+    // password in Cloud Sync.
+    setStatus(`Account created: ${email}. They sign in with the emailed code and can set a password from Cloud Sync.`);
     load();
   });
 

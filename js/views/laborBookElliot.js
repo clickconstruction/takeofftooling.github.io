@@ -43,11 +43,17 @@ const TakeoffLaborBookElliot = (function () {
         </tr>`
       )
       .join('');
+    // The scroll strip is load-bearing: .labor-book-section is overflow:hidden,
+    // so a seven-column table without one is clipped, not scrolled — the part
+    // name was cut to three characters at phone widths. Below 640px the CSS
+    // turns each row into a two-line card instead (see styles.css).
     return `
+      <div class="lb-parts-scroll">
       <table class="mc-book-entries elliot-entries-editable">
-        <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th>Price from</th><th></th></tr></thead>
+        <thead><tr><th>Add</th><th>Name</th><th>Labor (hrs)</th><th>Price</th><th>Part #</th><th title="Where the price this row is using came from, and how old it is">In use</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
-      </table>`;
+      </table>
+      </div>`;
   }
 
   // Body renderer for a supplier block: first RENDER_CAP rows plus a
@@ -60,6 +66,16 @@ const TakeoffLaborBookElliot = (function () {
       (capped
         ? `<button type="button" class="btn btn-secondary elliot-show-all-btn">Show all ${all.length.toLocaleString()} parts</button>`
         : '');
+    bodyEl.dataset.loaded = '1';
+  }
+
+  // Every row of the section, with the way back to the first hundred: showing
+  // all of a 4,000-part section drops ~70k nodes into the modal, and the only
+  // way out used to be leaving the tab.
+  function renderFullBody(bodyEl, block, vendor, importDate) {
+    bodyEl.innerHTML =
+      `<button type="button" class="btn btn-secondary elliot-show-fewer-btn">Show the first ${RENDER_CAP} again</button>` +
+      renderPartRows(block.visible, block.section.name, vendor, importDate);
     bodyEl.dataset.loaded = '1';
   }
 
@@ -181,13 +197,21 @@ const TakeoffLaborBookElliot = (function () {
           const tr = input.closest('tr[data-entry]');
           const entry = tr && rowEntries()[Number(tr.dataset.entry)];
           if (!entry) return;
+          const field = input.dataset.field;
+          // A price that isn't money promotes nothing: the typed text stays in
+          // the field, flagged, so nothing lands in the book looking priced.
+          if (field === 'price') {
+            const rejected = Number.isNaN(TakeoffUtils.parseMoney(input.value));
+            input.classList.toggle('lb-price-invalid', rejected);
+            input.setAttribute('aria-invalid', rejected ? 'true' : 'false');
+            if (rejected) return;
+          }
           const { section: secName, index } = TakeoffState.promoteCatalogPart(renderedForTab, s.name, vendor, {
             name: entry.name,
             partNumber: entry.partNumber || '',
             price: entry.price,
             pricedAt: entry.pricedAt || importDate,
           });
-          const field = input.dataset.field;
           if (field === 'labor') {
             TakeoffState.recordPartLabor(renderedForTab, secName, index, parseFloat(input.value) || 0);
           } else if (field === 'price') {
@@ -197,8 +221,22 @@ const TakeoffLaborBookElliot = (function () {
           } else {
             TakeoffState.updateLaborBookRow(renderedForTab, secName, index, { name: input.value });
           }
+          // the promoted row moves into a curated section that may not have
+          // existed a second ago: open it and put the cursor back in the field
+          // that was just edited, so the edit stays where the estimator is
+          TakeoffLaborBookView.markSectionOpen(secName);
           TakeoffLaborBookView.render();
           TakeoffLaborBookView.attachListeners();
+          const fieldClass = {
+            name: '.labor-book-name',
+            labor: '.labor-book-hrs',
+            price: '.labor-book-price',
+            partNumber: '.labor-book-partnum',
+          }[field];
+          const back = Array.from(
+            document.querySelectorAll(`.labor-book-row[data-type="${renderedForTab}"][data-index="${index}"]`)
+          ).find((tr) => tr.dataset.section === secName);
+          back?.querySelector(fieldClass)?.focus();
         });
 
         if (openSupplierBlocks.has(`${renderedForTab}::${s.name}`)) {
@@ -235,7 +273,12 @@ const TakeoffLaborBookElliot = (function () {
           }
           const showAll = e.target.closest('.elliot-show-all-btn');
           if (showAll && !block._filtered) {
-            bodyEl.innerHTML = renderPartRows(block.visible, s.name, vendor, importDate);
+            renderFullBody(bodyEl, block, vendor, importDate);
+            return;
+          }
+          const showFewer = e.target.closest('.elliot-show-fewer-btn');
+          if (showFewer && !block._filtered) {
+            renderCappedBody(bodyEl, block, vendor, importDate);
             return;
           }
           const header = e.target.closest('.labor-book-section-header, .lb-offers-header');
