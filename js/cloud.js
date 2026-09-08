@@ -44,6 +44,10 @@ const TakeoffCloud = (function () {
   let client = null;
   let session = null;
   let profileRole = null; // 'user' | 'admin' | 'dev' — from takeoff_profiles
+  let profileIsTwin = false; // takeoff_profiles.is_digital_twin — the 🤖 banner (004 migration)
+  // 004 adds bid-stamp/review columns to takeoff_projects; until it is applied the
+  // client falls back to the base columns (detected on the first 42703).
+  let projectColumnsAvailable = true;
   let syncedThisLoad = false;
   let suppressPush = false; // true while adopting remote data locally
   let lastSyncedAt = null;
@@ -165,6 +169,10 @@ const TakeoffCloud = (function () {
     }
   }
 
+  const PROJECT_COLS_BASE = 'id,name,data,updated_at';
+  const PROJECT_COLS_FULL = PROJECT_COLS_BASE + ',external_ref,review_status,review_note,agent_import';
+  const isMissingColumn = (error) => !!error && (error.code === '42703' || /column .* does not exist|schema cache/i.test(error.message || ''));
+
   function rowToProject(r) {
     return {
       v: 1,
@@ -175,6 +183,10 @@ const TakeoffCloud = (function () {
       laborRate: r.data && typeof r.data.laborRate === 'number' ? r.data.laborRate : 0,
       taxRate: r.data && typeof r.data.taxRate === 'number' ? r.data.taxRate : undefined,
       plansUrl: r.data && typeof r.data.plansUrl === 'string' ? r.data.plansUrl : '',
+      externalRef: typeof r.external_ref === 'string' ? r.external_ref : undefined,
+      reviewStatus: typeof r.review_status === 'string' ? r.review_status : undefined,
+      reviewNote: typeof r.review_note === 'string' ? r.review_note : undefined,
+      agentImport: r.agent_import && typeof r.agent_import === 'object' ? r.agent_import : (r.data && r.data.agentImport) || undefined,
     };
   }
 
@@ -184,7 +196,12 @@ const TakeoffCloud = (function () {
 
   async function syncProjects(legacyWs) {
     if (!projectsTableAvailable) return;
-    const { data, error } = await client.from(PROJECTS_TABLE).select('id,name,data,updated_at');
+    let { data, error } = await client.from(PROJECTS_TABLE).select(projectColumnsAvailable ? PROJECT_COLS_FULL : PROJECT_COLS_BASE);
+    if (error && projectColumnsAvailable && isMissingColumn(error)) {
+      projectColumnsAvailable = false;
+      console.warn('Takeoff: takeoff_projects bid-stamp/review columns not found — apply supabase/004_takeoff_twins.sql; syncing base columns only.');
+      ({ data, error } = await client.from(PROJECTS_TABLE).select(PROJECT_COLS_BASE));
+    }
     if (error) {
       noteProjectsError(error);
       return;
@@ -289,13 +306,14 @@ const TakeoffCloud = (function () {
     const dataCol = { manifest: project.manifest, laborRate: project.laborRate };
     if (typeof project.taxRate === 'number') dataCol.taxRate = project.taxRate;
     if (project.plansUrl) dataCol.plansUrl = project.plansUrl;
-    const { error } = await client.from(PROJECTS_TABLE).upsert({
-      id: project.id,
-      user_id: session.user.id,
-      name: project.name,
-      data: dataCol,
-      updated_at: project.savedAt,
-    });
+    if (project.agentImport) dataCol.agentImport = project.agentImport;
+    const baseRow = { id: project.id, user_id: session.user.id, name: project.name, data: dataCol, updated_at: project.savedAt };
+    const fullRow = { ...baseRow, external_ref: project.externalRef || null, review_status: project.reviewStatus || 'draft', review_note: project.reviewNote || null, agent_import: project.agentImport || null };
+    let { error } = await client.from(PROJECTS_TABLE).upsert(projectColumnsAvailable ? fullRow : baseRow);
+    if (error && projectColumnsAvailable && isMissingColumn(error)) {
+      projectColumnsAvailable = false;
+      ({ error } = await client.from(PROJECTS_TABLE).upsert(baseRow));
+    }
     if (error) {
       pendingProjects[id] = project; // retry on the next save or flush
       noteProjectsError(error);
@@ -351,12 +369,33 @@ const TakeoffCloud = (function () {
       return;
     }
     try {
-      const { data } = await client.from('takeoff_profiles').select('role').eq('user_id', session.user.id).maybeSingle();
+      let { data, error } = await client.from('takeoff_profiles').select('role, is_digital_twin').eq('user_id', session.user.id).maybeSingle();
+      if (error && /is_digital_twin/.test(error.message || '')) {
+        ({ data } = await client.from('takeoff_profiles').select('role').eq('user_id', session.user.id).maybeSingle());
+      }
       profileRole = data ? data.role : null;
+      profileIsTwin = !!(data && data.is_digital_twin);
     } catch (_) {
       profileRole = null;
+      profileIsTwin = false;
     }
     updateUi();
+    renderTwinBanner();
+  }
+
+  // 🤖 DIGITAL TWIN banner: a twin session is never mistaken for a person
+  // (PipeTooling docs/DIGITAL_TWINS_PLAN.md — humans and the twin can always tell).
+  function renderTwinBanner() {
+    const el = document.getElementById('twin-banner');
+    if (!el) return;
+    const on = !!(session && profileIsTwin);
+    el.hidden = !on;
+    document.body.classList.toggle('is-digital-twin', on);
+    if (on) el.textContent = `🤖 DIGITAL TWIN — ${getEmail() || 'twin'}`;
+  }
+
+  function isDigitalTwin() {
+    return !!(session && profileIsTwin);
   }
 
   function getRole() {
@@ -809,5 +848,5 @@ const TakeoffCloud = (function () {
   });
   updateUi();
 
-  return { isSignedIn, getEmail, isAdmin, isDev, getRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus, fetchLayoutSuggestions, setLayoutSuggestionStatus };
+  return { isSignedIn, getEmail, isAdmin, isDev, isDigitalTwin, getRole, listUsers, setUserRole, adminCreateUser, adminDeleteUser, onBookSaved, onProjectSaved, onProjectDeleted, onAssembliesSaved, flushPending, openModal, fetchSuggestions, setSuggestionStatus, fetchLayoutSuggestions, setLayoutSuggestionStatus };
 })();

@@ -122,13 +122,41 @@ Snapshot-based (full JSON clone of manifest), 50 deep. `beginBatch()`/`endBatch(
 
 `getTotalLabor`, `getTotalPrice`, `getPurchaseList` (merges identical descriptions, skips permits/powerCo/tempPower; a parent with children contributes its own line only when it carries a price — price-less parents are groupings), `getFlattenedItems` (adds `_depth`), `getSummaryBreakdown(manifest, taxRate)` (materials + sales tax at the passed FRACTION, default `SALES_TAX_RATE` 0.0825 + labor + other charges; returns `taxRate` and `unscaledCount`), `countUnscaled`. Every selector skips `unit === 'px'` rows' own labor and price.
 
+## Assembly kernel (js/explode.js, `TakeoffExplode`)
+
+Pure, UMD (browser global / Deno module scope / `module.exports`). `TEMPLATES` match a parent by
+`type` + a description regex (GFCI before receptacle; switch/dimmer/sensor; data drop; lay-in
+fixture; EMT, PVC, MC runs) and list child rules `{ name, qty, per: 'count'|'run'|'ft', ftInterval,
+childType }` — `{size}` in a name takes the trade size parsed off the parent (`sizeOf`).
+`explodeItem(item, { book })` returns child rows priced by `lookup` over a flat book (`flattenBook`
+of `laborBook[type][section][]`): exact normalized name, else every-token containment; a miss
+leaves `labor`/`price` null with `meta.needsPricing` — never a guess. px (unscaled) parents never
+explode. `explodeManifest` fills only childless parents (hand-built children win). Consumers: the
+⚡ Explode button (manifest.js, the live book) and the agent door (`import-manifest`, the twin's
+synced book or the bundled defaults JSON).
+
+## Digital twins (the seat, the door, the bridge)
+
+Mirrors CountTooling's half of PipeTooling's twin program. `supabase/004_takeoff_twins.sql`
+adds `takeoff_profiles.is_digital_twin`, `twin_credentials`, and the bid-stamp/review columns on
+`takeoff_projects`. Functions (`supabase/README.md` has auth + secrets): `twin-login` mints a
+magic-link session (per-twin token or fleet secret; fleet email pattern + twin flag required);
+`manage-user` is the server→server bridge PipeTooling commands (`create`, `lookup`, `set_twin_flag`,
+`set_twin_credential`, `revoke_twin_credential`, `twin_projects`, `twin_manifest`,
+`set_twin_project_review`); `import-manifest` is the agent door (twin JWT; payload v2 items →
+normalized rows, exploded + priced through `_shared/explode.js`, upserted idempotently by
+`(owner, external_ref)` else `(owner, name)`, review lane reset to `draft`). `twin_manifest` returns
+the priced rows (`buildPipeToolingRows`), the counts text, and a `#d=` share URL so a human opens
+the twin's manifest in their own app. The client shows the 🤖 banner for a flagged session and a
+twin chip in Manage Users; humans get the same chips (bid stamp, review lane) on their own projects.
+
 ## Cloud sync (js/cloud.js, `TakeoffCloud`)
 
 Optional Supabase mirror of the book, assemblies, and projects; the app stays local-first (boots synchronously from localStorage, works fully signed out or with the CDN blocked). Supabase project `takeoff-tooling` (`awjcdxqhvgnqsrlnoyxr`, us-east-2): `public.takeoff_store` (`user_id, key, value jsonb, updated_at`) holds the `book` and `assemblies` rows (a legacy `workspace` row is read once as a stand-in for a missing `book` row and left as backup), and `public.takeoff_projects` (`id, user_id, name, data jsonb, created_at, updated_at` — schema-aligned with Count Tooling's `projects` table; SQL in `supabase/001_takeoff_projects.sql`) holds one row per project (`data` = `{manifest, laborRate}`, `updated_at` = the client's savedAt). Both under RLS scoping every operation to `auth.uid() = user_id`. Roles live in `takeoff_profiles` (`user`/`admin`/`dev`, 002 migration): `admin` unlocks the suggestions review (via `is_takeoff_admin()`, now role-driven with the hardcoded-email check as a pre-002 fallback), `dev` additionally gets Manage Users (list/set-role RPCs + the `takeoff-admin` Edge Function for create/delete, which re-verifies the caller's dev role server-side). Projects sync per-row with last-write-wins by `updated_at` and union-merge on sign-in; a missing `takeoff_projects` table (SQL not yet applied) disables project sync gracefully.
 
 **Shared-book corrections** (opt-in, `takeoff-share-corrections` localStorage flag, toggle in the cloud modal): after each workspace push, `TakeoffState.getBookCorrections()` is upserted into `public.takeoff_suggestions` (`user_id, email, tab, section, part_name, kind edit|new|remove, old_value, new_value, status pending|accepted|dismissed`; unique per user+part; RLS: users see only their own rows, `is_takeoff_admin()` — email match — sees all). Reverted edits are pruned on the next push; opting out deletes the user's rows. The admin account gets a "Review suggestions" ☰ menu item (js/suggestionsReview.js): pending rows aggregated per part (distinct users, median, ≥20× price-outlier flag), Accept/Dismiss updates status, and "Download accepted as defaults patch" emits JSON to apply to `js/data/laborBookDefaults.js` + version bump — the shared book only changes through a commit, like the supplier-price flow. A `takeoff_suggestion_summary` view exists for reviewing straight from the Supabase dashboard.
 
-**Shared layouts** (same opt-in flag): alongside corrections, `TakeoffState.getBookLayout()` (non-null only after an Organize Categories Apply — group config + per-tab section order) is upserted as the user's single row in `public.takeoff_layout_suggestions` (003 migration; RLS: owner-managed, `is_takeoff_admin()` reviews all; the app skips layout sharing gracefully while the table is unapplied). Reverting to the default layout, or opting out, withdraws the row. The review panel shows layout rows above part corrections — per-user group summary + cross-tab moves vs the shipped defaults — with **Copy as code** producing a `LABOR_BOOK_DEFAULT_GROUPS` literal (plus move/order comments) to hard-code into `js/data/laborBookDefaults.js`: like corrections, member layouts only reach everyone through a commit. Auth is Supabase email/password (accounts are provisioned in the project's auth tables) with an email OTP fallback (6-digit code — the "Magic link or OTP" email template was edited to send `{{ .Token }}`); neither path uses redirect URLs, so localhost and GitHub Pages behave identically. Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
+**Shared layouts** (same opt-in flag): alongside corrections, `TakeoffState.getBookLayout()` (non-null only after an Organize Categories Apply — group config + per-tab section order) is upserted as the user's single row in `public.takeoff_layout_suggestions` (004 migration; RLS: owner-managed, `is_takeoff_admin()` reviews all; the app skips layout sharing gracefully while the table is unapplied). Reverting to the default layout, or opting out, withdraws the row. The review panel shows layout rows above part corrections — per-user group summary + cross-tab moves vs the shipped defaults — with **Copy as code** producing a `LABOR_BOOK_DEFAULT_GROUPS` literal (plus move/order comments) to hard-code into `js/data/laborBookDefaults.js`: like corrections, member layouts only reach everyone through a commit. Auth is Supabase email/password (accounts are provisioned in the project's auth tables) with an email OTP fallback (6-digit code — the "Magic link or OTP" email template was edited to send `{{ .Token }}`); neither path uses redirect URLs, so localhost and GitHub Pages behave identically. Sync rules: on sign-in, workspace conflicts resolve by newest `savedAt` (last write wins) and assemblies merge as a union by id; afterwards every `TakeoffStorage.save*` queues a debounced (1.2 s) upsert, flushed when the tab hides. Pulling remote data goes through `TakeoffState.adoptWorkspace` / `setAssemblies` (clears undo history) + `TakeoffApp.render()`. The publishable API key ships in cloud.js by design; RLS is the access control.
 
 ## localStorage keys
 
@@ -137,7 +165,7 @@ All `takeoff-*` writes go through the `TakeoffStorage` adapter (js/storage.js) �
 | Key | Owner | Content |
 |---|---|---|
 | `takeoff-projects-index` | storage.js (via state.js) | `{v:1, currentId, projects:[{id,name,createdAt,updatedAt}]}` — device-local, never synced (cloud rebuilds the list from `takeoff_projects` rows) |
-| `takeoff-project-<id>` | storage.js (via state.js) | `{v:1, id, savedAt, name, manifest, laborRate, taxRate?, plansUrl?}` — 400 ms debounced write, flushed on `beforeunload`/project switch. `taxRate` is a percent (absent = default 8.25); `plansUrl` is the CountTooling view link the counts came from |
+| `takeoff-project-<id>` | storage.js (via state.js) | `{v:1, id, savedAt, name, manifest, laborRate, taxRate?, plansUrl?, externalRef?, reviewStatus?, reviewNote?, agentImport?}` — 400 ms debounced write, flushed on `beforeunload`/project switch. `taxRate` is a percent (absent = default 8.25); `plansUrl` is the CountTooling view link; `externalRef` the PipeTooling bid number; `reviewStatus` absent = draft. The cloud row carries the last four as columns (004) |
 | `takeoff-book` | storage.js (via state.js) | `{v:1, savedAt, laborBook, laborBookGroups, laborBookMeta}` — account-level, own 400 ms debounce; `laborBookGroups` (null until the user applies an Organize Categories layout) holds per-tab `[{name, sections}]`, `laborBookMeta` = `{defaultsVersion, removed, relocated}` |
 | `takeoff-workspace` | legacy | pre-projects single workspace; migrated into the keys above on first boot (`TakeoffStorage.migrateLegacyWorkspace`), then left untouched as a rollback backup |
 | `takeoff-assemblies` | storage.js (via state.js) | assemblies array — written immediately |

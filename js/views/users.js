@@ -66,7 +66,7 @@ const TakeoffUsersView = (function () {
               const self = (u.email || '').toLowerCase() === me;
               return `
           <tr data-id="${escapeHtml(u.user_id)}">
-            <td class="users-email">${escapeHtml(u.email || '')}${self ? '<span class="users-you-chip">You</span>' : ''}</td>
+            <td class="users-email">${escapeHtml(u.email || '')}${u.is_digital_twin ? '<span class="users-twin-chip" title="Digital twin — an agent-operated account (never a person)">🤖 twin</span>' : ''}${self ? '<span class="users-you-chip">You</span>' : ''}</td>
             <td>
               <select class="users-role-select" data-id="${escapeHtml(u.user_id)}" ${self ? 'disabled title="You can’t change your own role"' : ''}>
                 ${ROLES.map((r) => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}

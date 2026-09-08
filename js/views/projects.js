@@ -38,6 +38,20 @@ const TakeoffProjectsView = (function () {
         plans.removeAttribute('href');
       }
     }
+    // bid stamp + review lane (agent-door projects; humans can set them too)
+    const ref = document.getElementById('project-ref-chip');
+    if (ref) {
+      ref.hidden = !project.externalRef;
+      ref.textContent = project.externalRef || '';
+    }
+    const review = document.getElementById('project-review-chip');
+    if (review) {
+      const st = project.reviewStatus || 'draft';
+      review.hidden = st === 'draft';
+      review.dataset.status = st;
+      review.textContent = st === 'ready' ? 'Ready for review' : st === 'changes' ? 'Changes requested' : st === 'reviewed' ? 'Reviewed' : '';
+      review.title = project.reviewNote ? `Review lane · ${project.reviewNote}` : 'Review lane';
+    }
   }
 
   // ---------- header dropdown ----------
@@ -144,9 +158,13 @@ const TakeoffProjectsView = (function () {
         const data = TakeoffStorage.loadProject(p.id);
         const count = data && Array.isArray(data.manifest) ? data.manifest.filter((m) => !m.parentId).length : 0;
         const isOpen = p.id === current.id;
+        const ref = data && typeof data.externalRef === 'string' ? data.externalRef : '';
+        const status = data && TakeoffState.REVIEW_STATUSES.includes(data.reviewStatus) ? data.reviewStatus : 'draft';
+        const reviewSelect = `<select class="projects-review-select" data-id="${escapeHtml(p.id)}" title="Review lane">${TakeoffState.REVIEW_STATUSES.map((st) => `<option value="${st}" ${st === status ? 'selected' : ''}>${st === 'changes' ? 'changes requested' : st}</option>`).join('')}</select>`;
         return `
         <tr data-id="${escapeHtml(p.id)}">
-          <td><span class="projects-name">${escapeHtml(p.name)}</span>${isOpen ? '<span class="projects-open-chip">Open</span>' : ''}</td>
+          <td><span class="projects-name">${escapeHtml(p.name)}</span>${ref ? `<span class="projects-ref">${escapeHtml(ref)}</span>` : ''}${isOpen ? '<span class="projects-open-chip">Open</span>' : ''}</td>
+          <td class="projects-meta">${reviewSelect}</td>
           <td class="projects-meta">${count}</td>
           <td class="projects-meta">${fmtAgo(p.updatedAt)}</td>
           <td><div class="projects-actions">
@@ -160,7 +178,7 @@ const TakeoffProjectsView = (function () {
       .join('');
     listEl.innerHTML = `
       <table class="projects-table">
-        <thead><tr><th>Name</th><th>Rows</th><th>Updated</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Review</th><th>Rows</th><th>Updated</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
     const countEl = document.getElementById('projects-count');
@@ -237,6 +255,49 @@ const TakeoffProjectsView = (function () {
       hideCreateRow();
     }
   });
+
+  // review lane: the open project through state (persisted + synced); others by
+
+  // rewriting their stored document the way rename does
+
+  document.getElementById('projects-list')?.addEventListener('change', (e) => {
+
+    const sel = e.target.closest('.projects-review-select');
+
+    if (!sel) return;
+
+    const id = sel.dataset.id;
+
+    const status = sel.value;
+
+    const current = TakeoffState.getCurrentProject();
+
+    if (id === current.id) {
+
+      TakeoffState.setReviewStatus(status);
+
+      TakeoffState.persistNow();
+
+    } else {
+
+      const data = TakeoffStorage.loadProject(id);
+
+      if (!data) return;
+
+      if (status === 'draft') delete data.reviewStatus; else data.reviewStatus = status;
+
+      data.savedAt = new Date().toISOString();
+
+      TakeoffStorage.saveProject(data);
+
+    }
+
+    updateHeader();
+
+    TakeoffUtils.toast(status === 'draft' ? 'Review lane cleared.' : status === 'ready' ? 'Marked ready for review.' : status === 'changes' ? 'Sent back with changes requested.' : 'Marked reviewed.', { kind: 'success' });
+
+  });
+
 
   document.getElementById('projects-list')?.addEventListener('click', (e) => {
     const sw = e.target.closest('.projects-switch-btn');

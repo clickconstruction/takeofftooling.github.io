@@ -76,7 +76,11 @@ const TakeoffManifestView = (function () {
     // childless parents get "+" for their first child; once children exist the
     // ghost add-row at the bottom of the block takes over (children can't nest)
     const showRailAdd = !isChild && !(item.children && item.children.length);
-    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}</td>`;
+    // Explode: fill children from the assembly template (js/explode.js) when one
+    // matches this row and it has no children yet — the same kernel the agent door runs.
+    const template = showRailAdd && typeof TakeoffExplode !== 'undefined' ? TakeoffExplode.findTemplate(item) : null;
+    const explodeBtn = template ? `<button type="button" class="explode-btn icon-btn" data-id="${item.id}" title="Explode: add the ${escapeHtml(template.label)} assembly (box, ring, plate, fittings…) priced from your book">⚡</button>` : '';
+    const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}${explodeBtn}</td>`;
 
     return `
       <tr class="${isChild ? 'child-row' : ''} ${item.unit === 'px' ? 'row-unscaled' : ''}" data-id="${item.id}">
@@ -372,6 +376,25 @@ const TakeoffManifestView = (function () {
     });
 
     attachSummaryListeners();
+
+    document.querySelectorAll('.explode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = TakeoffState.getItemById(btn.dataset.id);
+        if (!item || typeof TakeoffExplode === 'undefined') return;
+        const book = TakeoffExplode.flattenBook(TakeoffState.getLaborBook());
+        const kids = TakeoffExplode.explodeItem(item, { book });
+        if (!kids.length) {
+          TakeoffUtils.toast('No assembly template matches this row (or it has no quantity).', { kind: 'error' });
+          return;
+        }
+        TakeoffState.beginBatch();
+        for (const k of kids) TakeoffState.addItem({ ...k, parentId: item.id });
+        TakeoffState.endBatch();
+        const unpriced = kids.filter((k) => k.meta && k.meta.needsPricing).length;
+        TakeoffUtils.toast(`Added ${kids.length} assembly row${kids.length === 1 ? '' : 's'}${unpriced ? ` — ${unpriced} without a book price (open the Labor & Price Book to fill them)` : ', priced from your book'}.`, { kind: unpriced ? 'info' : 'success' });
+        TakeoffApp.render();
+      });
+    });
 
     document.querySelectorAll('.labor-book-icon-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
