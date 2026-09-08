@@ -1,0 +1,2455 @@
+[
+  {
+    "tier": 1,
+    "id": "T1-01",
+    "title": "Type a number, then click — and both are gone",
+    "journeys": [
+      "J1",
+      "J4",
+      "J8"
+    ],
+    "severity": "blocker",
+    "item": "A field's change handler rebuilds the DOM under the pointer, so the value you typed never lands and the control you aimed at is destroyed between mousedown and click. In the devices flow the change handler calls a full render; on the manifest a row field's change replaces the whole summary block, taking the labor-rate input with it. It looks random because a field left unchanged tabs fine, and the buffer is safe — only the user's next action is lost.",
+    "evidence": "device.js:283-286 calls TakeoffApp.render() on every change; manifest.js:167 replaces .manifest-summary via outerHTML. A straight-through Tab pass over three device rows saved a bid with Devices material $0.00 (true $175.00); one click each on Save / + Box / PB / trash / x2 immediately after typing did nothing (J4 NEW-1). On the manifest 4/4 first clicks on Labor Rate were swallowed - focus to <body>, field empty, Labor Total $0.00 instead of $160.86; a 2 s pause does not help and the summary node identity provably changes on the row field's change.",
+    "proposal": "Delete the render() from the device flow's change (J4 P1) and stop the row field's change rebuilding a summary block its own input handler already patched; bind the labor rate once by delegation, patch cells in place and restore focus (J1 P1 = J8 P12 - ship once). Verifier confirmed nothing reads a re-rendered value, so only cosmetic re-normalisation of typed text is lost; the conduit/wire half of J4 P1 is a no-op and drops out.",
+    "effort": "M",
+    "event": "field_commit_lost (debug counter during bake-in) + flow_saved {kind, rows, componentPrice}",
+    "sourceFindings": [
+      "J1-F1",
+      "J1-F6",
+      "J4-F1",
+      "J4-NEW-1",
+      "J8-F12"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-02",
+    "title": "An assembly lands on the bid at a different price than the row you clicked",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "blocker",
+    "item": "addAssemblyEntry explodes an MC assembly into its components whenever a composition exists - and all 24,291 entries have one - so the components' prices replace the book price the BOM footer just promised. The rolled-up branch is unreachable outside fill mode, which means README's 'rolled-up or exploded' describes a choice that does not exist. Unpriced components are stored as the number 0 rather than null, so the purchase list counts them as priced and its 'n without a price' flag goes quiet on exactly the gap this creates.",
+    "evidence": "mcBook.js:259-262; renderBom only relabels (:150-153). 100A ENCL CB 2P 250V - row 4.03 hrs / $193.65, footer 'using the book price' - added onto a x3 panel as $2.76 and 5.70 hrs, -99.5% against $580.95. Coupling row $1.66 - child $0.76 (-54%). Whole-book scan: component-sum / book-price median 1.099, p90 18.7; 5,179 priced entries explode to under half their book price. J6 NEW-1: after the add the list carried '100A CIRCUIT TERM x 18 - $0.00' as a priced line.",
+    "proposal": "J6 P1 as reshaped by verifier: explode only when the components reconstruct the book price within a tolerance, otherwise add the rolled-up entry at the book's labor and price, and flash what happened ('Added 20A ENCL CB 2P 250V - 1.7 hrs - $57.34, book price'). The walker's 'unpriced === 0' test is insufficient - the fully priced #12 MTR TERM still explodes $42.52 to $23.88. Store unpriced components as null, not 0. Fill mode is unchanged and the single undo frame survives.",
+    "effort": "M",
+    "event": "book_add_to_target {bucket, exploded, bookPrice, landedPrice}",
+    "sourceFindings": [
+      "J6-F1",
+      "J6-NEW-1",
+      "J6-NEW-4"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-03",
+    "title": "A part added to a 220-ft run arrives 220 times",
+    "journeys": [
+      "J5",
+      "J6",
+      "J7"
+    ],
+    "severity": "blocker",
+    "item": "inheritedQty and scale apply the parent's quantity to every item type, so a run's footage becomes a part count. The same part added from inside the conduit wizard arrives once, so two doors on one row disagree in silence - and the banner on the door that adds one is the door that says 'x220 on the bid'. Inside that single wizard door a single entry lands qty 1 while an assembly's components land at the run's footage.",
+    "evidence": "laborBookTargets.js:102-105 (manifest door), :176 and :186 (scale), :99 (wizard door = qty 1). A 145-ft feeder took an Elliot coupling at x145 @ $73.0758 = $10,595.99; the same part added inside the wizard landed qty 1. The walker's 220-ft case: x220 couplings = $233.20 (assembly) + $1,794.91 (Elliot) on one run. J6 NEW-3 measured the split inside the fittings door.",
+    "proposal": "J6 P2 with the verifier's scope correction: inherit a quantity only when the parent's type is gear, lighting, devices or specialSystems; conduit and wire parents get 1, and the flash reads 'Added x1 under 3/4\" EMT Homerun - set the count'. The rule must cover addComponentsToTarget's fittings branch (:186) as well as the manifest branch (:176), or the wizard keeps the bug the proposal names.",
+    "effort": "S",
+    "event": "book_add_to_target {targetType, targetQty, inheritedQty}",
+    "sourceFindings": [
+      "J6-F2",
+      "J6-NEW-3",
+      "J5-entry-points",
+      "J7-F3-adjacent"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-04",
+    "title": "\"Add All\" on a re-count duplicates every fixture you already have",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "blocker",
+    "item": "Import counts are totals, and the more prominent of the two buttons treats them as additions. On a re-count Add All appends a second, untyped, unpriced row for every fixture that already exists - so the manifest over-counts while the summary does not move, because the new rows carry no price. The purchase list then merges the two rows' quantities but only the priced row's extended cost, producing a line whose qty times unit does not equal its extended.",
+    "evidence": "import.js:101-133; index.html:232-233 - both buttons are .btn-success, Add All sits rightmost and README lists it first. Seed Troffer 24 @ $89.50 + import 30 gives 54 troffers for a count of 30, Lighting stays $3,660.00 (should be $4,197.00), purchase list prints '54 | $89.50 | $2148.00' where 54 x 89.50 = $4,833. selectors.js:76-82 sums quantity for every occurrence and extended only for priced ones; the row is greyed, with no title and no marker. No confirm and no delta-aware button state exists anywhere in the code.",
+    "proposal": "J2 P1: one state-aware primary button - empty manifest 'Add 5 fixtures', anything matched 'Update 1 count - add 2 fixtures' (today's Add-Overages-Only behaviour); demote Add All to a secondary 'Add as separate rows', shown only when at least one line matched. Makes the duplicate outcome unreachable by a single click and retires the word 'overage' from this modal. The verifier noted the label can carry the receipt for free, which is where J2 P7's value belongs.",
+    "effort": "M",
+    "event": "import_added {mode, raised, added, lowered, untyped}",
+    "sourceFindings": [
+      "J2-F1",
+      "J2-F3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-05",
+    "title": "A row at quantity 0 still bills once — and disappears from the purchase list",
+    "journeys": [
+      "J1",
+      "J3",
+      "J5",
+      "J8"
+    ],
+    "severity": "blocker",
+    "item": "Two deliberate, separately tested rules contradict each other on the same row: the summary treats a priced row at quantity 0 as one unit, while the purchase list drops any row at quantity 0. Zeroing a row is the most common what-if in a bid check, and it shows the job with the row still in it, at one unit, plus the hours to install one - then the two reports disagree by exactly that unit price. Inside the flows it leaks to components, where the rule was never intended.",
+    "evidence": "selectors.js:145/148 (effectiveQty = qty > 0 ? qty : price > 0 ? 1 : 0, pinned at selectors.test.js:15) against selectors.js:69 (if (!desc || qty <= 0) return). Panel LP-2 ($980 / 6.5 h) spun to 0: Gear still $981.85 / 6.5 hrs; regenerated list '14 materials' $6,826.15 against Sub Total $7,806.15 - delta exactly $980.00. A PB-filled fitting at qty 0 / $58.4697 added $58.47 to Conduit while the list skipped it: Sub Total $5,824.74 vs footer $5,766.27.",
+    "proposal": "J8 P2 owns it: drop the counts-once branch so quantity 0 contributes 0 to materials, labor and the list and the three agree by construction; keep 'typing a description sets qty 1' (manifest.js:383) so the case the rule protected stays visible as 1; grey the qty cell on a described, priced row at 0. J5 P7's component-only split is subsumed. Update selectors.test.js:15. This is an owner decision - it changes the totals of existing bids.",
+    "effort": "M",
+    "event": "qty_zero_priced_row (fires on save; measures the rule's real frequency before and after)",
+    "sourceFindings": [
+      "J8-F2",
+      "J1-F3",
+      "J3-F6",
+      "J5-F8c"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-06",
+    "title": "Undo runs first and asks afterwards — \"Cancel\" doesn't cancel",
+    "journeys": [
+      "J3",
+      "J5"
+    ],
+    "severity": "blocker",
+    "item": "The header's Undo handler calls TakeoffState.undo() and only then navigates, which raises the discard prompt. Answering Cancel leaves the editor open over a manifest that has already moved, on a row the estimator was not even looking at; saving then writes the buffer onto the undone manifest and clears Redo, so the change is unrecoverable. Redo has the identical defect, and its variant restores a child the open buffer never hydrated, which the next Save deletes again.",
+    "evidence": "app.js:336-340 (Undo), :343-347 (Redo). Conduit: a saved 10% overage (15 ft @ $1.10) on the bid with the flow dirty at 15% - Undo, Cancel - view still conduit, the overage child gone, Conduit $181.50 to $165.00, and the next Save wrote 23 ft, a third number. Devices: plan page E3.9 to E3.1 under an open editor, then 'Save and Back' wrote onto the undone manifest and cleared Redo so E3.9 could not be recovered by exhausting Redo. Severity reconciled to blocker - J3 rated it stumble, J5 blocker - because the loss is silent and Redo cannot undo it.",
+    "proposal": "J3 P6 = J5 P1, one item and one plan of record, not to be scheduled twice: run the existing 'Discard unsaved changes in this editor?' confirm before undo()/redo() and return on Cancel. Three lines each, and the Redo lines are not optional (J5 NEW-3).",
+    "effort": "S",
+    "event": "undo {frames, fromView, flowDirty}",
+    "sourceFindings": [
+      "J5-F1",
+      "J3-F4",
+      "J5-NEW-3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-07",
+    "title": "The discard guard has three holes, and the only exit from steps 2–3 goes through one",
+    "journeys": [
+      "J5",
+      "J6"
+    ],
+    "severity": "blocker",
+    "item": "Baseline B-3 installed a 'Discard unsaved changes?' guard on the flow editors. The conduit wizard defeats it three ways: goToStep clears flowDirty on backward moves although only forward moves commit; book-side adds into the fittings buffer never set the flag at all; and steps 2 and 3 render no Cancel, so Back-then-Cancel is the only Cancel route and it never asks. This is a hole in B-3's fix, not a re-report of it.",
+    "evidence": "conduit.js:117-126 (goToStep clears on backward), :263-266 and :286-289 (no Cancel on steps 2-3), :206 (the only Cancel). A typed fitting 3 x 0.12 x 2.40 - Back - Cancel gave 0 dialogs and the row was gone. grep setFlowDirty finds no call in any book module, so a book-added hanger was discarded with no confirm even via the guarded app-title route. Dialogs were driven in dismiss mode so a confirm would actually have blocked the exit.",
+    "proposal": "J5 P3: make Next, Back and the step pills pure navigation and write trench, add-ons, fittings and overage in one batch on Save - the wire flow already works this way. That removes commitStep1/commitStep2's mid-wizard writes (~60 lines), the 'Trenching: 0 - N/A @ N/A' child on every non-trenched run, two of the three undo frames per run and both Back/Cancel special cases; put a Cancel on every step while you are there. J6 P12's setFlowDirty half is subsumed - it does not close the hole on its own, because goToStep still disarms the flag.",
+    "effort": "L",
+    "event": "flow_step_committed {kind, step} + flow_discarded {kind, dirty, via}",
+    "sourceFindings": [
+      "J5-F2",
+      "J5-F5",
+      "J5-NEW-1",
+      "J6-F9",
+      "J6-NEW-2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-08",
+    "title": "Component quantities are totals for the whole run, and nothing says so",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "blocker",
+    "item": "Every component row in the devices flow is seeded Quantity 1 beside a panel that says the run is Quantity 20, and the saved child is added to the bid as quantity times price with no multiplication by the run count. Read the box as per-run and the line prices 20x under; read it as a total and it is right. Nothing on the screen declares which, and the app's other door states the opposite rule out loud.",
+    "evidence": "device.js:186 (hasParentDesc ? 1 : quantity), also app.js:133, device.js:255/375; selectors.js multiplies nothing by the run count. Three rows read as totals give $175.00 / 9.2 hrs; read as per-run they give $8.75 / 0.46 hrs - 20x under, and both look right. The manifest row's book door banners 'Adding parts under: ... x20 on the bid' (laborBook.js:360) while the flow seeds the opposite value with no label. Pressing D in the type modal drops a first-timer straight into this on the fastest path in.",
+    "proposal": "J4 P2: seed every component row with the parent's quantity, head the column 'Quantity (all 20 runs)' and add the panel line 'Price: $175.00 - $8.75 per run'. Keeps the storage model, deletes the hasParentDesc ternary in four places and closes the flow-versus-book split. Regression checked: isMeaningfulRow ignores quantity, so seeded blank rows still stay out of the totals and out of the save.",
+    "effort": "M",
+    "event": "flow_saved {kind:'devices', parentQty, componentQty}",
+    "sourceFindings": [
+      "J4-F2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-09",
+    "title": "A saved assembly is a snapshot of one run's counts, not a recipe",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "blocker",
+    "item": "Save as Assembly stores absolute quantities, so loading the preset onto a line with a different run count carries the old counts. The reuse feature's whole point is 'same recipe, different count'; today every load needs four quantities retyped, and forgetting is invisible because the card prints a dollar figure with no 'per what'.",
+    "evidence": "A preset saved from a 20-run line loaded onto an 8-run line stays 20/20/20: panel $175.00, saved bid Devices $350.00 for 28 runs, purchase list '40 - Decora receptacle'. Per-run-correct for the 8-run line is $70.00. No warning anywhere; the card title says 'Extended material price (qty x unit)' and nothing else.",
+    "proposal": "J4 P3 with the verifier's required amendment: store the ratio and round up at load. A plain divide-then-multiply manufactures fractional part counts - a qty-1 support on 20 runs stores 0.05 and loads onto 8 runs as 0.4, and neither getPurchaseList nor getSummaryBreakdown rounds, so the list would read '0.4 - CADDY box support'. Card reads '$8.75 per run - 0.46 hrs per run - 4 parts'; flag stored assemblies perRun and load legacy ones as today with a note. The flag must survive the cloud merge, since takeoff-assemblies merges as a union.",
+    "effort": "L",
+    "event": "assembly_saved {rows} / assembly_loaded {sourceQty, targetQty, scaled}",
+    "sourceFindings": [
+      "J4-F3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-10",
+    "title": "Money typed the way estimators write it is stored as text and prices at $0",
+    "journeys": [
+      "J7"
+    ],
+    "severity": "blocker",
+    "item": "A price typed with a dollar sign or a comma is stored verbatim as a string. The book stamps it 'You - today', the row looks priced, and the same part lands on the bid as $0 because the manifest's number input renders the string blank - while its labor hours still count. The literal string would also ride into the shared book as a correction.",
+    "evidence": "state.js:549-571 never coerces; laborBook.js:519 passes the raw string. '$21,450.75' on a Switchboards row: badge 'You - today', child on the bid price:\"$21,450.75\" with a blank number input, materials +$0 but labor +30 hrs, purchase list '1200a Switchboards - unpriced', and getBookCorrections carrying the string. '1,975' and '5,000.00' become NaN the same way; ' 2400 ' survives only because addRowToFixture trims.",
+    "proposal": "J7 P1: one parser on the way in - strip $, commas and spaces; if the result is not finite keep the field text, store price:'' and do not stamp provenance, and outline the field. The verifier's binding caveat: it must also cover the catalog price input (laborBookElliot.js:192) and the corrections shape, or the string still reaches J12.",
+    "effort": "S",
+    "event": "book_price_edited {parsed, rejected}",
+    "sourceFindings": [
+      "J7-F1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-11",
+    "title": "Recording a quote on the fixture's own part, then adding it, double-counts the fixture",
+    "journeys": [
+      "J6",
+      "J7",
+      "J8"
+    ],
+    "severity": "blocker",
+    "item": "From a manifest row's book icon the only door is 'add a part underneath', so a quoted part lands beside the price it was meant to replace instead of correcting it. There is no warning that the fixture already carries a price and no fill affordance on any manifest row - even though the code path for exactly that has been built, is advertised in README, and has zero callers.",
+    "evidence": "SWBD-1 ($18,400 / 30 hrs) plus an Add of book row '1200a' ($17,995 / 30 hrs) took gear materials $20,800 to $38,795 and gear labor 66 to 96 hrs, with no warning of any kind. J7 NEW-1: TakeoffApp.showPartBookSearchForManifestItem -> {kind:'manifest-row'} -> addEntryToTarget (laborBookTargets.js:37-38) with a banner label already mapped at laborBook.js:339, and no caller anywhere. One undo does recover.",
+    "proposal": "J7 P3 as reshaped by verifier, and cheaper than it looks: when the book is opened from a top-level row that has its own price and no children, Add on a curated row of the fixture's own type defaults to 'Use as Panel A's price' - price and labor replaced, provenance carried onto the manifest row - with 'Add as a part underneath' demoted to the banner's secondary action. Wires the existing dead path; PB flows are untouched because they route through the same function by a different fill.kind. One caveat: the manifest-row branch overwrites description, so pass a flag rather than changing the shared branch.",
+    "effort": "M",
+    "event": "book_row_added_to_bid {targetHasOwnPrice, mode}",
+    "sourceFindings": [
+      "J7-F3",
+      "J7-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-12",
+    "title": "The purchase list freezes the moment you start correcting the bid",
+    "journeys": [
+      "J8"
+    ],
+    "severity": "blocker",
+    "item": "Inline edits patch only the summary block, so an open purchase list is left as it was. The two artifacts the estimator is reconciling disagree because they are being reconciled, on one screen, and copying at that moment sends the old list to the supply house. The data is correct throughout - it is the DOM that never re-renders.",
+    "evidence": "updateSummaryOnly() (manifest.js:395, :411, :424) replaces only .manifest-summary (:165-167). Box 15 to 25, typed and tabbed, with the list open: summary Sub Total $7,825.65 above a list still reading $7,806.15 and a box row still saying 15, while TakeoffState.getPurchaseList().totalCost was already 7825.65. Refreshes only on a full render; the walker's claim that tabbing out of the labor rate refreshes it is wrong after any inline edit, because the swapped listener patches in place (list $2,227.50 vs fresh $2,301.75).",
+    "proposal": "J8 P1: updateSummaryOnly() also re-renders the open purchase list and re-binds Copy/Hide, with the same outerHTML patch. It must fire from the swapped labor-rate listener (manifest.js:168-171) too - that is the path where the stale list survives today.",
+    "effort": "S",
+    "event": "purchase_list_generated {lines, unpriced, agreesWithSummary}",
+    "sourceFindings": [
+      "J8-F1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-13",
+    "title": "The purchase list merges by description, so lines arrive that don't multiply — or can't be ordered",
+    "journeys": [
+      "J2",
+      "J6",
+      "J8"
+    ],
+    "severity": "blocker",
+    "item": "getPurchaseList merges on description alone. Three consequences reach the supply house: two rows of one fixture at different prices merge into a line whose quantity times unit does not equal its extended; two curated fitting rows that share a bare name (an elbow and a coupling) merge into one unorderable line; and every run's overage carries the same description, so two runs' waste merges into a quantity of an abstraction while the buyable footage line still reads the un-wasted number.",
+    "evidence": "selectors.js:60-63. (a) '2 - Panel LP-2 != - $980.00 - $1830.00' where 2 x 980 = 1,960; the explanation is a title on a 14.4 px glyph and the TSV drops the glyph entirely. (b) 10 of 10 row names shared between EMT fittings (SS) Elbows and (SS) - Couplings; describeBookRow appends the section only under 10 characters (laborBookTargets.js:19), so 1\" EMT(R) at 9 chars gets its section and 1/2\" EMT(S) at 11 does not - adding one of each produced '1/2\" EMT(S) x 6'. (c) '23 - Conduit overage (10%) != - $1.12 - $22.24' across two runs, and a single run reads '15 - Conduit overage (10%)' beside an EMT line saying 150, not 165 (conduit.js:522, wire.js:151).",
+    "proposal": "Three coordinated changes in one file. J6 P3: delete the name.length < 10 rule rather than re-tuning it - length is a proxy for nothing - and always append the section kind ('3/4\" EMT(S) coupling'); the same describe path feeds fill mode and the flow rows. J8 P4: a varying price renders as a range ($1100.00-$1250.00) in the cell and the TSV, and the != glyph and its tooltip go (Extended $ stays numeric, which is the column that gets summed). J8 P5: overage children fold into the parent's line by parentId plus type, never by description ('242 - 3/4\" EMT Homerun (incl. 10% overage)'), with wire identical and a null-priced overage folding as unpriced quantity.",
+    "effort": "M",
+    "event": "purchase_list_generated {lines, mergedRows, rangeRows}",
+    "sourceFindings": [
+      "J8-F4",
+      "J8-F5",
+      "J6-F3",
+      "J2-F1-list-half"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-14",
+    "title": "Clicking a row's trash shows the confirm, takes the OK, and removes nothing",
+    "journeys": [
+      "J3"
+    ],
+    "severity": "blocker",
+    "item": "The remove handler reads e.target.dataset.id, and the target of a click at the button's centre is the <path> inside its SVG. The confirm fires, OK is accepted, and nothing is removed - no row, no undo frame. Only the button's 4 px padding ring, or Enter on the focused button, carries the id. A confirmed OK that does nothing reads as 'delete is broken' and drives estimators to the quantity-0 workaround, which is its own wrong number.",
+    "evidence": "manifest.js:463-465. locator.click() at the 24x24 button's centre: dialog 'Remove this item?', OK accepted, top-level rows 6 to 6, canUndo() false (0 frames), elementFromPoint returns <path> with dataset.id undefined. A raw mouse click 2 px inside the corner, click({position:{x:2,y:2}}) and focus+Enter each removed. 8 of 8 in the walk, 1 of 1 re-driven. No closest( anywhere in manifest.js, no pointer-events guard, and every sibling handler that works already uses e.currentTarget.",
+    "proposal": "J3 P1: e.currentTarget.dataset.id, and make the same edit at manifest.js:431 (.select-type-btn) and :437 (.clear-type-btn), which work today only because their content is a bare text node and break the day either grows an icon. The Playwright case must click the icon's centre - that is exactly the failing case.",
+    "effort": "S",
+    "event": "row_removed {hadChildren, via}",
+    "sourceFindings": [
+      "J3-F1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-15",
+    "title": "The share link carries the bid but not the labor rate",
+    "journeys": [
+      "J9",
+      "J10"
+    ],
+    "severity": "blocker",
+    "item": "The share envelope has no laborRate, so the recipient's new project inherits whichever rate their own device happened to be carrying. Two people read the same bid and see different grand totals, with nothing on either screen explaining why. A recipient whose own rate is non-zero is the worse case, because there is no visible 0 to notice.",
+    "evidence": "app.js:314-320 - envelope keys are exactly v, app, exportedAt, name, manifest. One bid, three grand totals: sender at $92 $4,402.98; fresh-profile recipient (rate 0) $2,056.97; a recipient whose own bid carried $60/hr $3,586.97. createProject deliberately carries the open project's rate (state.js:282-283), which the verifier judged makes the wrong number harder to spot rather than less wrong.",
+    "proposal": "J9 P1 = J10 P3's envelope half, landed as one change: put laborRate in the envelope and call setLaborRate after createProject, only when typeof data.laborRate === 'number' so legacy links keep today's behaviour. Acceptance: a recipient whose own rate is 60 sees 92 on the shared copy and still 60 on their own bid. J10's 'shop rate as an account default' half is optional polish and must not hold this up.",
+    "effort": "S",
+    "event": "share_link_created {rows, hasRate} / share_link_opened {hasRate}",
+    "sourceFindings": [
+      "J9-F1",
+      "J10-F3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-16",
+    "title": "The one PDF meant for a reviewer is unreadable, and its hours are wrong",
+    "journeys": [
+      "J9"
+    ],
+    "severity": "blocker",
+    "item": "Print for Review lays out fixed column widths that are far too narrow for 10 pt text, so descriptions run through the Quantity and Labor columns and the header itself overlaps. Labor prints to one decimal per unit, so the per-foot rates of conduit and wire round to 0.0 and the reviewer is told the wire is free to pull. And the document called Review carries no dollar figure at all - no extended cost, no materials, no tax, no grand total.",
+    "evidence": "pdf.js:36 lays 25/80/35/35/40/35 pt columns; measured with jsPDF's own getTextWidth on a 44-row bid, 44 of 44 descriptions cross Quantity (x=145), 39 cross Labor, and the bold header 'Plan Page / Location' is 97.4 pt and overruns 'Price' by 57.4 pt. pdf.js:57 rounds labor: 0.04 to '0.0' and 0.006 to '0.0', so the wire and conduit runs - 25.2 of 139 hrs - print as free while 'Total Labor: 139.0 hrs' is right. No $, 'Materials', 'Tax' or 'Grand' text run exists anywhere in either PDF. J9 NEW-1: the Type column prints the raw internal key cut to 8 characters (outletsA, trenchin, powerCoC) while manifest.js:10-35 already owns display labels.",
+    "proposal": "J9 P2: page 1 is the summary the screen already shows, with $ and cents; then the table with measured column widths, labor at two decimals, extended labor and extended price columns, children indented, and the existing TYPE_LABELS / CHILD_TYPE_LABELS map instead of raw keys. The proposal's own fixed widths sum to 525 of 532 pt with no gutters, so measure rather than fix them; the verifier's longest 45-char description was 195.9 pt at 10 pt, so a 220 pt description column holds. 'Makes the filename confusion unnecessary' is overclaimed - filenames are B10's job.",
+    "effort": "L",
+    "event": "pdf_exported {variant, rows, pages}",
+    "sourceFindings": [
+      "J9-F2",
+      "J9-F3",
+      "J9-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-17",
+    "title": "Switching bids from inside a flow editor lands on a blank page — or writes into the wrong bid",
+    "journeys": [
+      "J10"
+    ],
+    "severity": "blocker",
+    "item": "Switching projects while a flow editor is open swaps the manifest but leaves the view and the old project's item id in place, so the editor renders nothing: a header over an empty page with no control on it, no dialog, and no recovery that does not throw the edit away. Worse, a duplicated or shared bid carries the same item ids as its source, so switching to a twin does not blank the page - the editor re-renders on the twin and Save writes the unsaved row into the wrong bid, silently, under a header showing the right-looking name.",
+    "evidence": "projects.js:69-74 switches without leaving the view; TakeoffDeviceView.render returns '' for an unknown item (device.js:61-62). All twelve combinations (device x conduit x wire x dirty/clean x switcher and Manage->Open) end with #main-content innerHTML.length 0, zero dialogs, Esc and Undo/Redo dead, and the Labor & Price Book listing only the new bid's fixtures. J10 F1b: sanitizeImportedItem keeps any well-formed raw.id (state.js:55) and duplicateProject clones ids verbatim (state.js:303-309) - row 'MEANT-FOR-ALPHA' typed on Alpha, switched to Alpha (copy), Saved: Alpha's children [], the copy's ['MEANT-FOR-ALPHA']. J10 F1c: creating a bid from the blank page leaves you on the blank page, because createProject never resets currentView/currentItemId either.",
+    "proposal": "J10 P1 with the verifier's promotion: switchTo, createFromRow, the header-menu New Project path and Manage->Open all call navigateToManifest() first - it already asks when dirty - and abort the switch if the user keeps their edits; and TakeoffApp.render falls back to the manifest when a flow's item is missing (app.js:15-24). That second half is required, not defensive: without it the twin case silently succeeds. Consider re-id'ing on duplicate and on #d= import as belt and braces.",
+    "effort": "M",
+    "event": "project_switched {fromView, flowDirty, blocked}",
+    "sourceFindings": [
+      "J10-F1",
+      "J10-F1b",
+      "J10-F1c"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-18",
+    "title": "The supplier price update deletes the catalog and advises publishing that",
+    "journeys": [
+      "J13"
+    ],
+    "severity": "blocker",
+    "item": "Processing the bundled price file builds an overlay larger than a self-imposed size cap, so it is stored with its new-item list emptied - and patchLaborBook then reads 'no new items' as 'remove every supplier section', stripping the whole committed catalog from every tab, immediately and after every reload. The downloaded book carries the same emptiness, and the warning beside the download buttons tells the maintainer to commit it so the prices are kept. The Assemblies status reports the loss as success. Recovery exists but nothing points to it, and it silently discards the review queue.",
+    "evidence": "The bundled CSV builds a 2,718,636-char overlay against MAX_BYTES = 2500000 (mcElliotState.js:10); saveOverlay (:136-144) stores 2,885 chars with newItems: [] and newItemsTruncated: true; the else-branch at elliotPriceCore.js:445-449 then filters every supplier section out. Measured twice in fresh profiles: 13 sections / 27,556 parts to 0 on all six tabs, with the book re-fetched and no reload, and again after reload. Downloaded mc-labor-book.json 4,063,536 B against 7,786,102 B committed, 0 supplier sections, meta.elliot.newItems 0. labor-book.spec.js:20 passes in the broken state. J13 NEW-2: the warning blames local storage, which is false - Chrome stored the full payload with no quota error. J13 NEW-3: every overlay re-save (each Match, each category change) goes back through the same cap. J13 NEW-1: 'Remove overlay' also deletes the 847 KB / 2,525-row review queue while promising confirmations are kept.",
+    "proposal": "J13 P1 as reshaped by verifier. Guard (i) is load-bearing and ships regardless: patchLaborBook must treat 'no new items' as leave the committed catalog alone, never as remove it - this alone makes the catalog un-losable and also closes NEW-3, which a diet does not. Guard (ii): downloadPatchedBook refuses when the patched book has fewer supplier entries than the fetched one. (iii) drop the cap or move the overlay to IndexedDB rather than dieting - the tab-mapped-only diet measures 2,278,974 chars, 8.8% of headroom, which one bigger Elliot file erases. Fix the false warning copy and make Remove overlay say what it deletes.",
+    "effort": "L",
+    "event": "supplier_file_processed {rows, matched, review, truncated} + catalog_sections_rendered {tab, count} — the cheapest possible alarm",
+    "sourceFindings": [
+      "J13-F1",
+      "J13-F7",
+      "J13-NEW-1",
+      "J13-NEW-2",
+      "J13-NEW-3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-19",
+    "title": "Auto-matching overwrites saved mappings and prices two MC items from one supplier SKU",
+    "journeys": [
+      "J13"
+    ],
+    "severity": "blocker",
+    "item": "The item-mapping store is keyed by supplier part number, so when the automatic pass guesses a part number that is already mapped to a different MC item, the newest guess wins and the saved match is replaced with no signal. Because the map is one-to-one by part number, the same supplier SKU ends up pricing two different MC items in the live overlay, and the mapping file flips back and forth on every upload.",
+    "evidence": "setMapping keys by part number (mcElliotState.js:123-128); runMatching applies saved mappings first, then lets the auto pass overwrite the same key. The downloaded file and the committed elliot-item-mappings.json are both 173 entries with exactly four differences - 1709 8706->8732, 1711 8708->8734, 1713 8710->8736, 813400 26452->26453 - and a second import in the same session flipped all four back. Live in the overlay, not just the file: 8706 (die-cast) and 8732 (non-die-cast) both at $4.3233, and a 3/4 x 8' ground rod carrying the 10' rod's $35.18. The summary shows '4 matched automatically' with no hint they replaced anything, and the mapping count stays 173.",
+    "proposal": "J13 P2: when an auto match's part number already maps to a different MC item, push it to the review queue with the saved match shown as the current answer and count it separately ('4 matched automatically - 0 replaced saved matches'). The verifier's binding addition: the fix must also stop one Elliot part pricing two MC items in a single overlay, which is where the wrong dollars actually land. Note the committed 173 are apply-elliot-prices.js --match output, not human confirmations, so the severity rests on the prices, not on 'deliberately mapped'.",
+    "effort": "M",
+    "event": "supplier_mapping_collision {partNumber, oldItem, newItem}",
+    "sourceFindings": [
+      "J13-F2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-20",
+    "title": "Two shipped default rows share a name, and the merge is name-keyed",
+    "journeys": [
+      "J12"
+    ],
+    "severity": "blocker",
+    "item": "The Labor & Price Book's whole provenance model matches rows by name, and the shipped defaults contain one duplicate name inside one section. So every version bump silently rewrites an untouched default to the other row's hours, the merge never settles, pre-versioning users get a phantom correction they never made, and on one reachable path two corrections carry the identical conflict key - which Postgres rejects, so the whole push fails behind a console warning while the dialog says N corrections shared.",
+    "evidence": "laborBookDefaults.js:575-576 ships two rows named PVC GLUE in section PVC GLUE at 15 hrs and 5 hrs - exactly one duplicate in all 481 default rows. laborBookMerge.js matches on r.name === def.name (:47, :58, :88, :102, :126). mergeDefaults(pristine book, identical defaults) returns changed = 1, 2, 2, 2 over four calls and never settles, because the 15-hr row is rewritten 5->15->5 inside every call. bootstrap then flags the 5-hr row edited and computeCorrections emits a phantom 'PVC GLUE 15 -> 5'; on the merge-then-bootstrap path two rows carry the same (user_id, tab, section, part_name) key and cloud.js:433-435 swallows the rejection.",
+    "proposal": "J12 P1: fix the data (two names or one row), add the assertion the suite already makes against a synthetic fixture - mergeDefaults(clone(LABOR_BOOK_DEFAULTS), LABOR_BOOK_DEFAULTS, {}) === 0, which is laborBookMerge.test.js:90's invariant and fails on the real data today - and make the merge refuse (or index-match) a section carrying duplicate names. Blocks T2-11 and part of B14: the 'N values changed' line prints an inflated count and 'equals the shipped default' is undefined until this lands.",
+    "effort": "S",
+    "event": "defaults_merged {from, to, changed}",
+    "sourceFindings": [
+      "J12-F1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-21",
+    "title": "Two devices on one bid overwrite each other silently, with ✓ on both",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "blocker",
+    "item": "There is no realtime and no polling - a device reconciles once per page load or when Sync Now is pressed - and a push upserts the whole project row with the client's own clock as updated_at, without ever consulting the remote. So the second device overwrites the first on its own push, before any reconcile, with no field merge, no conflict copy and no notice; adopting a remote project then clears the local undo stack, so nothing can bring the lost version back. Last-write-wins is a documented design fact; what this row rests on is silent, unrecoverable, and a checkmark on both machines.",
+    "evidence": "syncDown runs once per load (syncedThisLoad, cloud.js:521-524); pushProjectNow (:263-269) upserts the whole row with updated_at: project.savedAt; adoptProject clears undo (state.js:234-236). No realtime, no channel(, no setInterval and no keepalive anywhere in the repo. setStatus('syncing') appears only at cloud.js:78, so neither queuePush nor queueProjectPush changes the status and the checkmark lies for the whole 1.2 s debounce plus network time - exactly the lid-close window. Cloud interior is a wall: code-verified line by line, never signed in.",
+    "proposal": "J11 P8 with the verifier's binding extension: when syncProjects would replace a local project whose savedAt is within the session or whose manifest differs, keep the loser as '<name> (conflict - <device time>)' in the same account and show a one-line header notice; and put an updated_at precondition on the push, or the earlier copy is already gone from the cloud before anyone reconciles. Reject any version that adds a merge dialog - the point is keep both, say so. The status half (J11 #13) ships with B13.",
+    "effort": "L",
+    "event": "cloud_sync_conflict {kind, winner, keptCopy} + cloud_push_failed {code}",
+    "sourceFindings": [
+      "J11-F10",
+      "J11-F13"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-22",
+    "title": "On a phone the book shows everything about a part except what it is",
+    "journeys": [
+      "J6",
+      "J14"
+    ],
+    "severity": "blocker",
+    "item": "Two surfaces, two mechanisms, one outcome: at phone widths the Labor & Price Book renders parts you cannot identify. Supplier catalog rows are a seven-column table with no minimum width inside an overflow:hidden section, so the name is clipped to three characters and nothing pans - a full ancestor audit found no element a finger can scroll. And in global search the part name is the only shrinkable item in a flex row, so it collapses to zero width while the context and prices stay - which also kills the workaround the tablet dossier itself recommended.",
+    "evidence": "At 375 px the catalog table is 467 px (right edge 513) inside .labor-book-section { overflow: hidden } (styles.css:1311), clipping at x~363: Name 38.2 px = 3 of 27 characters, Part # 26.8 px, Price 33.4 px, the provenance badge at x 366-484 hit-testing as DIV.modal. A 400 px horizontal wheel leaves every scrollLeft at 0 and window.scrollTo(500,0) leaves scrollX 0; the only element accepting scrollLeft is the hidden section, at max 167 px. A-7's .flow-table-scroll fix never reached this table (tbl.closest('.flow-table-scroll') is null). J14 NEW-1: .lb-search-name { flex:1; min-width:0 } (styles.css:3009) beside flex-shrink:0 siblings (:3017, :3027) collapses to clientWidth 0 against a scrollWidth of 137-146 px - 'form3/4 EMT coupling' returns 33 rows with no visible names, and nothing overflows, so a scrollWidth === innerWidth check never sees it.",
+    "proposal": "J14 P1 with the verifier's caveat: below 640 px render each catalog row as a two-line card (name on line 1; part #, price, badge and Add on line 2) using the same display:block grid the manifest already uses; from 641 up give the table a min-width: 640px inside a scroll wrapper - a bare min-width would just be re-clipped by .labor-book-section. NEW-1 folds in: .lb-search-row { flex-wrap: wrap } with the name on its own full-width line below 640. Keep the inline-edit-then-promote behaviour and the 100-row cap, and re-measure the Show-all cost with cards.",
+    "effort": "M",
+    "event": "session_start {vw, vh, coarsePointer} — nobody knows whether a single estimator opens this on a phone",
+    "sourceFindings": [
+      "J14-F1",
+      "J14-NEW-1",
+      "J6-F8"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-23",
+    "title": "\"Load into Ledger\" is clipped to nothing below ~536 px",
+    "journeys": [
+      "J14"
+    ],
+    "severity": "blocker",
+    "item": "The Assemblies bar's header is a nowrap flex line whose minimum content is wider than the section it lives in, and that section is overflow:hidden - so on a phone the Load button is laid out past the painted edge and simply does not exist for a finger. The select beside it invites you to pick a saved run recipe, and then nothing happens.",
+    "evidence": ".assemblies-select { min-width:140px } and .assemblies-load-btn { flex-shrink:0 } inside .assemblies-section { overflow:hidden } (styles.css:1691, :1693, :1646). At 375 px the 148 px button lays out at x 338-486 while the section's painted box ends at x 326; elementFromPoint(346, 441) returns DIV.flow-page. Broken at 390 too. The header needs 436 px of content inside a section that is viewport minus 98, so the real cut-off is about 536 px, not the walker's ~520. Programmatic scrollLeft (max 167) reveals it, so a Magic Keyboard Tab would reach it; no touch gesture will.",
+    "proposal": "J14 P3, narrowed by the verifier to the two safe options: flex-wrap: wrap on .assemblies-section-header, or move the button into the body next to the select. Do not simply drop overflow: hidden from .assemblies-section - the 436 px header would then spill past the 277 px section and give the flow page horizontal overflow at 375, regressing the zero-overflow property baseline A-6 bought. Rides with T1-09's assembly work and J4 P7's confirm.",
+    "effort": "S",
+    "event": "assembly_loaded {viewportClass}",
+    "sourceFindings": [
+      "J14-F3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-24",
+    "title": "Conduit and wire children carry numbers the flow won't update or won't show",
+    "journeys": [
+      "J5"
+    ],
+    "severity": "stumble",
+    "item": "Three defects with one shape: a child row on the bid and the wizard that produced it hold different numbers, and only a Save reconciles them. The overage child is a snapshot of quantity and unit price taken at Save, so changing the run afterwards leaves the waste wrong while the chip still says a live-sounding percentage. The trenching child's manifest quantity and its stored meta diverge, so a correction made on the manifest is silently reverted the next time anyone opens the run. And wire MAC rows have no Price column, yet a book fill writes one and Save persists it, re-hydrating it on every re-entry.",
+    "evidence": "conduit.js:511-528 and wire.js:140-157 copy ceil(qty x %) and the parent's price once. Parent 150 to 200 ft leaves the child at 15 ft - Conduit $236.50 where $242.00 is right; price 1.10 to 1.25 leaves the child at 1.10 ($272.00 vs $275.00); re-entering shows '200 + 20 = 220' while the bid carries the old line. Trench child edited 150 to 100 on the manifest drops Conduit $750 live, then app.js:171 prefers meta.feet, re-entry reads 150 and Next restores it ($3,964.74 back from $3,214.74) because handleFieldUpdate never touches meta. MAC: an Elliot connector at $206.45 x 6 put Wire at $2,294.71 with $1,056.00 visible in the flow (wire.js:46 has no Price column; laborBookTargets.js:55-61 writes one). All three were downgraded from blocker to stumble because the estimator can edit the child in place and recover - the cost is a wrong figure on the bid meanwhile.",
+    "proposal": "J5 P4 write-time half only - the verifier killed the read-time variant, because pdf.js, share links, getPurchaseList and getSummaryBreakdown all read the stored child, so deriving at render creates a new stored-versus-shown split. Recompute the overage child when the parent's quantity or price changes in handleFieldUpdate, and treat a manual edit of the child as an override that drops meta.overagePercent (read-only child inputs would add a special row type). J5 P8 lands in the same branch - a trench child's quantity or price edit updates meta.feet/meta.pricePerFoot and regenerates the description - so ship them as one change. J5 P5: give the MAC table the Price column the fittings table has and delete the if (priceNum != null) special case, so the two flows share one rule.",
+    "effort": "M",
+    "event": "flow_saved {kind, overagePct, overageQty, macPriced}",
+    "sourceFindings": [
+      "J5-F4",
+      "J5-F6",
+      "J5-F3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-25",
+    "title": "Labor on a Permits / Power co. / Temporary power row vanishes from the screen and prints in the PDF",
+    "journeys": [
+      "J3",
+      "J8",
+      "J9"
+    ],
+    "severity": "stumble",
+    "item": "Two totals disagree by construction. The summary routes Other-type rows to other charges and adds only their price, so labor typed on a permit row shows no effect at all; the total the PDF prints filters on no type and counts it. So a field takes a number, teaches the estimator that labor does not apply here, and the printed bid then disagrees with the screen by exactly those hours times the rate. A third, unused total disagrees with both.",
+    "evidence": "getSummaryBreakdown routes OTHER_TYPES to otherCharges and adds only priceAmount (selectors.js:150-152); getTotalLabor filters on no type at all (:18-33); pdf.js:33 calls the second. Permit labor 3 on a qty-1 row: the field keeps 3, the screen's Labor TOTAL (hrs) stays 62.8, getTotalLabor() goes to 65.8, and pdf.js:72 prints 65.8 - a $276.00 screen-versus-print gap at $92/hr. Nothing in code, README or tests says which is intended. J3 NEW-2: getTotalPrice (selectors.js:36-50) is a third total that applies no counts-once rule and also sums Other-charges rows - measured 8,399 against a materialsSubtotal of 7,249 plus $1,150 other - exported but called from no view and no PDF.",
+    "proposal": "J3 P12: pick a branch - count Other-type labor in the summary, or make the Labor cell read-only with an em dash on those rows - and which branch is J8's call. But the load-bearing clause is the second one: pdf.js:33 must stop calling getTotalLabor() and read the same getSummaryBreakdown().laborTotal the screen shows, or the branch only changes which of the two numbers is wrong. Delete or align getTotalPrice in the same change.",
+    "effort": "S",
+    "event": "pdf_exported {variant, laborTotal, screenLaborTotal} — assert they match",
+    "sourceFindings": [
+      "J3-F14",
+      "J3-NEW-2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 1,
+    "id": "T1-26",
+    "title": "A legacy or meta-less book silently loses its defaults, permanently",
+    "journeys": [
+      "J11",
+      "J12"
+    ],
+    "severity": "stumble",
+    "item": "The legacy migration adopts any object as the Labor & Price Book, and the upgrade path then stamps the current defaults version without ever running the merge - so a book that arrives empty or partial is recorded as up to date while missing most of its sections, and never self-heals. Worse, every default missing from a section the book does have is written into the removed map: permanently blacklisted and emitted as a remove correction, so a user proposes deleting defaults they never touched. Separately, every book save stamps a fresh savedAt including the silent boot merge, so a device that boots after an app update can push its stale book over another device's corrections.",
+    "evidence": "migrateLegacyWorkspace adopts for any object (storage.js:156-158); upgradeLaborBook's bootstrap sets storedVersion = LABOR_BOOK_DEFAULTS_VERSION and the merge is then skipped (state.js:179-190), contradicting that function's own comment. Measured on three shapes: laborBook:{} gives all six tabs at 0 sections with meta {defaultsVersion:2, removed:{}}; absent gives the defaults intact (gear 6/65, conduit 44/373, wire 3/43) as the control; and a partial gear-only book keeps its one row and destroys conduit's 44 and wire's 3 sections (J11 NEW-5). J12 NEW-2: a legacy book with one conduit section booted with 1 conduit section against 44 shipped, and a seed missing five current defaults produced five remove entries in getBookCorrections(). persistBookNow stamps savedAt: new Date() unconditionally (state.js:152-158) from upgradeLaborBook's dirty path (:190). The cloud legacy workspace row takes the same path (cloud.js:92-93).",
+    "proposal": "J11 P6 in the verifier's preferred variant: run mergeDefaults after bootstrap in upgradeLaborBook and drop the storedVersion assignment - one line, which is also J12 NEW-2's fix. It covers both the empty and the partial shape and self-heals books already in that state, which an 'is it empty?' guard cannot. The savedAt re-stamp needs its own guard: a merge-only save must not move the book newer than the cloud's.",
+    "effort": "M",
+    "event": "book_migrated {shape, sectionsBefore, sectionsAfter} + defaults_merged",
+    "sourceFindings": [
+      "J11-F8",
+      "J11-NEW-5",
+      "J11-F12",
+      "J12-NEW-2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-01",
+    "title": "`hidden` does not hide — a hole in baseline A-5",
+    "journeys": [
+      "J1",
+      "J4",
+      "J10",
+      "J14"
+    ],
+    "severity": "stumble",
+    "item": "A-5 fixed elements rendering while marked hidden by shipping two per-class rules and no base rule, so a later class introduced by the N-series inherited the same bug. Four surfaces now render at full size with the hidden attribute set: the Manage Projects create row, the devices flow's assembly-name row, the book's Add-Section row on every catalog tab, and the same class at a fourth site nobody has hit yet.",
+    "evidence": ".projects-new-row, .inline-name-row { display:flex } (css/styles.css:3667) beats the UA [hidden] rule. Measured with hidden === true: the create row 306x34 px, the assembly-name row 36 px tall with a focusable input, the book's Add-Section row 76 px. A-5 shipped only .header-menu-item[hidden] and .btn[hidden]; laborBook.js:112 carries the same defect unfixed, and projects.js:142 uses the class with no hidden attribute so it is unaffected.",
+    "proposal": "J4 P4 as reshaped by verifier: one base rule [hidden] { display: none !important } instead of a third per-class rule. It closes device.js:124, projects.js:89-92, laborBook.js:112 and anything the next N-series adds, in fewer lines than the targeted fix, and the class of bug stops recurring.",
+    "effort": "S",
+    "event": "—",
+    "sourceFindings": [
+      "J4-F4",
+      "J1-F2-css-half",
+      "J10-F2-css-half",
+      "J14-F7-css-half",
+      "J14-NEW-2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-02",
+    "title": "Naming a job ends in a dialog that won't close and a list that grows",
+    "journeys": [
+      "J1",
+      "J10"
+    ],
+    "severity": "stumble",
+    "item": "The very first thing a new user does - naming the job - leaves the Manage Projects dialog open with the typed name still in the field and focus still in it, so Enter again mints a duplicate project and an empty Create mints another 'Untitled project'. Esc is eaten by the field's own keydown handler, so two presses close nothing. On a fresh install, naming the job also leaves the boot project behind, and clicking the header name to rename - the naive reflex - opens the switcher instead.",
+    "evidence": "Depends on T2-01's CSS. After Enter: row.hidden true, computed display:flex, 34.4 px tall, name still in the input, focus still in the input, '2 projects'. Esc twice from the field does nothing (projects.js:241-244 stopPropagation) while Esc from anywhere else closes. Enter again produced 'Harbor View Clinic TI' twice; empty Create produced 'Untitled project' (state.js:287). The footer '+ New project' toggle flips hidden with no visual change. Rename lives only inside Manage (switcher -> Manage -> Rename -> Enter -> Close = 5 steps).",
+    "proposal": "J1 P2 = J10 P2, with J10 owning the surface: after Create, clear the field and close the modal when it was opened with {create:true} - the estimator came to name a job, not manage a list - and let Esc close from the field. Plus J1 P3 as narrowed by the verifier: add Rename to the switcher menu and keep the header as the switcher (click-to-edit would split one control into two targets and hide the switcher), and reuse the open project only when it is never-renamed, has no described row and rate 0.",
+    "effort": "S",
+    "event": "project_created {source}",
+    "sourceFindings": [
+      "J1-F2",
+      "J1-F5",
+      "J10-F2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-03",
+    "title": "Undo is dead exactly when you reach for it, and Redo lies",
+    "journeys": [
+      "J1",
+      "J3"
+    ],
+    "severity": "stumble",
+    "item": "The Undo and Redo buttons are refreshed only at the tail of a full render, and field edits deliberately skip rendering - so after typing, the button is disabled while the stack is not empty, and after an edit clears the redo stack the Redo button stays lit and does nothing. The journey's own trigger is 'relies on Undo when they slip', and the button is dead precisely then. Cold boot is the mirror image: Undo is enabled before the user does anything, and clicking it empties the table.",
+    "evidence": "updateUndoRedoButtons() is defined at app.js:29 and called from exactly one place, app.js:25 inside render(); it is not exported and no keydown handler binds Z. Typing 99 into a quantity made canUndo() true while #undo-btn.disabled stayed true and Playwright's click timed out; identical after a share-link import and after a spinner click; Add Row wakes it. After an Undo plus one keystroke, canRedo() false with the button enabled and clicking changing nothing. Cold boot: Undo enabled, click gives 0 manifest rows under a hint saying 'type the first fixture below'; reload re-seeds.",
+    "proposal": "J3 P4's button half, which is the part that adds zero surface: call updateUndoRedoButtons() from handleFieldUpdate, both spinner handlers and updateSummaryOnly. The keyboard half needs a boundary - the browser's own per-field undo already writes through to state via the input listener (measured qty 99 to 9), so an app-level handler firing inside a field runs two undo systems on one keystroke; ship it 'not in a text field' or ship the button half alone. J1 P9: seed the boot row without pushing an undo frame, mirroring what createProject already does at state.js:288-290.",
+    "effort": "S",
+    "event": "undo {frames, fromView}",
+    "sourceFindings": [
+      "J3-F2",
+      "J3-F9",
+      "J1-F9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-04",
+    "title": "Undo frames that undo nothing",
+    "journeys": [
+      "J3",
+      "J4",
+      "J5"
+    ],
+    "severity": "stumble",
+    "item": "Several paths push undo frames that produce no visible change, so the first Undo press appears to do nothing and estimators conclude Undo is unreliable. Typing then pausing then blurring re-sends the same value after the coalescing window closed; deleting the last row pushes a second frame for the blank row that replaces it; a no-change flow save deletes and re-creates every child with new ids; and the conduit wizard pushes three frames per pass, so one Undo after a Save removes only the overage.",
+    "evidence": "manifest.js:398-400 and state.js:411-415. Counted by unwinding the real stack: type 55 into a quantity then Tab immediately = 1 frame, values [55, 40]; type 55, pause 1.5 s, then Tab = 2 frames, [55, 55, 40], and the first Undo leaves 55 on screen. Deleting all six rows then Undo #1 gives 0 top-level rows. A device-flow re-open with flowDirty false then Save: all three child UUIDs changed and Undo left the children at 3 with identical buckets. Conduit undo depth counted non-destructively: no-change re-save 15 to 16; a no-change full pass 16 to 19.",
+    "proposal": "J3 P5: skip pushUndo when every key in updates already equals the item's coerced value - handleFieldUpdate parses before it calls, so compare after coercion and treat null == null as equal, or a blank price re-sent on blur still pushes a frame - and wrap the last-row re-seed in beginBatch/endBatch. J4 P9: skip the delete-and-re-add when the row set is unchanged, or at least reuse child ids. T1-07 removes the wizard's extra frames for free.",
+    "effort": "S",
+    "event": "undo {frames, noop}",
+    "sourceFindings": [
+      "J3-F3",
+      "J3-F10",
+      "J4-F10",
+      "J5-F13"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-05",
+    "title": "The import preview can't show what's about to go wrong, and the type guesser mis-types the trade's own names",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "stumble",
+    "item": "The preview has no type column, so the estimator cannot see how many rows will arrive needing a type until after the modal closes and they are looking at gold Add buttons. The inference regex misses the commonest lighting names outright - and, worse, mis-types several: a mis-typed row shows a real type badge and sums into the wrong summary bucket with no Add to flag it.",
+    "evidence": "import.js:13-21 needs fixture/lighting/light fixture; troffer, downlight, exit, emergency, sconce and high-bay all return null, so 2 of 6 real paste lines landed untyped. J2 NEW-1: '2x2 LED Flat Panel - F1' becomes gear (the word panel, import.js:19, because lighting is tested after gear only for fixture|lighting); 'Switchgear MSB', 'Transfer Switch ATS-1' and 'Disconnect Switch 60A' become devices (switch, :17); 'Lighting Contactor LC-1' and 'Fixture Whip' become lighting. On the verifier's seed this put a duplicate Flat Panel row under Gear.",
+    "proposal": "J2 P4 with the verifier's word-boundary requirement: teach the matcher the trade's fixture names, but fix the order and use word boundaries first - lighting terms must be tested before gear, and switch must not beat switchgear|switchboard|transfer switch|disconnect. The proposed lamp, strip, jack and meter all have false positives waiting (Beam clamp, Strip heater, Jack chain, Voltmeter). J2 P3 as salvaged by the verifier: an info-only chip fails the simplicity budget, so make the dashed 'needs a type' chip a picker (G/L/D/C/W/S) inside the preview - then it replaces the post-import type-modal trip instead of adding surface, and it surfaces the mis-typed rows too.",
+    "effort": "M",
+    "event": "import_opened {lines, matched, new, untyped, misTyped}",
+    "sourceFindings": [
+      "J2-F4",
+      "J2-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-06",
+    "title": "A lower re-count is silently kept, and the preview calls it \"no change\"",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "stumble",
+    "item": "The merge is one-directional: it raises a matched row to the import's count when higher and does nothing when lower, while telling the estimator 'already N - no change'. Counts go down as often as up, and 'already 10' reads as reassurance rather than 'your count dropped and I ignored it'. The only way to accept the lower number is to edit the row by hand.",
+    "evidence": "import.js:88-90 has exactly two branches and no third. Wall Pack 10 in the manifest against an import of 7: preview says 'already 10 - no change' and after Add Overages Only the bid still carries 10 @ $118 / 1.0 h - $354 of material and 3.0 hrs of labor for fixtures the count says are not there. ARCHITECTURE.md:178 documents 'raised when higher' as design, which makes the behaviour intentional but not the wording: the count did change.",
+    "proposal": "J2 P2 in the verifier's simplest variant: counts are totals and the preview already shows the delta, so 'Update counts' sets matched rows to the import's number in both directions, with 'x 7 - was 10, -3' on screen. Nothing is silent because the delta is visible, and there is no per-line toggle and no new surface - the label change alone is pure removal of a wrong message.",
+    "effort": "S",
+    "event": "import_added {lowered}",
+    "sourceFindings": [
+      "J2-F2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-07",
+    "title": "\"Load into Ledger\" replaces all eight sections with no warning and no undo",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "stumble",
+    "item": "Loading a saved assembly into the devices flow silently replaces every section, including rows the estimator typed a moment earlier - and because the flow is a temp buffer there is no undo path at all. README describes the button as doing something else entirely.",
+    "evidence": "device.js:367-380. A typed Misc row ('Corridor pull string') was gone after the load with zero dialogs, and the only two dialogs in that run were baseline B-3's discard guard. README:42 still reads 'Load into Ledger - Add assembly items to the manifest' - it loads rows into the flow, replacing what is there, and nothing reaches the manifest until Save and Back.",
+    "proposal": "J4 P7, with the verifier's note that the README half is pure win and ships regardless. The confirm ('Replace the 5 parts here with \"Break room duplex\"?') survives spirit rule 1 only because it is gated on there being something to lose. The stronger alternative worth costing: load into the buffer with an 'Undo load' affordance, which puts no decision on the happy path at all.",
+    "effort": "S",
+    "event": "assembly_loaded {replacedRows}",
+    "sourceFindings": [
+      "J4-F7"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-08",
+    "title": "Three doors into the book behave three ways on one row",
+    "journeys": [
+      "J4",
+      "J6",
+      "J7"
+    ],
+    "severity": "stumble",
+    "item": "A flow row offers a PB fill button and its own book icon, and they do opposite things: PB replaces the row and closes the book leaving the quantity at 0, while the book icon merges the pick into the row's existing text, producing a Frankenstein description and a summed quantity that nobody could order. An assembly through that door explodes junk rows. A stray click anywhere on a book row that is not an input adds it silently. And the fittings-header door banners a quantity rule it does not follow, with a stale search hiding the group it promised to open.",
+    "evidence": "laborBookTargets.js:76-82 (merge), :137-165 (explode), :92-100 (fittings door). Measured: the row's book icon produced 'NC POWER SUPPLY&BACK-BOX, CADDY box support far side', qty 2, labor 1.45, book still open; an Assemblies hit through it exploded '20A WIRE TERMINATION x 6 - price 0' plus a labor 0.0075 row. J7 #7: two different non-input areas of a book row (the space right of the trash, the padding of the Name cell) each silently added a child carrying +50 labor hrs, from laborBook.js:495-500. The fittings-header banner read 'x150 on the bid' while Add appended qty 1 with the price as the string \"58.4697\", and the box still held the previous fill search so the Fittings group was not on screen.",
+    "proposal": "J4 P6: remove the flow row's book icon and the targetDeviceRow 'Add to' path (laborBookTargets.js:70-86, :141-168; laborBook.js:346-353) and keep PB - 'another part in this section' is + Box then PB, which is what the merge path was standing in for. That deletes ~60 lines, the explode-into-device-rows branch and a banner variant. It must remove only the flow row's icon: the manifest row's book icon is a different, working door that T1-08 depends on. J7 P7: delete the whole-row click handler - 6 lines, and no spec or module depends on it. J5 P9: the fittings-header door clears the fill search and drops the misleading x-footage suffix.",
+    "effort": "M",
+    "event": "book_add_to_target {door, bucket}",
+    "sourceFindings": [
+      "J4-F6",
+      "J7-F7",
+      "J5-F9",
+      "J6-F12-door-half"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-09",
+    "title": "The book's search doesn't speak the trade, and its three buckets are three incomplete shapes of one part",
+    "journeys": [
+      "J4",
+      "J5",
+      "J6"
+    ],
+    "severity": "stumble",
+    "item": "Everyday electrician phrasings return nothing while the parts sit in the catalog under another name, and the short synonyms that were added to fix that now trade a miss for a screenful of noise because results are ordered by tab and section rather than by match quality. One synonym is matched as a substring, so a four-letter abbreviation inside a longer word ranks a nurse-call power supply first for 'box support'. Structurally the three buckets are incomplete in complementary ways: the catalog has prices and no hours, the curated book has hours and mostly no prices, and the third bucket is named after a vendor.",
+    "evidence": "26-query sweep: '2p 20a breaker' returns 0 assemblies while 'encl cb 2p' finds 52; '20a circuit breaker' also 0; 'exit sign' 0/0/0 against 'exit light' 5; '4 square box' returns 17 hits, all 4-11/16; 'emt 90' returns 0 Elliot rows because the catalog writes '90D EMT ELB'; '1900 box', 'single pole switch' and 'pull string' all 0/0/0. 'ss' means stainless in the catalog and set-screw in the book; 'lt' surfaces BATH FAN/LT and a $27,255 generator. In the wire flow 'mac' and 'mac adapter' return 0/0/0 while 'mc connector' returns 2/0/43 and mc-labor-book.json holds 15 'MC CONN' rows. J4 #5: makeTokenMatcher tests synonym alternatives of 4+ chars as substrings, so support -> supp hits SUPPLY and filling from that first Add wrote 1.35 hrs / $45.36 into a row that should read 0.1 hrs. Whole-book counts: 27,556 catalog entries with 0 carrying labor; 481 curated rows with 466 carrying labor and only 98 priced.",
+    "proposal": "J6 P5 with the verifier's ordering caveat: the load-bearing half is literal-match-first within each bucket, not the synonyms - adding cb -> breaker without it pulls 52 ENCL CB rows into every cb-shaped query and repeats the ss/lt noise this is meant to sink. Then the groups: breaker/brkr/bkr/cb, exit sign/exit light, 4s/4sq/4 square/1900, single pole/1p/sp, 90/90d/ell/elbow/elb, pull string/line/tape, and mac <-> mc (J5 P11 re-shaped smaller by the verifier - a synonym group, not a new defaults section, because the parts already exist). J4 P5: word-boundary matching for synonym alternatives only, verified in-page - (^|[^a-z0-9])supp([^a-z0-9]|$) still matches 'BOX SUPP BRKT' and no longer matches 'SUPPLY', so the abbreviation keeps working; and fill mode ranks Parts before Assemblies. J6 P8 labels the buckets honestly ('Your book (hours)', 'Supply house - Elliot (prices)', 'MC assemblies (hours + material)'), and the last label must not ship until T1-02 lands.",
+    "effort": "M",
+    "event": "book_search {termLength, buckets, zeroResult}",
+    "sourceFindings": [
+      "J6-F5",
+      "J6-F6",
+      "J5-F14",
+      "J4-F5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-10",
+    "title": "Half the book is unreachable and unfilterable",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "stumble",
+    "item": "The Assemblies side of the book has no filter at all, so narrowing thousands of sections means leaving the tree for the global search and losing your place - even though the input's listeners and its 'N matching sections' count are already written and waiting. Drilling to a common gear item takes four clicks through lower-case MC codes, and the Abbreviation Key that sits two links away decodes none of the codes on the screen behind it.",
+    "evidence": "#mc-book-search is wired at mcBook.js:183 and :413-416 and appears in neither index.html nor the live DOM; #labor-book-assemblies holds no input or select at all, and its toolbar (index.html:121-124) is exactly the slot the filter would take. Conduit alone has 2,748 sections. The Abbreviation Key modal holds exactly 8 entries (SS, st, cn, insl., RGS, RT, N3R, N4R) and none of D/S, S/S, D/C, S/C, W/C from the book's own rows or nf, gd, hd, seb, n3r from the tree; README:77 calls it a reference for labor codes.",
+    "proposal": "J6 P6: add the input the code already listens to, styled like the Parts filter - wiring an orphan, not new surface. J6 P10: generate the Abbreviation Key from a table that includes the book's row codes and MC's section codes, add title tooltips on assembly section names ('nf = non-fused'), and fix README:77.",
+    "effort": "S",
+    "event": "book_filter_used {side}",
+    "sourceFindings": [
+      "J6-F7",
+      "J6-F14"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-11",
+    "title": "Nobody is told the shared book moved, and nobody who contributed learns what happened",
+    "journeys": [
+      "J12"
+    ],
+    "severity": "stumble",
+    "item": "The loop that turns one shop's know-how into everybody's is closed only in the repository. The merge already computes how many rows it changed and the result is discarded, so nothing anywhere says a user's book was updated. On the contributor's side the row status exists in the table and is readable under RLS, but the 'see what's shared' list never shows it - so an estimator cannot tell whether their correction became everyone's, or whether a number in their book came from a colleague.",
+    "evidence": "mergeDefaults' return value is dropped at state.js:186, its only call site in the app; after a real v1-to-v2 boot merge the document contains no 'updated', 'shared book', 'merged' or 'changed' anywhere, and neither does the book modal. Provenance badges only ever read You, a supplier name or 'no date' - and the badge is price provenance only (shared.js:76-95), so this journey's own trigger, a labor-hours fix on a price-less row, renders '+ price' and no badge at all.",
+    "proposal": "J12 P5, blocked on T1-20: the count it would print is inflated by 2 forever until the duplicate name is fixed, and 'changed > 0' is the wrong gate because the merge is not idempotent - gate on a list of actually-changed row names. J12 P4's honest list: the book's rendered trail instead of raw storage keys, the row's status read per row (status is set on all rows in a group, so 'accepted' is readable and 'shipped in v3' is not until B14 adds it), and one line saying the sign-in email travels with it. J12 P3 with the verifier's mechanism correction: the 'shared' cue must live on the row or the hours cell, not on the price badge, which does not exist on a labor-only fix.",
+    "effort": "M",
+    "event": "defaults_merged {from, to, changed} + suggestion_resolved {kind, status, users}",
+    "sourceFindings": [
+      "J12-F6",
+      "J12-F7"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-12",
+    "title": "Sharing consent is stored per device and survives sign-out",
+    "journeys": [
+      "J12"
+    ],
+    "severity": "stumble",
+    "item": "The opt-in to share book corrections is a flag in the device's own localStorage, and signing out never clears it - while the post-sign-in sync ends by pushing suggestions, gated only on that flag. So on a shared office machine one person's opt-in silently makes the next person a contributor, pushing their book corrections and their email with no consent of their own. The same device-locality means a second machine shows the toggle Off while the user's rows sit in the table, and cannot withdraw them without flipping it On first.",
+    "evidence": "isSharing reads localStorage['takeoff-share-corrections'] === '1' (cloud.js:34, :389-395); signOut (:507-514) touches pushTimers, the session, pendingEmail and status but not SHARE_KEY; syncDown ends with pushSuggestions() (:134). The delete on opt-out runs only on a change event (:404-407), so a device whose toggle already reads Off cannot use it. Every pushed row carries email: getEmail() (cloud.js:423), and the modal's 'N corrections shared' line counts the local diff regardless of what the server did (:563-575). Cloud interior is a wall - code-verified, never signed in.",
+    "proposal": "J12 P4's account-level half, which the verifier promoted out of polish: move the flag into takeoff_store next to book, so two devices agree and consent does not outlive a session on a shared machine. A device-local flag cannot be fixed by copy - this is the only fix. Ships with T2-11's list work.",
+    "effort": "M",
+    "event": "book_share_toggled {on, scope} + suggestions_pushed {n, failed}",
+    "sourceFindings": [
+      "J12-NEW-1",
+      "J12-F5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-13",
+    "title": "The first sign-in on a new device lands on a blank table and leaves junk on every other device",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "stumble",
+    "item": "The whole promise of signing in is that the bid shows up. Instead the sync adopts a remote project into the open view only when its id matches the current one, and a fresh device's current project is the empty starter minted at boot with a brand-new id - so the ids can never match and the estimator sees an empty table with a checkmark on it. That starter is then pushed up as a local-only project and appears in every other device's switcher.",
+    "evidence": "cloud.js:199-206 (the r.id === current.id adopt gate is the only adopt path), :213-219 (local-only push), state.js:212-217 (restoreOnBoot mints a fresh UUID and persists). No auto-switch exists anywhere: syncDown ends at TakeoffApp.render() (:135), and even the legacy-workspace fallback (:226-245) creates a project without opening it. Wall - code-verified, never signed in.",
+    "proposal": "J11 P7: after syncProjects, when the current project is a description-less starter and remote rows exist, switch to the most recently updated remote project; and never push a starter that has no described row, reusing baseline B-6's meaningful-row test, which identifies it exactly - the starter always carries exactly one description-less row. Step count on the second device drops from 3 to 2 and a class of junk projects disappears rather than needing a cleanup UI. Add the legacy-workspace fallback, which needs the same switch.",
+    "effort": "M",
+    "event": "cloud_signed_in {method, new_account, adoptedProject}",
+    "sourceFindings": [
+      "J11-F9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-14",
+    "title": "Deletes don't win",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "stumble",
+    "item": "Assemblies merge as a union seeded from the remote and overlaid with the local set, so an assembly deleted on one machine returns from whichever machine still holds it. A project deleted on device A does reach the cloud, but nothing tells device B, whose device-local index entry re-uploads it as a local-only project and resurrects the row. 'I deleted that and it came back' is the fastest way to stop trusting sync.",
+    "evidence": "cloud.js:114-116 (union seeded from remote, then local overlaid), :185-211 (sync only adds and updates index entries), :213-219 (local-only re-upload), :476-482 (onProjectDeleted deletes the cloud row from the deleting device only). Wall - code-verified, never signed in.",
+    "proposal": "J11 P9: a deleted_at tombstone on takeoff_projects rows and on assembly entries - union, then filter - and syncProjects removes tombstoned ids from the device index. The union at :114-116 and the index-only add/update at :185-219 are exactly the two places it has to be honoured, and onProjectDeleted is the natural place to write one. Invisible to the user; removes the support path with no new UI.",
+    "effort": "M",
+    "event": "cloud_sync_conflict {kind:'delete', resurrected}",
+    "sourceFindings": [
+      "J11-F11"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-15",
+    "title": "Closing the tab in an open flow editor loses the run, with no prompt",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "stumble",
+    "item": "Every in-app exit from a dirty flow editor asks 'Discard unsaved changes in this editor?', but the browser's own exits do not: the beforeunload handler flushes storage and never sets returnValue. The rest of the app autosaves every keystroke, so the estimator has no reason to expect this page is different - and a Cmd-R, a browser update or a laptop reboot mid-run takes the run silently.",
+    "evidence": "app.js:378-380 - one beforeunload listener, no returnValue, even with TakeoffState.getFlowDirty() true. Re-driven through the real UI: a typed component row with flowDirty true and storage children 0, then reload = 0 dialogs, lands on the manifest, children still 0; a real tab close behaves identically. The counter-evidence hunt confirms the inconsistency rather than excusing it - the same dirty state exiting in-app does prompt, so B-3 holds and only the browser-level exits skip it.",
+    "proposal": "J11 P2: set e.returnValue in the existing handler when the flow is dirty and the view is not manifest. Zero decisions on the happy path - flowDirty is false on the manifest and on flow entry, so the guard fires only on a genuinely dirty editor - browser-native copy with nothing to translate, and it removes a rule ('editors are different') rather than adding surface. Must also cover the location.replace in Hard reload, which unloads with no prompt today.",
+    "effort": "S",
+    "event": "flow_discarded {kind, via:'unload'}",
+    "sourceFindings": [
+      "J11-F2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-16",
+    "title": "Nothing in the app ever says it saved",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "stumble",
+    "item": "There is no Save control and no saved-state indicator anywhere on the manifest: no timestamp, no 'Saved' flash, not even the word. The only recency surfaces are day-granularity and live inside menus, and the one sentence about persistence is inside the Cloud dialog and talks about devices rather than saving. At the lid-close moment there is no answer to 'is it saved?', so first-timers export a link or print as insurance - extra steps on a route that otherwise costs zero.",
+    "evidence": "0 hits for save/saved/saving/autosave across every button, title and aria-label and the manifest view's body text; the project button's only title is 'Switch project'. J11 NEW-1: fmtAgo (views/projects.js:13-22) returns today / yesterday / Nd ago / Nw ago / a date, and grep 'just now' over js/, index.html and css/ finds nothing - so no surface can distinguish 'saved 2 seconds ago' from 'saved this morning'. Scope corrections that strengthen it: the flow editors do carry three Save buttons, and Manage Projects has a second day-granularity 'Updated' column - two recency surfaces, neither saying saved.",
+    "proposal": "J11 P1 with the verifier's correction: there is no formatter to reuse, so add a minute-level branch to fmtAgo first, then show 'Saved just now / 2 min ago' as the subline or title of #project-switch-btn, appending '- synced 12:47' from lastSyncedAt when signed in. It makes the Cloud button's title and the per-row age say one thing instead of two and adds no control. Must not wrap the header below 900 px.",
+    "effort": "S",
+    "event": "—",
+    "sourceFindings": [
+      "J11-F1",
+      "J11-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-17",
+    "title": "The supplier review queue can never be finished",
+    "journeys": [
+      "J13"
+    ],
+    "severity": "stumble",
+    "item": "Two and a half thousand uncertain matches are presented as a flat list with no filter, sort, grouping or bulk action, three hundred rows at a time, and every decision re-renders all three hundred. Half of each decision is not even remembered: a Skip only drops the row locally, so the next upload re-derives the identical queue. The rows do not say why they are uncertain, and the button labelled Skip means something entirely different two scroll-heights up the same modal.",
+    "evidence": "2,525 rows (847,158 B in mc-elliot-review-queue), 300 rendered, 2,996 DOM nodes, 14,575 px tall, 0 text inputs / 0 filters / 0 sort / 0 bulk actions, 300 selects, footer 'Showing first 300.' Match re-render measured 251 ms in the walk and 1,556 ms in the verify pass. resolveQueueItem(itemNum, null, null) (mcElliotState.js:175-187) leaves mappings at 5 across a Skip and a full second import re-derived the same 2,525. Row 1 shows three candidates all at $0.1334 / 100% with the near-tie at a different price invisible, because the row renders candidates.slice(0, 3) while classifyMatches checked all rivals (elliotPriceCore.js:315-318, :328). Match and Skip give no confirmation: setStatus (mcElliotUpdate.js:288) is wiped by renderBody() (:297 -> :326) and #mc-elliot-status measures empty.",
+    "proposal": "J13 P3: group by MC category with a filter box reusing TakeoffUtils.makeTokenMatcher, remember Skip as a null mapping so the row stays gone next upload, say why each row is uncertain, and add one bulk action - 'Match all 100% ties with identical prices'. The verifier pinned the rule: it may fire only when all near-tie rivals share the price (elliotPriceCore.js:317), which must be recomputed rather than read off the row's three shown candidates. Rename the row button 'Not this' and keep 'Skip' for categories; set the status after renderBody(), not before.",
+    "effort": "L",
+    "event": "review_decision {kind, bulk, remaining}",
+    "sourceFindings": [
+      "J13-F4",
+      "J13-F5",
+      "J13-F6"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-18",
+    "title": "Every line of the supplier tool is written for a developer, and the first one is false",
+    "journeys": [
+      "J13"
+    ],
+    "severity": "stumble",
+    "item": "The tool's audience is an office admin, and its copy is a developer's: commit, repo, push, overlay, local storage, formula unverified - with no statement of who commits, that a site deploy follows, or that until then only this browser has the prices. The first sentence on the first screen is simply untrue, and the status line goes stale because only one of four handlers ever updates it.",
+    "evidence": "Verbatim from the run: 'Commit to the repo', 'replace the files in mc-assemblies/', '... and push', 'Add suppliers by editing mc-assemblies/vendor-profiles.json'. The upload panel reads 'No supplier price overlay is active - the book shows original MC prices' while McElliotState.hasOverlay() is false but McBook.elliotImportDate() returns 2026-07-18 and 13 sections of badged supplier parts render behind the modal; after an import it reads '... 177 item prices, 0 new items' for a file with 33,000. Only downloadPatchedBook calls setStatus (mcElliotUpdate.js:317); the overlay, mappings and category-map handlers (:392-411) leave the previous line standing, so after three downloads it still read a category message.",
+    "proposal": "J13 P4 and P5 together: rewrite the first screen to what is true ('The book's supply-house prices are from the file committed 2026-07-18 (27,556 parts). Nothing has been changed on this computer.'), rename 'Commit to the repo' to 'Send the new prices to everyone' with a paragraph an office admin can act on, keep the file names visible because the maintainer is the reader, and give the three silent download handlers a status line. Retires the word overlay from the UI.",
+    "effort": "S",
+    "event": "supplier_files_downloaded {which}",
+    "sourceFindings": [
+      "J13-F3",
+      "J13-F8",
+      "J13-F12"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-19",
+    "title": "Sales tax is a hardcoded 8.5% applied to trenches and backhoes",
+    "journeys": [
+      "J5",
+      "J8"
+    ],
+    "severity": "stumble",
+    "item": "The tax rate is a constant with no input anywhere in the app, so an estimator outside one jurisdiction cannot use the Grand Total at all. And because trenching and rentals are stored as conduit materials, sub-contract and rental dollars are taxed as stock and handed to purchasing as shopping lines nobody can order.",
+    "evidence": "SALES_TAX_RATE = 0.085 (selectors.js:12); no input on the page matches /tax/. Trenching $1,800 plus a $550 compactor drew $199.75 of one bid's $663.52 tax; on the walk's bid $4,844 of trench, backhoe and sand drew $411.74 of $958.25. The purchase list carries '220 - Trenching: 220 - Dirt @ 24 in - $15.00 - $3300.00' and '4 - BACKHOE - $350.00 - $1400.00' as buy lines (selectors.js:85-94). The sand's labor does land correctly in Conduit labor.",
+    "proposal": "J8 P7: 'Sales Tax (%)' beside 'Labor Rate ($/Hr)', stored per project like the rate and carried in the share envelope (rides T1-15) - it replaces a constant rather than wrapping it, and removes the 'this app only works in one county' wall. J5 P6 as reshaped by verifier: the walker's version failed the simplicity budget by moving every add-on out of materials, but TRENCHING SAND, ASPHALT PATCH, POLE BASES, CONCRETE PADS and MANHOLES are real stock that belongs taxed and on the PO, and rentals are taxable in many states - so move only the trenching line (a sub-contract) plus add-ons from the Rentals button group, recording the group on the child (the UI already separates Rentals from Fill Materials at conduit.js:170/180). Fill Materials stay materials. Do not add a per-line toggle yet.",
+    "effort": "M",
+    "event": "tax_rate_set {from, to, perProject}",
+    "sourceFindings": [
+      "J8-F7",
+      "J5-F7"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-20",
+    "title": "The bid has nowhere to keep the job's own details, so the form prints another bid's address",
+    "journeys": [
+      "J9",
+      "J10"
+    ],
+    "severity": "stumble",
+    "item": "A project is a name, a manifest and a labor rate - there is no bid metadata at all. The Print-with-Form fields live in a static block of page DOM rather than on the project, so they follow you from one bid to the next and are wiped by a reload. The modal never says which form it is, and the four answers print as a footer after the last item rather than as the header they clearly are.",
+    "evidence": "storage.js:12 defines the project document. The fields live at index.html:269-274 and are read at print time (app.js:407-415 -> pdf.js:161-167). Filled on bid A, cancelled, switched to bid B and reopened: all three pre-filled with A's values; no localStorage key anywhere contains them; reload empties them. On a 73-row bid the 'Form Details' block lands alone on page 3; on a 44-row bid at PDF y=568 on page 2. No client, GC, due date or bid number exists anywhere in the app.",
+    "proposal": "J10 P9 and J9 P4 as one change: details {client, address, permitNo, builderOrOccupant, dueDate} on the project document (mirrored in the cloud row's data), edited from the header name, with Print with Form pre-filling from them and printing them under the project name on page 1. It passes the simplicity budget only if #form-modal actually retires - if the sheet ships and the modal stays, it fails. The details must stay optional: nothing here may become a step before typing the first fixture. Needs a sanitize on import and a row in ARCHITECTURE's key table.",
+    "effort": "L",
+    "event": "pdf_exported {variant:'form', prefilled}",
+    "sourceFindings": [
+      "J10-F12",
+      "J9-F5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 2,
+    "id": "T2-21",
+    "title": "Print for Purchase Order is not the purchase list",
+    "journeys": [
+      "J9"
+    ],
+    "severity": "stumble",
+    "item": "The PO PDF is the manifest tree with quantities: it carries price-less grouping rows, the permit, a utility fee and the overage as a separate line, it does not merge duplicates, and it contains no price, no extended cost and no total. Meanwhile the purchase list - which merges, prices, flags what is unpriced and agrees with the summary to the cent - exists on screen and can only be copied. Two 'purchase' artifacts with different contents.",
+    "evidence": "pdf.js:98-111 prints exactly two x-positions (40 plus indent, and 390). The 44-row file's text runs contain the devices grouping row, the permit, 'Utility service connection fee' and the overage line; zero $ and zero total anywhere. The supply house gets a list with a non-item on it, so the estimator hand-edits it or pastes the TSV into a spreadsheet and prints that.",
+    "proposal": "J9 P3: reuse getPurchaseList() - Qty, Material, Unit $, Extended $, materials total before tax, project name and date at the top, 'n without a price' flagged - and name the button, the on-screen report and the PDF one thing. Nothing the tree dump prints is lost, because it carries only Item and Quantity with no plan page and no run structure, so the swap has no downside. Keep 'PO' somewhere in the label, because estimators say PO; 'Order list' alone is not trade language.",
+    "effort": "M",
+    "event": "pdf_exported {variant:'po', lines, unpriced}",
+    "sourceFindings": [
+      "J9-F4"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B1",
+    "title": "Manifest keyboard & focus",
+    "journeys": [
+      "J1",
+      "J3"
+    ],
+    "severity": "papercut",
+    "item": "One PR over js/views/manifest.js making the table behave the way a spreadsheet does: focus lands where the work is, Tab walks fields rather than buttons, and Enter adds a row.",
+    "evidence": "activeElement is BODY after the type-modal pick and after Add Row, by click and by Enter, while the ghost 'Add component' row already focuses its new description (manifest.js:446). Tab trace from a row-1 description: x, minus, qty, plus, labor, price, planPage, then the next row's book, arrow and description - 10 stops for 5 fields, 3 Tabs from description to quantity, no tabindex on any of the six row buttons. Both gold 'Add' buttons compute rgb(232,197,71) on rgb(15,15,17) with no title, 69 px apart.",
+    "proposal": "J1 P7 and J3 P8 with the verifier's accessibility caveat binding: take the row buttons out of the row's inner tab order as a roving-tabindex group or by moving them after planPage, NOT with tabindex=-1, which would remove the book and the delete entirely for a keyboard-only estimator. Prefer a dashed empty 'type...' chip over relabelling the second Add, since it matches what the cell becomes after the pick.",
+    "effort": "S",
+    "event": "—",
+    "contents": [
+      "Focus that row's Labor after a type is picked — non-flow types only, since D/C/W already navigate into the editor (J1 F8)",
+      "Focus the new description after Add Row, copying manifest.js:442-448 (J1 F8, J3 F8)",
+      "Enter in the last field adds a row and moves to it; must not fire while the type modal is open (J3 F8)",
+      "Row buttons leave the inner tab order as a roving group, not tabindex=-1 (J3 F8, verifier caveat)",
+      "Retire one of the two identical gold Adds — dashed 'type…' chip in the Type column (J1 F7)",
+      "Restore the first-run hint and re-hide the zeroed summary when a description is deleted (J1 NEW)"
+    ],
+    "sourceFindings": [
+      "J1-F7",
+      "J1-F8",
+      "J3-F8",
+      "J1-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B2",
+    "title": "One money formatter and one hours formatter, everywhere",
+    "journeys": [
+      "J1",
+      "J5",
+      "J6",
+      "J8",
+      "J9"
+    ],
+    "severity": "papercut",
+    "item": "Four numeric-presentation defects with one cure: the app has several formatters and several precisions for the same figures, so a five-digit total is hard to read, hours disagree with the dollars beside them, the summary and the list round differently, and one price can be a string, a number or a 4-decimal supplier value depending on which door it came through.",
+    "evidence": "formatMoney is a bare toFixed(2) (manifest.js:112): '$9642.75 / $10462.38 / $11609.88', and every figure on the proof route is five or six digits. Hours print toFixed(1) while dollars use the raw value: 0.75 renders '0.8' beside $63.75, and a total showing 86.3 hrs with $7,935.00 (= 86.25 x 92) when 86.3 x 92 = $7,939.60; the Review PDF rounds per unit so 0.04 and 0.006 both print 0.0. Summary rounds the raw sum while the list rounds per line: $7,807.39 against $7,807.40 with two 4-decimal prices. One search row showed $73.08 and stored the string \"73.0758\", while an exploded add stored the number 0.23 and a fill stored 1.66; the flows and the manifest inputs render 58.4697 and 206.451 raw, because C-1's decimal rule reached only the review queue.",
+    "proposal": "J8 P10 owns the touch; J1 P8 and J8 P11 ride inside it (P11 fails the spirit test as a standalone row - nothing is removed and reading correctly is not a step). J1 P4 with the verifier's caveat: use one hours formatter everywhere - the summary, the devices flow's 'Job labor' line and the PDFs - so the same job never prints two totals. Apply C-1's rule (2 places at or above $1, 4 below) to the flow inputs and the manifest Price cell, and settle on one stored type for a price. TSV stays bare.",
+    "effort": "S",
+    "event": "—",
+    "contents": [
+      "Thousands separators via toLocaleString in formatMoney and the purchase list; TSV unchanged (J1 F10, J8 F11)",
+      "Hours to two decimals, or '0.75 hrs × $85.00 = $63.75', from one shared formatter (J1 F4, J8 NEW-1, J9 F3)",
+      "Round per-line extendeds to cents in getSummaryBreakdown so summary and list share one convention (J8 F10)",
+      "C-1's decimal rule reaches the flow inputs and the manifest Price cell (J5 NEW-2, J6 F11)",
+      "One stored type for a price — never a string from a search row (J6 F11; the parse itself is T1-10)"
+    ],
+    "sourceFindings": [
+      "J1-F4",
+      "J1-F10",
+      "J8-F10",
+      "J8-F11",
+      "J8-NEW-1",
+      "J5-NEW-2",
+      "J6-F11"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B3",
+    "title": "Trade-language pass — one label map for chip, summary, picker and PDF",
+    "journeys": [
+      "J1",
+      "J3",
+      "J6",
+      "J9",
+      "J10",
+      "J13"
+    ],
+    "severity": "papercut",
+    "item": "The screen reads like three applications in one column: shouting all-caps charge types beside title-case categories, software words at the first touch, an internal storage key printed in the PDF's Type column, and one word - assembly - used for three different things at once. One label map, used by the chip, the summary, the picker and the PDF, retires all of it.",
+    "evidence": "Read off the live DOM: 'SALES TAX (8.5%)', 'Materials TOTAL $', 'Labor TOTAL (hrs)', 'PERMITS', 'POWER CO. CHARGES', 'TEMPORARY POWER' beside Lighting, Gear and Special Systems. 'Assembly Description' is the column header and the placeholder on parents and children, while the devices flow says 'Save as Assembly' and the book has an Assemblies tab. pdf.js:53 prints item.type raw, and J9 NEW-1 measured it truncated to 8 characters: outletsA, trenchin, specialS, powerCoC. MC names arrive verbatim as bid descriptions: '20A ENCL CB 3P (OR 2P' and 'SP              STD'. Casing drift: 'Manage Projects' / 'Manage projects...' / 'New Project' / '+ New project'. The supplier tool's tab reads 'Review Matches (2525)' against a body saying '2,525'.",
+    "proposal": "J3 P10 with the verifier's addition that the map must reach the PDF, plus J1 P10 and J10 P10. Use 'Fixture or run' for the description column and placeholder, trimmed to 'Fixture or run' on the 204 px phone column; sentence-case the charge types; 'Lines' and 'Last edited' for the projects columns. The verifier trimmed one claim: renaming 'Rows' to 'Lines' does not fix the count, which stays top-level-only - that is B11's job. The PDF half is subsumed by T1-16 and listed here only so the map is built once.",
+    "effort": "S",
+    "event": "—",
+    "contents": [
+      "Sentence-case Permits / Power co. charges / Temporary power, Sales tax, Materials total, Labor total (hrs) (J3 F12)",
+      "'Assembly Description' → 'Fixture or run' on the column, parents and children; 'Price' → '$ each' (J1 F11, J3 F12)",
+      "One TYPE_LABELS map used by chip, summary, picker and the PDF — no raw keys, no 8-char truncation (J3 NEW-1, J9 NEW-1)",
+      "Normalise MC names before they become bid descriptions (J6 F16)",
+      "One casing for the two New-project buttons; 'Rows' → 'Lines', 'Updated' → 'Last edited' (J10 F11)",
+      "Supplier tool tab count matches the body's number format (J13 F10)"
+    ],
+    "sourceFindings": [
+      "J1-F11",
+      "J3-F12",
+      "J3-NEW-1",
+      "J6-F16",
+      "J9-NEW-1",
+      "J10-F11",
+      "J13-F10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B4",
+    "title": "Import parser hygiene and preview manners",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "papercut",
+    "item": "One PR over js/import.js and the hash routes, fixing what Count Tooling actually sends and how the preview behaves while it is open. Every item is a removal: a junk row, a silent wrong number, a second normalisation of one concept, a wrong diagnosis, a focus escape.",
+    "evidence": "The signed-in footer 'View link:<tab><url>' becomes a preview line 'NEW View link: x 0' and then a manifest row with the URL discarded (parseFloat(url) -> 0, import.js:30); the footer's exact shape is pinned in Count Tooling's own tests. '1,800' on the clipboard path becomes 1; '\"2,400\"' on the link path becomes 0. Three sites use trim().toLowerCase() (import.js:53, :80, :112) while selectors.js:70 also collapses internal whitespace, so 'LED  Wall Pack - WP1' badges NEW and lands as a duplicate even under Add Overages Only. A {v:2} payload reports 'This import link contained no valid items.' Both cold paths leave the blank starter row above the imports with its own Add button. The preview does not trap focus: on the clipboard path Tab leaves for #labor-book-open-btn behind it and Enter re-fires the still-focused paste button.",
+    "proposal": "J2 P5, P6, P8 and P10's contract text, plus the focus half of J2 P11. The verifier's corrections are binding: normalise at all three import sites plus selectors.js via one shared TakeoffUtils key helper, or the badge and the outcome diverge; guard the blank-row consumption on the sole row being description-less and the import adding at least one row, inside the same batch so Undo restores it. J2 P7's post-import receipt line is explicitly NOT in this batch - the verifier failed it as pure added surface, and its value belongs in T1-04's state-aware button label.",
+    "effort": "M",
+    "event": "import_opened {source, lines, matched, new, untyped}",
+    "contents": [
+      "Drop the 'View link:' footer as a row and keep the URL with the project (J2 F5)",
+      "Strip thousands separators; render an unparseable count as '× ?', never 0 or 1 (J2 F6)",
+      "One shared normalisation key across import.js:53/80/112 and selectors.js:70 (J2 F7)",
+      "Consume the blank starter row when the import adds rows, inside the same undo batch (J2 F9)",
+      "A wrong envelope version must not be reported as an empty link (J2 F10)",
+      "Trap focus in the preview; Enter must not re-fire the paste button behind it (J2 F11, J2 NEW-2)",
+      "A matched row's stale plan page, and naming a 'px of' row as an unscaled upstream page (J2 F12)",
+      "Publish the #import= contract for Count Tooling's implementers (J2 P10 — rides G2)"
+    ],
+    "sourceFindings": [
+      "J2-F5",
+      "J2-F6",
+      "J2-F7",
+      "J2-F9",
+      "J2-F10",
+      "J2-F11",
+      "J2-F12",
+      "J2-NEW-2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B5",
+    "title": "Book modal chrome & feedback",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "papercut",
+    "item": "One PR over the laborBook* view modules: make Esc mean the same thing everywhere in the book, say where an add went, prime the search box, give the 100-row cap a way back, and move a maintainer's control off every estimator's lookup screen.",
+    "evidence": "Esc with focus on an Add button set aria-hidden true while the term 'pull elbow' survived in the input and the module, and reopening showed .labor-book-tabs at display:none over 12 stale rows; Esc from the search box clears then closes, exactly as documented, so the documented behaviour is true one time in three. The only success signal is a 1.2 s check swapped into the button (laborBookSearch.js:178-182), and with no fixture selected a native alert blocks the page. activeElement after the header door is the opener button and after a row icon that row's button; only fill mode focuses the search. A PB fill leaves the fitting row at qty 0. 'Show all 3,937 parts' replaces the body with every row (laborBookElliot.js:54-62, :236-239) and nothing re-renders the capped body while data-loaded=1 stands. Signed out the footer reads 'Export Groups & Sections - Close' with the admin button already hidden two positions away.",
+    "proposal": "J6 P4, P12's focus half, P9, plus the qty and Show-all items. The verifier's notes: P4 removes a special case rather than adding one, since both handlers already exist (laborBook.js:653-656 and app.js:91-102); priming focus must keep P4's Esc contract intact; and the selectors half of the qty-0 fill is T1-05's, so this batch only seeds the row at 1.",
+    "effort": "S",
+    "event": "book_esc_closed_with_term",
+    "contents": [
+      "Esc clears the term when one exists regardless of focus; hideLaborBookModal clears the term and the input (J6 F4)",
+      "Say where an add went; replace the native 'select a fixture first' alert with an inline message (J6 F10)",
+      "Focus the global search on every open, as fill mode already does (J6 F17)",
+      "Seed a PB-filled row at qty 1, as the preset does (J6 F12)",
+      "A way back from 'Show all N parts' to the 100-row cap (J6 F13)",
+      "The category heading stops running label, count and note together (J6 F18)",
+      "Move Export Groups & Sections into ☰ or behind the existing role gate (J6 F15)"
+    ],
+    "sourceFindings": [
+      "J6-F4",
+      "J6-F10",
+      "J6-F12",
+      "J6-F13",
+      "J6-F15",
+      "J6-F17",
+      "J6-F18"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B6",
+    "title": "The part card and the provenance trail",
+    "journeys": [
+      "J7"
+    ],
+    "severity": "papercut",
+    "item": "The provenance system is a differentiator whose promise is 'every number has a trail'. Ten defects break that promise at its edges: the commonest way of entering a price leaves no trail at all, clearing a price leaves a fresh green badge on an empty field, a promoted part inverts the rule the rest of the journey teaches, the history is not in date order, and the card cannot be scrolled on a laptop.",
+    "evidence": "laborBookCard.js:32-36 mints a synthetic 'You' offer that the first real quote replaces outright, and updateLaborBookRow writes no history - after recording Border States $3,980 nothing remembers the $4,025 typed first. A cleared price leaves {price:'', priceSource:'You', pricedAt:today, edited:true} and the badge still reads 'You - today' in the in-place patch and after a full render, because shared.js:78 needs no source AND no date to show the ghost. J7 NEW-2: on a promoted catalog part the import offer already fills offers[0], so offers.length === 1 is false and recording Crescent $221.40 left the row at Elliot $259. J7 NEW-3: history renders in insertion order while every line shows a date. J7 NEW-4: recordPartPrice writes the typed casing into row.priceSource, so a badge reads 'summit electric' while the table reads 'Summit Electric'. At 1440x768 the card is 691 px holding 794 px behind .part-card-content{overflow:hidden} (styles.css:3383) and scrollTop stays 0; injecting overflow:auto fixed it in the page. Empty supplier plus a price does nothing, with zero error nodes; an emptied date silently records today (state.js:599). The offers table has 0 editable cells while ARCHITECTURE.md:109 still promises a badge popover.",
+    "proposal": "J7 P6, P8, P2 and P12's doc half. Verifier corrections: the .pc-body max-height clause of P8 is unnecessary because History already has its own working scrollport, and the empty-date tier needs recordPartPrice to stop defaulting at, not just card copy; P2 is narrower than written - open sections already survive, so the whole fix is openSections.add for the new section plus restoring focus to the field just edited. Do not rename the 'In use' pill; add the sentence instead (that half is G7).",
+    "effort": "M",
+    "event": "quote_recorded {supplier, hasDate, fromCard} + catalog_part_promoted {field}",
+    "contents": [
+      "Inline price edits push a real 'You' offer and a history line; drop the synthetic branch (J7 F5)",
+      "Clearing a price clears priceSource/pricedAt and returns the '+ price' ghost (J7 F6)",
+      "A promoted part's first real quote becomes the working price (J7 NEW-2)",
+      "History in date order (J7 NEW-3); canonical supplier casing on the row badge (J7 NEW-4)",
+      "The card scrolls at ≤768 px — .part-card-content{overflow:auto} (J7 F9)",
+      "Inline 'Supplier is required'; allow an empty date so the 'no date' tier is reachable (J7 F11)",
+      "A provenance-only edit path, and fix ARCHITECTURE.md:109 plus shared.js:70's stale comment (J7 F12)",
+      "One name for the working price across column, card, pill and state (J7 F13)",
+      "'You' stops meaning three things; hand-priced is not a supply house (J7 F10)",
+      "Promotion keeps your place: openSections.add for the new section, restore focus (J7 F2)"
+    ],
+    "sourceFindings": [
+      "J7-F2",
+      "J7-F5",
+      "J7-F6",
+      "J7-F9",
+      "J7-F10",
+      "J7-F11",
+      "J7-F12",
+      "J7-F13",
+      "J7-NEW-2",
+      "J7-NEW-3",
+      "J7-NEW-4"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B7",
+    "title": "The devices flow's shape",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "papercut",
+    "item": "The flow opens as a wall of eight identical empty tables with a title pointing at the wrong one, a panel figure that counts nothing orderable, and an assembly card padded with blank lines. Collapsing what is empty is the single biggest scroll saving anywhere in the app.",
+    "evidence": "Measured empty: 1183 px tall in two columns at 1440 (section lefts 125 and 740) and 1925 px in one column at 1199 - 1.6x, not the walker's 'double'. Five of eight sections stayed empty on the walked journey. Title 'Devices - Add Boxes and Covers' over a first table headed 'Outlets and Switches'. The panel's Quantity read 60 - receptacles plus boxes plus covers added together. '+ Box' leaves activeElement on body. saveAssemblyAs keeps blank seed rows (device.js:293-299, no isMeaningfulRow filter) so the card listed three real rows and five '- x 1 | Labor: 0 | Price:' lines, and device.js:299 manufactures a blank row for a section that had none. flowDirty is true before and after Save as Assembly - design-correct, but the word Save means two scopes on one page.",
+    "proposal": "J4 P8 and P9, with J4 P10's labelling half. The verifier measured the win (a header plus one chip row replaces 1183 px at 1440 and 1925 px at 1199) and confirmed the chips keep all eight section names discoverable, so nothing is hidden, only deferred. Ordering note: '+ Box focuses the new description' is unreachable until T1-01 lands, because today the click on + Box right after typing is swallowed and the row is never added at all.",
+    "effort": "M",
+    "event": "flow_saved {kind:'devices', sectionsUsed}",
+    "contents": [
+      "Render a section's table only when it holds a meaningful row; otherwise one row of '+ Outlet/Switch', '+ Box'… chips (J4 F8)",
+      "Title the page with the run's own name (J4 F8)",
+      "Drop the panel's summed 'Quantity' — a count of nothing orderable (J4 F9)",
+      "'+ Box' focuses the new description — blocked on T1-01 (J4 F9)",
+      "Filter isMeaningfulRow in saveAssemblyAs; stop manufacturing a blank row per empty section (J4 F11)",
+      "Drop the name row's Cancel so one page stops carrying two Cancels with different scopes (J4 F11)",
+      "Label the two saves distinctly (J4 F12)"
+    ],
+    "sourceFindings": [
+      "J4-F8",
+      "J4-F9",
+      "J4-F11",
+      "J4-F12"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B8",
+    "title": "Conduit and wire step labels",
+    "journeys": [
+      "J5"
+    ],
+    "severity": "papercut",
+    "item": "The wizard uses one vocabulary for two kinds of thing, repeats one number three ways without a unit, and gives its percentage buttons no pressed state. The table split is not only a labelling fix - recording which button group a row came from is the data T2-19's reshaped tax fix depends on.",
+    "evidence": "The add-on table heads verbatim 'Description - Quantity (Hours or Days) - Additional Labor - Charge (per Hour or Day)' over one table (conduit.js:191) that receives TRENCHING SAND and BACKHOE alike, while the two button groups above it already know the difference (:170 Rentals, :180 Fill Materials); 'Additional Labor' has no unit at all. The parent panel says 'Quantity: 150' and 'Length: 150' on step 1 and 'Current length: 200' on step 3, with no 'ft' anywhere. All four percentage buttons compute class=\"\" after a click (shared.js:41-46 renders no state). The preset select appends below the blank seed row and resets itself (conduit.js:414-424), leaving one trash click per run; FITTINGS_LIST is six bare strings.",
+    "proposal": "J5 P9. The verifier's notes: 'carries the preset's labor when present' is a data task first and ships nothing until fittings.js grows fields, so it is not in this batch; and the Rentals / Fill split is what the reshaped J5 P6 needs, so record the button group on the add-on child here. Baseline C-7 was explicitly delegated to J5 by the baseline, so the preset-select item is not a re-report.",
+    "effort": "S",
+    "event": "flow_saved {kind:'conduit', addonGroups}",
+    "contents": [
+      "Split the add-on table into Rentals (Hours/Days · Rate) and Fill & site (Qty · Unit price), recording the group on the child (J5 F10)",
+      "The preset select fills the blank seed row when one is empty (J5 F11, baseline C-7)",
+      "One parent-panel line carrying the unit — '220 ft' (J5 F12)",
+      "An .active class on the chosen % button (J5 F12)"
+    ],
+    "sourceFindings": [
+      "J5-F10",
+      "J5-F11",
+      "J5-F12"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B9",
+    "title": "Summary and purchase-list display rules",
+    "journeys": [
+      "J3",
+      "J8",
+      "J14"
+    ],
+    "severity": "papercut",
+    "item": "Three display rules that let a wrong-looking number stand: a minus sign is treated three different ways with no visual cue, a zero price and a missing price look alike but count differently, and the purchase list gives the quantity column exactly as much room as the description.",
+    "evidence": "min=\"0\" is on the inputs and :invalid matches, but grep ':invalid' css/styles.css returns 0 rules and the computed border colour equals a valid neighbour's. Price -28 x 20: summary Special $0.00 (the p > 0 guard) while the list honours $-28.00 / $-560.00, a $560 disagreement; labor -0.4 x 10 subtracts 4.0 hrs with no guard at all; qty -10 falls into the counts-once branch and adds $38.00 while the list drops the row; a labor rate of -92 turned a $17,024.67 bid into $1,154.67. Price 0 renders '$0.00 - dash' and is not counted as unpriced, while blank renders 'dash - dash' and is - manifest.js:282's l.extended ? ... : '-'. The purchase list is table-layout: fixed, so at 375 px all four columns are 82 px with descriptions wrapping to five lines, and at 768 px all four are 180 px.",
+    "proposal": "J8 P3 with the verifier's caveat that it must be clamp OR credit, not both - the 'alternatively' is a second proposal - and clamp is the branch that also covers negative labor and negative quantity; J3 P7's clamp half agrees, and must fire on change or blur rather than input, or a user typing a minus before the digits loses the keystroke. J8 P9 minus its optional '(no charge)' text, which the verifier identified as the only additive part. J14 P9's purchase-list third, which the verifier confirmed helps at 768 as well.",
+    "effort": "S",
+    "event": "—",
+    "contents": [
+      "Clamp price, labor, quantity and the labor rate to ≥ 0 on change, with a visible invalid state (J8 F3, J3 F6)",
+      "A $0 price renders $0.00 · $0.00 and is never 'without a price'; blank stays dashed and counted (J8 F9)",
+      "Purchase list table-layout: auto with Qty / Unit $ / Extended $ at width:1% (J14 F11)"
+    ],
+    "sourceFindings": [
+      "J8-F3",
+      "J8-F9",
+      "J3-F6-negatives",
+      "J14-F11"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B10",
+    "title": "Export and share surface",
+    "journeys": [
+      "J9",
+      "J10"
+    ],
+    "severity": "papercut",
+    "item": "One PR over the share and export paths: tell a recipient what they are holding, stop making identical twins, fail loudly on a shaped-but-empty link, name the files after the job, and move the share verb to where the estimator is standing at delivery time.",
+    "evidence": "No text matching /copy/ anywhere on the recipient's page; exportedAt is decoded and ignored (app.js:447 stamps new Date()); the '(shared Sep 6)' suffix is cut by the switcher at both 1440 px (scrollWidth 297 vs clientWidth 237) and 375 px. app.js:448 always calls createProject with no lookup by name or exportedAt, so one link opened twice gives two byte-identical projects - and duplicating a bid twice does the same for '(copy)'. {\"v\":2,\"name\":\"x\"} and a non-array manifest both strip the hash and do nothing, while garbage and a 300-char cut do alert. suggestedFilename is identical for a 3-row and a 44-row bid: takeoff-review.pdf, takeoff-purchase-order.pdf, takeoff-form.pdf (pdf.js:74, :115, :169). The blank app shows no print, share or export word anywhere, and ☰ holds exactly New Project, Export via link, Remove items and Hard reload.",
+    "proposal": "J9 P5 minus the confirm prompt, which the verifier failed: it adds a decision to a path measured at 1 step and 0 decisions, and removes nothing, because the switch replaces nothing - both the recipient's own starter and the sender's bid were intact after import. The banner, the name-plus-exportedAt dedupe and the shaped-but-empty alert pass all four tests on their own. J9 P6 (filenames; skip the 'Saved' flash, which duplicates the browser's download chip; slug must strip / and :). J9 P7 as a MOVE, not an addition - the verifier rejected keeping both surfaces by construction. J10 P5's ' 2' suffix must cover Duplicate as well as #d=.",
+    "effort": "M",
+    "event": "share_link_opened {ok, duplicateOf} + pdf_exported {variant}",
+    "contents": [
+      "A dismissible 'Copy of X, shared Sep 6 by link — edits stay on this device' banner on #d= import (J9 F7)",
+      "Dedupe by name + exportedAt instead of creating a second identical project; same ' 2' suffix for Duplicate (J9 F6, J10 F15)",
+      "Alert on a shaped-but-empty payload — a missing or non-array manifest is as silent as garbage is loud (J9 F9)",
+      "Project-and-date filenames for all three PDFs (J9 F8)",
+      "'Copy share link' moves under Print Options and the ☰ item is removed (J9 F10)"
+    ],
+    "sourceFindings": [
+      "J9-F6",
+      "J9-F7",
+      "J9-F8",
+      "J9-F9",
+      "J9-F10",
+      "J10-F15"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B11",
+    "title": "The projects surface",
+    "journeys": [
+      "J10"
+    ],
+    "severity": "papercut",
+    "item": "One PR over js/views/projects.js and its CSS: stop the list re-sorting under the estimator, make long names distinguishable, let the menu scroll, put the delete confirm in the row with the facts in it, and make the Rows column count what it claims.",
+    "evidence": "getProjects sorts by updatedAt (state.js:245) and applyRename stamps savedAt (projects.js:188-194), so renaming a non-open bid jumps it to row 1 while the open bid sat at index 13 of 24 - and leaving a bid stamps it too, so the open bid is never pinned. The header name shows 237 px of 519-536 px with the button's only title reading 'Switch project' and the name span carrying none; menu names clip at 250 px, also untitled, so three Northgate variants at 63/70/78 chars render as one identical line. The menu has max-height: none and overflow: hidden: at 24 bids it is 919 px against a 900 px window with the footer at y 922, reachable only because the header is position: static. The open bid's row offers only Rename and Duplicate, neither with a title, and Delete is a native confirm naming the bid but not its row count. The Rows column counts top-level entries of the stored manifest: 1 for a fresh bid, 8 for an 11-line bid, and 5 while memory held 6 inside the 400 ms debounce.",
+    "proposal": "J10 P4, P5, P6, P8 and P10's count half. Verifier notes: pinning the open bid is the half that actually removes the second look, since the stamp also fires on leaving; hover is desktop-only so the middle-ellipsis half is what carries the phone; the archive idea raised in F8 is a separate proposal (X9) and not part of P6; the inline Delete's row count inherits F6's under-count until the count itself is fixed, so ship both together.",
+    "effort": "M",
+    "event": "project_renamed / project_deleted {rows}",
+    "contents": [
+      "Pin the open bid; stop stamping updatedAt on rename (J10 F5)",
+      "Full-name title on the header button and every menu row; middle ellipsis so the suffix survives; '(copy)' and '(shared …)' as chips (J10 F7)",
+      "The menu scrolls with its footer outside the scroll; sticky footer in the modal (J10 F8)",
+      "Inline delete confirm carrying the row count; a disabled Delete with a reason on the open bid (J10 F10)",
+      "The Rows column counts what it claims, not top-level only (J10 F6)"
+    ],
+    "sourceFindings": [
+      "J10-F5",
+      "J10-F6",
+      "J10-F7",
+      "J10-F8",
+      "J10-F10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B12",
+    "title": "The phone batch — coarse pointer and ≤640 px",
+    "journeys": [
+      "J10",
+      "J14"
+    ],
+    "severity": "stumble",
+    "item": "Everything below 640 px that is cramped rather than unreachable (the unreachable ones are T1-22 and T1-23). Order matters inside this batch: the card grid must be fixed before the font size is raised, or the quantity clipping gets worse before it gets better.",
+    "evidence": "Card grid tracks at 375 px measure 24.02 / 104 / 38.95 / 38.95 / 46.73: the quantity box is 44.8 px with 27 px of content space, so '4500' (32 px of glyphs) renders '450' and '12000' (40 px) is worse; Labor and Price keep width:4.25rem = 68 px inside 39 px tracks, overflowing 29 px each with Price overlapping the Plan track by 18 px. 151 of 151 manifest controls fail 44x44, 70 in both dimensions, and the qty plus has no halo - a centred tap ran 24 to 25 while +/-14 px hit-tested DIV.qty-spinner or the TR and did nothing. 74 of 74 inputs are under 16 px (14.4 manifest, 13.333 flow, 13.6 card) and 64 type=number inputs carry 0 inputmode. The import preview's content is 500 px at x -62 to 438 with the title reading 'ort Preview' and Add All 38 px off the edge with 42 px tappable; nothing scrolls because a fixed .modal adds no document scroll width, and a real tap at x 371 did complete the import. The devices flow is 2,356 px against an 812 px viewport with Save at document y 2,255 and zero fixed-or-sticky elements. The switcher menu runs x 117 to 455 on a 375 px screen and takes window.innerWidth and document.scrollWidth to 455 until it closes.",
+    "proposal": "J14 P4, P5, P6, P2, P8 and the two thirds of P9 that survive, plus J10 P7. Binding verifier caveats: P4's arithmetic does not close as written, because the two 24 px spinner buttons live in the qty track - it must grow past 6.5 rem or the spinners must leave it; P6 must ship with or after P4; P5 should reuse .labor-book-add-btn's existing 44 px idiom rather than inventing a second one; P2's min-width: min(500px, 94vw) still beats the computed max-width, so raise the max-width alongside it, and dropping the 'In Manifest' column loses the only place a manifest row absent from the import is visible; and P9's .project-menu { right: 0 } is WRONG - it anchors to the button's right edge at x 264 and would drop a 338 px menu off the left instead, while max-width: calc(100vw - 1.5rem) does not clamp it. Anchor to the header's left edge or clamp the width.",
+    "effort": "L",
+    "event": "session_start {vw, vh, coarsePointer}",
+    "contents": [
+      "Card grid phone shape so a four- or five-digit quantity is readable and Labor/Price/Plan stop fusing (J14 F4)",
+      "16 px inputs under (pointer: coarse) and inputmode='decimal' on all 64 number inputs — after the grid fix (J14 F6)",
+      "Coarse-pointer control sizes with real hit areas, reusing the existing 44 px idiom; 'PB' → 'Book' (J14 F5)",
+      "Import preview fits the phone: min-width and max-width raised together, one column below 640 (J14 F2)",
+      "A sticky Save bar in the flows below 640 (J14 F8)",
+      "Manage Projects rows stack below 640 (J14 F9, J10 F9)",
+      "The switcher menu stops widening the layout viewport — anchor left or clamp the width (J14 F10, J10 F9)"
+    ],
+    "sourceFindings": [
+      "J14-F2",
+      "J14-F4",
+      "J14-F5",
+      "J14-F6",
+      "J14-F8",
+      "J14-F9",
+      "J14-F10",
+      "J10-F9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B13",
+    "title": "Cloud, sign-in and status honesty",
+    "journeys": [
+      "J11",
+      "J12"
+    ],
+    "severity": "papercut",
+    "item": "One PR over js/cloud.js and the unload handler: make both sign-in buttons behave the same way and stop showing a stale message, say what kind of account this is, stop dressing a safe recovery control in red, stop the checkmark claiming a push that has not happened, and label Sync Now for what it actually does.",
+    "evidence": "Empty Sign In returns silently (cloud.js:663-666) with zero network requests while the code button says 'Enter your email first.'; msgEl is never cleared on the silent return, so that message sits under an unrelated Sign In click (J11 NEW-3). The modal says the emailed code creates an account, ARCHITECTURE.md says accounts are provisioned, README says nothing, and the signed-in body carries no account-kind hint. Hard reload is class header-menu-item-danger, computed rgb(232,84,71), with '(keeps your data)' only in a hover title - and caches.keys() is empty with 0 service workers, so it clears nothing. setStatus('syncing') appears only at cloud.js:78; signOut (:507-514) clears pushTimers without pushing, dropping queued book and assembly writes as well as project ones; beforeunload never calls flushPending, visibilitychange is the only flush, and there is no keepalive anywhere (J11 NEW-4). Sync Now pushes at :106-108, :207-210 and :213-219, so the 'pull, not push' claim was half-killed. J11 NEW-2: after the legacy migration the index entry carries the legacy savedAt (storage.js:159), so the project you are looking at reads 'Jul 14'. J12 #7: the sharing list prints storage keys and renders price-less values as '8 hrs - $—'.",
+    "proposal": "J11 P3, P4 and the honest half of P13/P14, plus J12 P4's wording items and P9's README line. Verifier notes: P3's scope widens to clearing msgEl on every entry to signIn and send; P4's rename must land WITH the service worker (X2) if that ships, since only then does Hard reload have a cache to clear; P10's Sync Now sentence must read 'reconciles this computer with the cloud - the newer copy wins each way'.",
+    "effort": "M",
+    "event": "cloud_signed_in {method} + cloud_push_failed {code}",
+    "contents": [
+      "One behaviour for both sign-in buttons; clear msgEl on every entry (J11 F4, J11 NEW-3)",
+      "Say what kind of account this is after a code-created first sign-in (J11 F5)",
+      "'Reload app (keeps your data)' — drop the danger styling (J11 F6)",
+      "The status stops claiming a push that is still queued; signOut flushes; beforeunload calls flushPending (J11 F13, J11 NEW-4)",
+      "Label Sync Now as a two-way reconcile; surface the ⚠ Cloud error outside the modal (J11 F14)",
+      "The post-migration index date stops reading as the legacy date (J11 NEW-2)",
+      "The sharing list uses the book's rendered trail, not storage keys, and drops '$—' (J12 F7)",
+      "Say that the sign-in email accompanies every correction (J12 F9)"
+    ],
+    "sourceFindings": [
+      "J11-F4",
+      "J11-F5",
+      "J11-F6",
+      "J11-F13",
+      "J11-F14",
+      "J11-NEW-2",
+      "J11-NEW-3",
+      "J11-NEW-4",
+      "J12-F7",
+      "J12-F9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 3,
+    "id": "B14",
+    "title": "Merge hygiene and admin guards",
+    "journeys": [
+      "J12",
+      "J13"
+    ],
+    "severity": "papercut",
+    "item": "One PR over the merge module and the two admin panels: let provenance flags heal so a user stops proposing corrections they did not make, put guards on the review panel so a fat-fingered number or a chimera group cannot ship, stop provenance dates resetting on every re-import, and stop shipping internal flags into repo artifacts.",
+    "evidence": "Trashing 'wire · THHN CU · 12' then adding it back at the exact default still yields 'remove 12' and no 'new', because computeCorrections' guard (laborBookMerge.js:144) only drops names that left the defaults, never names whose row is present; renaming '14' to '14 SOL' and back leaves 'remove 14' with the row sitting there. updateLaborBookRow sets edited (state.js:569) and nothing clears it: 10.8 to 11.3 to 10.8 leaves the flag, and when upstream moves that row to 11.2 the row stays at 10.8 and the diff flips to proposing 11.2 -> 10.8. suggestionsReview.js:38-39 takes medLabor and medPrice from independent median() calls; the outlier test at :43-44 requires kind === 'edit' and a price, so 8 -> 800 hrs and a brand-new part at 800 hrs are both unflagged; downloadAcceptedPatch (:146-174) re-emits every accepted row ever with no shipped marker. partNumber never leaves the machine, verified by dumping a correction's keys. stampNewItemDates passes only McElliotState.getOverlay() (mcElliotUpdate.js:153), so a part unchanged since 2026-07-18 came back stamped today and meta.elliot.importedAt moved with it. The downloaded overlay carries newItemsTruncated and allCats at 3,663 B against 1,920,728 B committed. index.html:165 is type=\"text\" and no updateUser or resetPasswordForEmail exists in js/ or the Edge Function.",
+    "proposal": "J12 P2 and P6, J13's provenance-date and artifact items, and the Manage Users password item. Verifier notes that bind: P2's removed-splice must fire on both the rename-back and the Add-Row-back paths, and 'equals the shipped default' is undefined while a section carries two rows of one name, so T1-20 lands first; P6 must also cover the kind:'new' rows the outlier test skips entirely, and partNumber must join the payload or an accepted new part reaches the maintainer with nothing to key the catalog on.",
+    "effort": "M",
+    "event": "suggestion_resolved {kind, status, users, flagged}",
+    "contents": [
+      "Splice a name out of laborBookMeta.removed when the row comes back — both rename-back and Add-Row-back (J12 F2)",
+      "Clear `edited` when a row equals the shipped default again — blocked on T1-20 (J12 F3)",
+      "Labor outlier guard, and one that also covers kind:'new' rows (J12 F8)",
+      "Reject groups whose labor and price medians come from different users unless ≥ 3 users (J12 F8)",
+      "A `shipped` status so the next patch is a delta, not a re-apply (J12 F8)",
+      "partNumber travels with a `new` correction (J12 NEW-3)",
+      "Provenance dates stop resetting on re-import; meta.elliot.importedAt stops moving for unchanged parts (J13 F9)",
+      "Internal flags out of the downloaded artifacts; a size sanity check on every download (J13 F11)",
+      "Manage Users: the temporary password stops being type=\"text\", and the missing reset path is named (J13 F13)"
+    ],
+    "sourceFindings": [
+      "J12-F2",
+      "J12-F3",
+      "J12-F8",
+      "J12-NEW-3",
+      "J13-F9",
+      "J13-F11",
+      "J13-F13"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G1",
+    "title": "Your first bid in five minutes",
+    "journeys": [
+      "J1",
+      "J3"
+    ],
+    "severity": "—",
+    "item": "Takeoff Tooling has no guides at all — README.md is the only user-facing document — so Tier 4 is a guide-writing backlog, not a list of edits. This first article is the make-or-break ten minutes: type a fixture, give it a type, price it, set the rate, read the total.",
+    "evidence": "J1's demo moment measured at about eight seconds from an empty app to $89.50 · $7.61 tax · $97.11, on a phone as well as a desktop. README says 'Quantity … default 0', which is wrong for a described row, and documents neither projects nor the labor rate nor the first-run hint.",
+    "proposal": "Carry: 'Add' in the Type column sets the type (or press L/G/D/C/W/S); Labor is hours per unit; the labor rate lives in the totals panel; autosave is automatic and there is no Save button; a project is a bid, and where to rename or delete one. Until T1-05: a row at quantity 0 with a price still counts once — take a row off the bid by removing it, not by typing 0. Until T1-01: Tab from Plan Page reaches the labor rate in two presses and sidesteps the swallowed click.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J1-P12",
+      "J3-P13"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G2",
+    "title": "From count to bid (and the #import= contract)",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "—",
+    "item": "The hand-off article, plus the only place the link format is written down for the people on the other side of it.",
+    "evidence": "README:58-59 describes both import buttons inaccurately; ARCHITECTURE.md:179 has the payload shape and README has nothing. The verifier confirmed `type` is compared case-sensitively against ITEM_TYPES (import.js:212) and that a wrong `v` is reported as an empty link.",
+    "proposal": "Walk the paste and the link with the preview's deltas. Say what each button really does. Rows the import could not type show a gold Add. Name what arrives from Count Tooling: fixture-tab-count-tab-pages, 'ft of …' rows becoming Conduit and Wire, the 'View link:' footer. Publish the contract: pin v:1 literally; description; count or quantity; page or planPage; type as one of exactly lighting, gear, devices, conduit, wire, specialSystems, permits, powerCoCharges, temporaryPower; and that a 'px of' row means a page was left unscaled upstream.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J2-P10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G3",
+    "title": "Shaping the bid",
+    "journeys": [
+      "J3"
+    ],
+    "severity": "—",
+    "item": "Types, components, remove, and what undo actually covers — the article that stops the three wrong turns the naive walk took.",
+    "evidence": "TakeoffState.removeItem has exactly one caller app-wide; the × beside a chip is the only control shaped like remove and it removes the type, moving the row's dollars to Misc. Coalescing (1.2 s), the 50-frame cap and the button-refresh rule are documented nowhere.",
+    "proposal": "Carry: Add then pick, or G L D C W S; Devices/Conduit/Wire open their editor at once and the chip reopens it; × clears the type and parks the money in Misc until re-typed; the ↳ rail, the 'Add component' ghost row, components having no plan page, and one Undo restoring a deleted parent with all its children. Undo/redo is manifest-only, one step per typing burst, 50 deep, and leaves the editor. Do not delete a row by zeroing its quantity. Finding J3 #1 must never appear in a guide — it has to be fixed (T1-14), not documented.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J3-P13"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G4",
+    "title": "Parts under a device run",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "—",
+    "item": "The article that has to carry the app's most dangerous undeclared rule until T1-08 changes the default.",
+    "evidence": "The quantity semantics are stated nowhere in README, CLAUDE.md or ARCHITECTURE.md, and the two doors onto one row disagree in silence. README:42's Load-into-Ledger line is wrong.",
+    "proposal": "Carry: the chip with the pencil is the door (or press D in the type modal and you are already there); quantities are totals for the whole line, not per run — until T1-08; PB fills the row from the book; the panel's Price is what lands in the Devices bucket; two saves on one page, and do both; Load into Ledger replaces what is in the flow. Until T1-01: a field is not committed until you leave it, and the first click after typing may not register — otherwise the article teaches a route that silently drops numbers.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J4-P10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G5",
+    "title": "Trench, fittings and waste on a conduit run",
+    "journeys": [
+      "J5"
+    ],
+    "severity": "—",
+    "item": "The wizard's commit rule is a design fact developers know and estimators do not, and until T1-07 lands it is the single most expensive thing an unwarned user can hit.",
+    "evidence": "README:45-51 is two sentences and does not say that Next writes to the bid, that Back does not undo, what an overage costs, or that MAC adapters have no price column. CLAUDE.md and the baseline record the commit rule for developers.",
+    "proposal": "Carry: quick-add sets material, depth, price per foot and the footage; rentals are hours-or-days times rate; Next saves that step onto the bid and Back does not undo it, with Undo working once per step — until T1-07; fittings, where PB fills a row and the preset list only fills a name; overage is ceil(ft × %) at the run's own price with no labor and is frozen at Save, so re-open and Save after changing the footage — until T1-24; MAC adapters take a price only through PB and do not show it — until T1-24; search 'mc connector', not 'mac adapter' — until T2-09.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J5-P10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G6",
+    "title": "Finding a part",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "—",
+    "item": "How to read three buckets that are three incomplete shapes of one part, and the only decoder for the MC tree until T2-10 ships one.",
+    "evidence": "Measured across the whole book: 27,556 catalog entries with 0 carrying labor and 27,544 priced; 481 curated rows with 466 carrying labor and 98 priced. README:73 and ARCHITECTURE:186 describe a rolled-up-or-exploded choice that does not exist.",
+    "proposal": "Carry: pick the fixture first, or open the book from the row's icon, then type the trade name; read the three lists as hours / prices / both, saying plainly that a supply-house row brings no hours and a book row may bring no price. What Add does: one child under the fixture at the fixture's count — for a run, set the count yourself, until T1-03 — and an assembly adds its components as separate lines and may price them differently, so check the BOM footer, until T1-02. The tree: Equipment → Switchs/Breakers → encl cb = enclosed circuit breaker; nf/f = non-fused/fused; n1/n3r/n4x = enclosure ratings. 'MC assemblies (hours + material)' must not be written as a bucket label until T1-02 lands, or it promises a number the add does not deliver.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J6-P8"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G7",
+    "title": "Recording a quote",
+    "journeys": [
+      "J7"
+    ],
+    "severity": "—",
+    "item": "The provenance system is a differentiator that nothing user-facing explains: not quotes, not 'In use', not the card, not promotion, and not the snapshot rule that decides whether a bid follows a price change.",
+    "evidence": "README:72 describes the badge only; ARCHITECTURE.md describes the book side and is stale on the popover. The snapshot rule — a child keeps the price it was added with — is stated nowhere, and the verifier confirmed a child carries no link back (meta null).",
+    "proposal": "Carry: book icon → find the row → click the price pill, which is the door → supplier, price, date → Record. The three pill colours by age, with the boundaries as verified (<30d fresh, 30–90d aging, >90d stale). 'In use' means the price this book row carries; parts already on a bid keep the price they were added with. Editing a supplier part copies it into your book under the same section name, and the supplier's price stays as their offer. Until T1-10: type prices without a dollar sign or commas.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J7-P4",
+      "J7-P9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G8",
+    "title": "Check the bid before it goes out",
+    "journeys": [
+      "J8"
+    ],
+    "severity": "—",
+    "item": "Where every number comes from — and the home the verifier chose for J8 P6 after failing it as a UI addition, because the flow's own line stays and nothing would be removed.",
+    "evidence": "README documents none of this: no summary, no labor rate, no sales tax, no purchase list. The summary carries zero title attributes and no drill-down; the only explanation of parent-plus-component labor is inside the devices flow.",
+    "proposal": "Carry: how each bucket is built, with the parent-3.6-plus-components-6.0-equals-9.6 example; what the purchase list includes and excludes and why its total is before tax; what 'n without a price' means. Until T1-05: a priced row at quantity 0 still counts once and is absent from the list. Until T2-19: tax is fixed at 8.5% and applies to trenching and rentals. Until T1-13: what ≠ means, and that overage lines must be added to the run's footage by hand on the order. Until T1-12: do not edit a quantity while the list is open.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J8-P6",
+      "J8-guide-actions"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G9",
+    "title": "Deliver the bid",
+    "journeys": [
+      "J9"
+    ],
+    "severity": "—",
+    "item": "What each print contains, and the one sentence that stops two people reading two different totals off the same link.",
+    "evidence": "README's Export section is four accurate but shallow bullets; none describes what any PDF contains. The link is 318 chars per row (about 95 kB for a 300-row bid), the fragment never reaches the server, and a cut link alerts while a link mangled into valid JSON without a manifest does not.",
+    "proposal": "Carry: where Print Options is; what each print contains; the form's purpose and fields; Copy purchase list then paste into a spreadsheet. Sending someone the bid: it carries the whole bid, the recipient needs no account, they get a copy and edits do not flow back — and until T1-15, tell the recipient the labor rate. The link is the bid: it works offline and stores nothing on a server, a chat client that cuts long links produces the 'truncated' message, and if nothing opens at all, ask for the link again.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J9-P8"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G10",
+    "title": "Running several bids",
+    "journeys": [
+      "J10"
+    ],
+    "severity": "—",
+    "item": "The five verbs of a week with three live bids, plus the two warnings that keep an estimator out of T1-17's blast radius while it is queued.",
+    "evidence": "README has no Projects section at all, although this file's own coverage matrix assumes one.",
+    "proposal": "Carry: create, switch, rename via Manage, duplicate as a template, delete (open another bid first); '(copy)' is your template and '(shared <date>)' is a colleague's, so rename it. Until T1-17: save or cancel the editor before switching bids, and if you do land on the blank screen, do not switch to a copy of the same bid — go back to the one you were editing. Until T1-15: check the labor rate on every new or shared bid. The Rows number counts lines, not components.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J10-P12"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G11",
+    "title": "Saving, signing in, and two computers",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "—",
+    "item": "Lead with the fact nothing in the app states: there is no Save button because it saves as you type, in this browser. Then what signing in is actually for.",
+    "evidence": "Zero save-words anywhere in the manifest view. README's Cloud Sync paragraph is stale ('Newest save wins for the workspace' — there is no workspace), and the verifier disproved the walker's own 'Sync Now pulls, it doesn't push'.",
+    "proposal": "Carry: no Save button; what is not autosaved (an open flow editor until you press Save); sign-in is optional and is for a second computer; password versus emailed code, and that a code-created account will always use the code. What syncs (takeoffs individually, your book, saved assemblies) and what does not (which takeoff is open, supplier-price overlays). One line each: newer save wins per takeoff, the book follows the newest edit, assemblies add up. Sync Now reconciles both ways — the newer copy wins each way. Offline works until you refresh; do not refresh without signal. Until T1-21: reload before you start editing on a second machine.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J11-P10"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G12",
+    "title": "Fix a number once, fix it for everyone — plus the two admin articles",
+    "journeys": [
+      "J12",
+      "J13"
+    ],
+    "severity": "—",
+    "item": "The shared book's own article, and the two admin ones: loading a supply house's price file, and letting a new estimator in. Roles and Manage Users are undocumented anywhere today.",
+    "evidence": "'shared book' occurs exactly once in the whole app, inside the signed-in branch of the cloud modal; README:84 is the only user-facing mention and it is silent on the email. README:76 is the only line about the supplier tool. Both admin flows contain steps (a git commit, a Pages deploy, an out-of-band password hand-off) that no screen explains.",
+    "proposal": "Article one: where the toggle is, what a correction is, what leaves the machine (book rows and your sign-in email; never a takeoff), how to withdraw, and that accepted fixes arrive in an app update and never override a row you changed yourself. Article two, 'Loading the supply house's price file': who has the button, where it hides, what the summary numbers mean in trade terms, what 'Skip' means in each of its two places, and the hand-off — four files, the site maintainer, everyone's book updating on reload; include the recovery line until T1-18, and say that Remove overlay also clears the review queue. Article three, 'Letting a new estimator in': the emailed-code path is self-serve, Manage Users is for roles, and roles take effect only after the person signs in again.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J12-guide-actions",
+      "J13-guide-actions",
+      "J12-F4"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 4,
+    "id": "G13",
+    "title": "Takeoff Tooling on an iPad or phone",
+    "journeys": [
+      "J14"
+    ],
+    "severity": "—",
+    "item": "The device article — and the one place the synthesis had to overrule the dossier, because the workaround it recommends does not work.",
+    "evidence": "README, CLAUDE.md and ARCHITECTURE.md say nothing about tablets, phones, touch or breakpoints; the four breakpoints are documented only in CSS comments. J14 NEW-1 proved the book's global search shows no part names at all at 375 px, which is exactly what the dossier's guide action told phone users to rely on.",
+    "proposal": "Carry: portrait is cards and landscape is the office table, with the flip at 900 px; flow tables slide sideways, so swipe a row to reach Price and the trash; Save lives at the bottom of a flow; tap the provenance pill for the part card and Record price at the counter. Until B12: pinch out after typing on an iPhone. Until T1-04's preview fix: pasting from Count Tooling works on the phone even though the preview is cut off — the visible sliver of Add All does fire. The line 'on a phone use search, not the supplier sections' must NOT be written until T1-22 lands.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J14-P10",
+      "J14-NEW-1"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X1",
+    "title": "Nothing refreshes a bid row from the book when a quote changes",
+    "journeys": [
+      "J7"
+    ],
+    "severity": "—",
+    "item": "The strongest gap, and it is J7's actual trigger: build the bid, then quote it, and every changed price needs the child deleted and re-added by hand. Bid rows are snapshots by design, which is correct behaviour with the wrong words and no hint.",
+    "evidence": "A child '75KVA Transformers.3PH' stayed $3,950 / 32 hrs after the book row moved to Border States $3,925 / 35.5 hrs, and the child carries no link back (meta null). The storage already exists: every manifest item carries a meta field, sanitized on import (state.js:68), cloned on export (:390) and seeded null on create (:289), and only the conduit flow writes it today — so meta.book needs no schema change and survives share links and reload.",
+    "proposal": "J7 P5: children added from the book carry meta.book {type, section, name, partNumber}, and when the book's in-use price differs the row shows a quiet amber 'book: $1,140' chip that updates it in one undo frame. Hold the caveat hard — the chip must appear only on a real difference, or it becomes standing furniture on every book-sourced row. Largely makes G7's snapshot warning unnecessary.",
+    "effort": "M",
+    "event": "book_row_refreshed {delta}",
+    "sourceFindings": [
+      "J7-F4",
+      "J7-P5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X2",
+    "title": "The app cannot survive an offline reload",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "—",
+    "item": "Everything edits fine offline, but a refresh gives a blank browser error page: there is no service worker and no web manifest, so the app is neither installable nor reloadable without a connection — and the book's offline message is written for a developer.",
+    "evidence": "Offline: add-row, typing and totals all fine ($473.60 recomputed with no network); reload gives net::ERR_INTERNET_DISCONNECTED at chrome-error://chromewebdata with an empty body and no #main-content. 0 service-worker registrations, no <link rel=\"manifest\">, empty cache storage. The Assemblies side offline says 'Could not load mc-assemblies/mc-labor-book.json — serve the app locally.' (mcBook.js:383). Back online, the offline-added row was still there.",
+    "proposal": "J11 P5: a minimal app-shell service worker (index, css, js, the five mc-assemblies JSONs) plus a web manifest, and a plain-words offline message. Two binding conditions from the verifier: it must never cache supabase.co or the jsdelivr CDN, so the 'zero network while signed out' property stays testable; and B13's Hard-reload rename must land with it, since only then does 'Hard reload' have a cache to clear.",
+    "effort": "L",
+    "event": "session_start {offline, standalone}",
+    "sourceFindings": [
+      "J11-F7",
+      "J11-P5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X3",
+    "title": "There is no in-app account or password management",
+    "journeys": [
+      "J11",
+      "J13"
+    ],
+    "severity": "—",
+    "item": "A tester is given a temporary password out of band and keeps it forever, because no change or reset path exists anywhere. And because the emailed code self-provisions, Manage Users is a directory rather than a gate — today's mix has the worst of both.",
+    "evidence": "grep over js/ finds no updateUser and no resetPasswordForEmail, and the Edge Function exposes only create-user and delete-user (index.ts:49-66); index.html:165 is type=\"text\" with no copy affordance. cloud.js:492 uses signInWithOtp({shouldCreateUser: true}), so any email address self-provisions an account. A promoted admin does not see their new surfaces until re-auth, because fetchProfileRole has exactly one call site, inside onAuthStateChange.",
+    "proposal": "J13 P8, which the verifier correctly framed as a product decision the owner must make first: either make Manage Users the gate (turn off shouldCreateUser, so 'Add user' means something) or make it the directory it already is and drop the temp-password field entirely, letting the tester sign in with the emailed code. Either way, add a change-password path or remove the password path.",
+    "effort": "L",
+    "event": "cloud_signed_in {method, new_account}",
+    "sourceFindings": [
+      "J13-F13",
+      "J13-wall",
+      "J11-F5"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X4",
+    "title": "A promoted catalog part is shared back as the supplier's own price",
+    "journeys": [
+      "J7",
+      "J12"
+    ],
+    "severity": "—",
+    "item": "Promotion marks a part userAdded, so the corrections diff emits it as a brand-new part carrying the supplier's catalog number — the shared book learns a catalog echo. And the quote history, which is the one thing worth sharing, is not in the shape at all.",
+    "evidence": "Two promotions emitted kind:'new' corrections {labor:1.25, price:\"106.29\"} and {labor:0, price:\"259\"} — Elliot's own catalog prices, one with zero labor — and both survived a reload. The diff shape is exactly {tab, section, name, kind, old, new}: offers, history, priceSource and partNumber were each confirmed absent from a row that carried all four.",
+    "proposal": "Open. The honest options are to exclude promoted rows from the corrections diff until a human quote lands on them, or to widen the shape to carry supplier and date so the admin panel can see who quoted what. Both change the J12 contract, so this is a product call rather than a queued fix.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J7-F8",
+      "J12-NEW-3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X5",
+    "title": "The corrections loop has no return path",
+    "journeys": [
+      "J12"
+    ],
+    "severity": "—",
+    "item": "A contributor cannot learn what happened to their fix, and the shipping step is a hand-applied patch, a version bump, a commit and a deploy with no shipped marker anywhere in the data.",
+    "evidence": "takeoff_suggestions.status exists per row and RLS lets a user read their own, but the list never shows it; downloadAcceptedPatch re-aggregates every accepted row ever (suggestionsReview.js:146-174). The pace itself was judged acceptable for a defaults book, provided the arrival is visible and the outcome is shown.",
+    "proposal": "Deferred by design: T2-11 makes the arrival visible and B14 adds the shipped status, and the walker's own 'Pace' note says that with those two the pace is fine. Without them the pace is invisible rather than slow. Revisit only if the loop is used and the wait is what people complain about.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J12-F6",
+      "J12-pace"
+    ],
+    "status": "deferred",
+    "statusNote": "Deferred: the return path is covered by T2-11 (the shared-book update notice) and B14 (the review queue), so a third surface would repeat them."
+  },
+  {
+    "tier": 5,
+    "id": "X6",
+    "title": "Zones of the book that no search reaches",
+    "journeys": [
+      "J5",
+      "J6"
+    ],
+    "severity": "—",
+    "item": "T2-09 fixes the phrasing; this is the missing content behind it. The curated book is silent on every device query, and MAC adapters exist in the catalog with no labor figures anywhere.",
+    "evidence": "1900 box, single pole switch, pull string, toggle switch, occ sensor, photocell, disconnect 60a and romex all return zero curated hits (romex returns 56 Elliot rows and nothing else). 'mc connector' in MAC fill mode returns Assemblies 2 and Elliot Parts 43, and mc-labor-book.json holds 15 'MC CONN' rows — the parts exist, the labor does not.",
+    "proposal": "A data task, not a UI one: grow the curated defaults for the device and MAC gaps, bumping LABOR_BOOK_DEFAULTS_VERSION so existing workspaces merge it. J5 P11's defaults-section half is warranted only for the labor figures the Elliot rows lack; the vocabulary half is already queued in T2-09.",
+    "effort": "M",
+    "event": "book_search {zeroResult}",
+    "sourceFindings": [
+      "J6-F5",
+      "J5-F14"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X7",
+    "title": "No per-line taxable mark",
+    "journeys": [
+      "J5",
+      "J8"
+    ],
+    "severity": "—",
+    "item": "T2-19 gives the rate a home and moves the sub-contract trench line, but a bid carrying owner-furnished material, a rental in one county and stock in another still cannot be expressed.",
+    "evidence": "SALES_TAX_RATE is a constant and every material bucket is taxed; the verifier's counter-evidence was that rentals are taxable in many states and fill materials are genuine stock, which is precisely why a single global rule cannot be right everywhere.",
+    "proposal": "Deliberately deferred: J8 P7's own caveat is that the teach half is a stop-gap and the per-line mark becomes the rework only if walks show most jobs carry trenching, and J5 P6's verifier said do not add a toggle. Revisit after T2-19 has been lived with.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J8-F7",
+      "J5-F7"
+    ],
+    "status": "deferred",
+    "statusNote": "Deferred until T2-19 has been lived with — the per-project tax rate plus the untaxed site-work bucket may already cover the cases a per-line mark was asked for."
+  },
+  {
+    "tier": 5,
+    "id": "X8",
+    "title": "Assemblies cannot be edited, only replaced",
+    "journeys": [
+      "J4"
+    ],
+    "severity": "—",
+    "item": "A saved run recipe offers exactly two actions: load it, or delete it. Renaming one, fixing a single line of it, or seeing which runs used it are all impossible.",
+    "evidence": "The assembly card's action set is 'Load into Ledger' and a trash, with a confirm on delete. Deleting does not mark the flow dirty and Cancel leaves without a guard.",
+    "proposal": "Open. T1-09's per-run migration is the natural moment to revisit this, since the storage shape is changing anyway and legacy presets need a load path regardless.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J4-walk-step-19"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X9",
+    "title": "No archive or close state for a bid",
+    "journeys": [
+      "J10"
+    ],
+    "severity": "—",
+    "item": "The project list only grows, so a season of bids makes the two most-used controls the farthest away. B11 makes the menu scroll; it does not make the list shorter.",
+    "evidence": "At 24 bids the switcher menu is 919 px against a 900 px window with the footer at y 922, and the Manage modal's footer sits at y 1,190 inside an 810 px cap.",
+    "proposal": "Raised in J10 F8 and deliberately kept out of J10 P6 by the verifier, who noted the archive idea is a separate proposal. Open.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J10-F8"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X10",
+    "title": "The summary has no drill-down",
+    "journeys": [
+      "J8"
+    ],
+    "severity": "—",
+    "item": "An estimator with a calculator gets a different number from the app and has no way to ask where the app's came from, because the summary carries no explanation of any kind.",
+    "evidence": "The summary block has 0 title attributes, no notes and no 'component/parent/rolled' text anywhere; the only sentence explaining parent-plus-component labor is B-11's line inside the devices flow, which stays because the flow needs it while editing.",
+    "proposal": "J8 P6 failed the spirit test as written — a muted line is pure addition and removes nothing — so the verifier routed it to G8. A real UI shape would have to replace the bare hours cell text ('11.3 · runs 5.3 + parts 6.0') rather than add a row, and be re-tested against the four questions.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J8-F6",
+      "J8-P6"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X11",
+    "title": "One feedback system",
+    "journeys": [
+      "J2",
+      "J6",
+      "J7",
+      "J9",
+      "J10",
+      "J13"
+    ],
+    "severity": "—",
+    "item": "The app has no toast or live-region mechanism at all, so feedback is a native alert, a native confirm, a 1.2-second check swapped into a button, a status line the next render wipes, or nothing. Six journeys each patch their own corner.",
+    "evidence": "grep -rn 'toast|aria-live' js index.html returns nothing. Observed in one pass: three distinct alert() texts on the import path; 'Please select a fixture...' as a page-blocking alert in the book; 'Remove this item?', 'Discard unsaved changes in this editor?', 'Delete \"X\"? This can't be undone.' and 'Remove the local Elliot price overlay?' as native confirms; a 1.2 s ✓ and a 1.5 s 'Copied!'; and #mc-elliot-status measuring empty right after a decision.",
+    "proposal": "Open, and explicitly sequenced after the rows that need it: B4, B5, B10, B11 and T2-18 each replace one alert or one wiped status line. Standardising afterwards would retire all of them; standardising first would be a platform build with no consumer.",
+    "effort": "M",
+    "event": "—",
+    "sourceFindings": [
+      "J2-F8",
+      "J6-F10",
+      "J10-F10",
+      "J13-F4",
+      "J13-F12",
+      "J9-F9"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X12",
+    "title": "Picking a flow type yanks you into an eight-section editor",
+    "journeys": [
+      "J3",
+      "J4",
+      "J5"
+    ],
+    "severity": "—",
+    "item": "Labelling ten pasted rows drags the estimator into a full editor three times, and the only way back is the wordmark. Changing a flow row's type costs three clicks and parks its money in Misc in the meantime, because the picker cannot be reopened from a typed row.",
+    "evidence": "modal.js:12-16 navigates on pick. .type-badge-flow is the only door into a typed flow row's editor (manifest.js:450-458); non-flow chips are listener-less spans; .select-type-btn renders only when item.type is null — so × then Add then pick really is the only retype route. Nothing is lost on the detour: clearing a Devices type keeps its children and re-typing shows them again.",
+    "proposal": "J3 P2 failed the spirit test: routing every chip through the picker turns the daily one-click 'open my run' into two clicks to save one on a rare retype, and plants a modal in front of the affordance baseline B-2 installed. The shape the verifier proposed instead, and the one to build if this is taken up: keep the pencil as the direct one-click editor door, and make the chip's text (or a small caret beside it) open the picker with 'No type' at the bottom — one-click editor, two-click retype, and the × can go.",
+    "effort": "M",
+    "event": "row_typed {type, via, wasRetype}",
+    "sourceFindings": [
+      "J3-F5",
+      "J3-P2"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X13",
+    "title": "Delete is undiscoverable",
+    "journeys": [
+      "J3"
+    ],
+    "severity": "—",
+    "item": "There is no trash on a row by default, the one control shaped like remove removes the type instead, and the real route is four clicks behind a menu that closes on the toggle, so the checkmark recording the mode is out of sight.",
+    "evidence": "TakeoffState.removeItem has exactly one caller app-wide (manifest.js:465). By default row 1 exposes book, ↳, × titled 'Remove type', minus and plus, with the trash not visible; #header-menu computes display:none immediately after the toggle. Clicking × moved $47.40 and 9.0 hrs into Misc.",
+    "proposal": "J3 P3 (trash on row hover, always on touch widths, keep the confirm, drop the Remove-items mode and its menu row) passes the spirit test with two prerequisites the verifier made binding: T1-14 must land first, because a row-level trash that still no-ops on the icon makes the flakiness more visible rather than less; and an 'Undo' receipt is a real guard only once T2-03 lands, since the Undo button is dead after a keystroke today. Dropping the mode also removes showRemoveIcons from uiState.",
+    "effort": "M",
+    "event": "row_removed {via}",
+    "sourceFindings": [
+      "J3-F7",
+      "J3-P3"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X14",
+    "title": "The book has no second supplier",
+    "journeys": [
+      "J6",
+      "J13"
+    ],
+    "severity": "—",
+    "item": "The provenance model already supports per-supply-house offers with an explicit 'in use' — that is one of this app's verified strengths — but the import side has exactly one vendor and tells you to edit a JSON file to add another.",
+    "evidence": "The supplier select holds one option (Elliot Electric) with the hint 'Add suppliers by editing mc-assemblies/vendor-profiles.json'. The third search bucket is labelled with the vendor's name rather than what it is.",
+    "proposal": "Open. T2-09's honest bucket labels ('Supply house · Elliot') are the cheap half and are queued; a second vendor profile end to end is a build.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J13-walk-step-3",
+      "J6-F6"
+    ],
+    "status": "deferred",
+    "statusNote": "Deferred: needs a real second vendor's price file to design against. vendor-profiles.json already carries the shape; nothing is guessed until a file exists."
+  },
+  {
+    "tier": 5,
+    "id": "X15",
+    "title": "A keepalive-safe lid-close",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "—",
+    "item": "The local flush at unload is solid; the cloud flush is not. beforeunload never calls the cloud's flushPending, visibilitychange is the only path, and no request uses keepalive — so the last queued push can die with the tab while the status shows a checkmark.",
+    "evidence": "app.js:378-380 flushes local storage only; cloud.js:529-531 is the sole flushPending caller; no keepalive appears anywhere in the repo; signOut clears pushTimers without pushing (:507-514).",
+    "proposal": "B13 makes the status honest, which is the cheap half. Making the push itself survive the tab is a separate build and is not queued.",
+    "effort": "—",
+    "event": "cloud_push_failed {code}",
+    "sourceFindings": [
+      "J11-F13",
+      "J11-NEW-4"
+    ],
+    "status": "landed"
+  },
+  {
+    "tier": 5,
+    "id": "X16",
+    "title": "No spec drives any of this",
+    "journeys": [
+      "J1",
+      "J2",
+      "J3",
+      "J4",
+      "J5",
+      "J6",
+      "J7",
+      "J8",
+      "J9",
+      "J10",
+      "J11",
+      "J12",
+      "J13",
+      "J14"
+    ],
+    "severity": "—",
+    "item": "Three Playwright specs and a handful of node unit tests cover the data and almost none of the behaviour. Two of the Tier-1 blockers would pass every existing test, and one of them passes a spec that asserts success in the broken state.",
+    "evidence": "No spec sets a viewport or calls tap(), so A-6, A-7 and C-11 have no regression test and nothing in *.test.js can cover them because layout is CSS. js/import.js, js/views/manifest.js and js/views/modal.js are IIFEs with no module.exports, so no *.test.js can reach parseCountToolingClipboard, inferType, handleFieldUpdate or the remove handler. labor-book.spec.js:20 asserts the assemblies status contains 'Elliot prices applied' and passes in T1-18's catalog-wiped state ('… 5,946 repriced, 0 new items'). elliotPriceCore.test.js exercises patchLaborBook only with non-empty newItems, so the else-branch behind T1-18 is untested. No spec opens #mc-elliot-modal, #users-modal, #part-card-modal or any flow editor; no unit test imports storage.js or cloud.js; the admin review panel has no test at all.",
+    "proposal": "The dossiers name the specs to add, and each should ride the branch that makes it pass: a mobile.spec.js booting at 375×812 and 768×1024 asserting scrollWidth === innerWidth and that Add All and Load into Ledger are inside the viewport; a labor-book case per bucket asserting the child's price equals the price shown, plus a footage-parent quantity assertion; a describeBookRow unit for the shared bare names; the trash-icon-centre click; mergeDefaults(defaults, defaults) === 0; and a patchLaborBook case with empty newItems.",
+    "effort": "M",
+    "event": "—",
+    "sourceFindings": [
+      "J1-evidence",
+      "J2-evidence",
+      "J4-evidence",
+      "J6-evidence",
+      "J9-evidence",
+      "J13-evidence",
+      "J14-evidence"
+    ],
+    "status": "landed",
+    "statusNote": "Landed in the sense the row asked for: every fix in this program shipped with an automated check. At the close of the program the tree carries 21 Playwright specs (199 passing, 2 skipped) and 8 node:test files (167 tests), against the three Playwright specs that existed when the row was written. The two cloud round-trip specs are the skips: they need a non-admin test account in .env.local and migrations 001/003/004 applied."
+  },
+  {
+    "tier": 5,
+    "id": "X17",
+    "title": "Nothing measures anything",
+    "journeys": [
+      "J1",
+      "J2",
+      "J3",
+      "J4",
+      "J5",
+      "J6",
+      "J7",
+      "J8",
+      "J9",
+      "J10",
+      "J11",
+      "J12",
+      "J13",
+      "J14"
+    ],
+    "severity": "—",
+    "item": "Listed last because it is the gap that makes every ranking above a judgement call. Takeoff Tooling has no logUserEvent equivalent and Supabase holds data tables only, so every journey is blind and 'high-traffic' in Tier 2 means 'on the daily core', not 'measured'.",
+    "evidence": "Confirmed at frame time and re-confirmed by all fourteen walks: no telemetry of any kind; the Supabase project holds takeoff_store, takeoff_projects, takeoff_suggestions and takeoff_profiles, all data. Nobody knows whether a single estimator has ever opened this app on a tablet, how often the qty-0 rule fires on a real bid, or how many share links are opened.",
+    "proposal": "Adopt Count Tooling's standing rule: every rework ships its own event. Each Tier-1 row above names one. The minimum useful first release is flow_saved, book_add_to_target, import_added, purchase_list_generated, pdf_exported, share_link_created, project_switched and a boot session_start {vw, coarsePointer}. Re-rank Tier 2 after one window of real data, exactly as Count Tooling did at its Stage-2 re-rank.",
+    "effort": "M",
+    "event": "session_start {vw, vh, coarsePointer}",
+    "sourceFindings": [
+      "JOURNEY-MAP-phase-1-findings-in-advance"
+    ],
+    "status": "landed",
+    "statusNote": "Code landed (js/events.js + TakeoffEvents.log call sites, sanitized props, Do-Not-Track and an opt-out key). Migration must be applied: supabase/004_takeoff_events.sql. Until it is, events.js posts once, reads the 404, and stays silent for the session — the app is unaffected."
+  },
+  {
+    "tier": "keep",
+    "id": "K1",
+    "title": "Boot",
+    "journeys": [
+      "J1",
+      "J11"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, verified. Synchronous restore from localStorage before first paint, under a second, fully offline, with no app-authored console error anywhere in the program.",
+    "evidence": "374–607 ms to a usable table. Across fourteen walks and fifteen verify passes the only console error in any context was the walks' own deliberately aborted Supabase CDN script (net::ERR_FAILED), and there were zero pageerror events anywhere.",
+    "proposal": "Document as-is. X2's service worker must not disturb the synchronous boot.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J1-P11",
+      "J11-P11"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K2",
+    "title": "Undo/redo on the manifest",
+    "journeys": [
+      "J3"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, verified by unwinding the real stack rather than inferring frame counts.",
+    "evidence": "One typing burst = 1 frame; two 1.4 s pauses inside a phrase = 3; three spinner clicks = 1; one frame per type pick, per import, per flow save; a parent removed with two children = one frame that restores the whole block; 60 alternating edits cap at exactly 50 (UNDO_STACK_SIZE, state.js:23/331). × then Add then pick inside 1.2 s collapses to one frame.",
+    "proposal": "Document as-is. T2-03 and T2-04 fix the button state and the phantom frames around this core; the core itself is right and must not be touched.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J3-P11"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K3",
+    "title": "The manifest card layout below 900 px — corrected",
+    "journeys": [
+      "J14"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, and one of the two that needed correcting. It holds at iPad portrait and it does not hold on a phone, because one grid serves the whole 375–900 band.",
+    "evidence": "At 768 px: nothing clipped, scrollWidth 768 = 768, every field labelled, grid 24 / 159 / 145 / 145 / 173 with every input inside its track. At 375 px the same grid clips a four-digit quantity and fuses Labor, Price and Plan Page (B12). Rotation to 1024 gives the desktop table at 976/976 with no horizontal scroll.",
+    "proposal": "Protect the 768 px behaviour and the rotation flip. The wording of this strength must not be used to argue against B12's phone shape.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J14-keep",
+      "J14-F4"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K4",
+    "title": "Import preview",
+    "journeys": [
+      "J2"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, verified on an independent seed with the dollars checked: side by side, NEW badges, per-item deltas, counts treated as totals and never summed, one undo frame each way.",
+    "evidence": "Delta text verbatim: '× 25 · now 18, +7' and 'already 10 — no change'. Add Overages Only raised 18 to 25 keeping $74.25 / 0.7 h intact: Lighting $2,516.50 → $3,036.25 (+7 × $74.25 exactly), 22.6 → 27.5 h. #import= works at boot and on hashchange with the hash stripped and window state intact; Esc and click-out both close.",
+    "proposal": "Document as-is. T1-04 changes the buttons and T2-06 changes one delta string; the preview's shape is what they build on.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J2-P9"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K5",
+    "title": "The provenance system",
+    "journeys": [
+      "J7"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, independently re-derived on different parts and different supply houses.",
+    "evidence": "Freshness tiers are exactly <30d fresh / 30–90d aging / >90d stale, verified at the boundaries (29 fresh, 30 aging, 90 aging, 91 stale, 100 and 365 stale) with the row badge and the card badge agreeing. First-quote-wins; a quote from a supplier that is not in use never moves the price; explicit Use copies price, source and date onto the row; offers merge case-insensitively; per-part history; offers, history, part # and labor all survive reload.",
+    "proposal": "Document as-is. One exception is pinned in B6 (a promoted catalog part inverts first-quote-wins); the rest is a differentiator.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J7-P10"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K6",
+    "title": "Purchase list — corrected to name its conditions",
+    "journeys": [
+      "J8",
+      "J9"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, and the second of the two that needed correcting: 'agrees with the summary to the cent' holds only under four conditions, each of which is now a queued row.",
+    "evidence": "It merges by description, flags 'n without a price' instead of hiding gaps, keeps a run's footage and drops price-less groupings, and matched the Sub Total exactly on every clean seed ($11,273.51, $9,785.20, $7,806.15). It stops agreeing on a stale open list (T1-12), a priced qty-0 child (T1-05), a negative price (B9) and two 4-decimal supplier prices (B2). Copy produces clean TSV: header, materials sorted by description, a TOTAL row, no $ in cells, unit prices at two decimals.",
+    "proposal": "Document as-is with the four conditions stated. The Copy TSV must stay bare when B2 adds thousands separators to the screen.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J8-keep",
+      "J9-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K7",
+    "title": "Fill mode",
+    "journeys": [
+      "J4",
+      "J5",
+      "J6"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, verified. Any flow row's PB opens the book with the search focused and a banner naming the exact target; one click fills the row in place.",
+    "evidence": "Banner verbatim: 'Fill: Back Box Support row 1 — selecting an entry replaces this row's description, labor, and price', with the search focused (baseline N-2 holds, with a complete section-label map). It is the only one of the four doors that focuses the search, and the only one that leaves a single, coherent row.",
+    "proposal": "Document as-is. T2-08 keeps PB and removes the other doors precisely because this one is right.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J4-keep",
+      "J5-keep",
+      "J6-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K8",
+    "title": "Focus survives typing — corrected",
+    "journeys": [
+      "J1",
+      "J5"
+    ],
+    "severity": "—",
+    "item": "Pre-registered strength, corrected in scope. True within a field everywhere — the panel and the summary are patched on input without a re-render, which is the hard part of this architecture — and true across fields in the conduit and wire flows. Not true across fields in the devices flow or on the manifest's labor rate.",
+    "evidence": "Typing never loses focus in a description, a custom overage percentage (N-8 holds — the total line is patched in place) or any conduit/wire field; conduit.js:387/458 and wire.js:119 commit on blur without calling render(). The devices flow and the labor rate are T1-01, and J4's verifier explicitly killed the sub-claim that the conduit and wire handlers share the defect.",
+    "proposal": "Document as-is with the scope stated. The wording must not be used to argue against T1-01.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J1-P11",
+      "J5-keep",
+      "J4-F1-subclaim-killed"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K9",
+    "title": "The core count-to-total loop and its arithmetic",
+    "journeys": [
+      "J1",
+      "J4",
+      "J5",
+      "J8"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Every total on every route was correct to the cent when the inputs landed — across four dossiers, on seeds chosen so the hours did not fall on half-hours.",
+    "evidence": "J8's sixteen hand-derived figures matched exactly: Lighting $2,607.50, Gear $981.85 (raw 981.8466), Sub Total $7,806.15, tax $663.52, 86.3 hrs, Labor $7,935.00, Grand $17,024.67. Also J1's $113.88 and $11,609.88, J4's $175.00 / 9.2 hrs / parent 8.0 + components 9.2 = 17.2, and J5's $5,025.58 conduit bucket verified line by line. The arithmetic is not this app's problem; the rules around it are.",
+    "proposal": "Document as-is, and protect it: T1-05 and T2-19 change what is counted, not how it is computed.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J8-happy-path",
+      "J1-verification",
+      "J4-verification",
+      "J5-walk-step-13"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K10",
+    "title": "The conduit wizard's quick-add and live overage line",
+    "journeys": [
+      "J5"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. One click on a trenching preset fills material, depth, price per foot and the run's own footage; the overage step computes live while you type and buys waste at the run's price with no labor.",
+    "evidence": "Quick-add filled 150 / Dirt / 24in / 15 (baseline B-7 holds). Typing a custom 12% kept focus in the input for both digits and patched '150 + 18 additional = 168 total' live (N-8 holds). Overage priced at the run's unit price with labor 0 (A-2 holds): 27 × $0.68 = $18.36, 450 × $0.18 = $81.00. Exactly one overage child per run — replaced on re-save, never duplicated, and removed by a blank percentage.",
+    "proposal": "Document as-is. T1-07's single-save rework and T1-24's write-time recompute must both preserve this behaviour exactly.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J5-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K11",
+    "title": "Step inference and exact hydration on re-entry",
+    "journeys": [
+      "J4",
+      "J5"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. A run reopens at the step its children imply, and every field of every earlier step comes back exactly — including a blank price as an empty string rather than a zero.",
+    "evidence": "Re-entering a saved conduit run landed on step 3 with '12' in the input and '220 + 27 = 247'; Back then Back hydrated the fittings and the trench fields exactly. The devices flow re-opened with all rows hydrated, blank seed rows for the empty sections, the CADDY row's blank price as \"\", and flowDirty false.",
+    "proposal": "Document as-is. T1-07 must keep the inference when Next stops committing.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J5-keep",
+      "J4-walk-step-15"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K12",
+    "title": "The devices flow's live rollup",
+    "journeys": [
+      "J4",
+      "J8"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. The 'Job labor: parent 8.0 + components 9.2 = 17.2 hrs' line is the only place in the entire app that explains parent-plus-component labor — which is why G8 has to carry it in words.",
+    "evidence": "Baseline B-11 verified: the panel is patched on every keystroke with blank rows excluded and no re-render, and the line correctly disappears on a parent with no labor. J8 found the summary has zero title attributes and no equivalent explanation anywhere.",
+    "proposal": "Document as-is. J8 P6 was failed by the verifier partly because this line stays — the flow needs it while editing — so nothing here is removed.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J4-keep",
+      "J8-F6"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K13",
+    "title": "The book's search core",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Token-any-order matching with inch-mark normalisation, a filter that narrows curated and supplier rows together, a 100-row cap, open state surviving re-renders, and BOM expansion inside search results.",
+    "evidence": "'3/4 emt coupling' and '3/4\" emt coupling' both return 4 / 2 / 27 (A-4 holds); 'cplg' returns the same set; 'duplex receptacle 20a' returns 40 / 0 / 80+ via synonyms (N-1 holds). Tab-filter counts read 'First 100 of 759 matches', '1 match', '2 matches' (C-4 holds). One undo frame per single add and one per explosion (3 children → 0 → 3 on redo). Hotkeys work on both sides.",
+    "proposal": "Document as-is, with the boundary the verifier drew: what is protected is the matcher and the one-frame-per-add, explicitly NOT the explode-by-default behaviour T1-02 kills.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J6-P11"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K14",
+    "title": "The MC assemblies BOM footer",
+    "journeys": [
+      "J6"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. The footer states plainly what the app is doing about unpriced components, and it is the sentence T1-02 makes true.",
+    "evidence": "Both variants correct on independent parts: '2 of 3 components unpriced — using the book price (4.03 hrs, $193.65)' and 'Computed per unit (book: 0.66 hrs, $42.52)' (baseline B-12 holds). Also C-9: the relabelled MC categories ('Adjustment units ($1 material · 1 hr labor)', 'Tenant Improvement budget rates', 'Grounding') are intact and correctly diagnosed.",
+    "proposal": "Document as-is. T1-02 changes the add to match the footer, not the footer to match the add.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J6-baseline-B-12",
+      "J6-F18"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K15",
+    "title": "The part card",
+    "journeys": [
+      "J7",
+      "J14"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. The card is the best-composed modal in the app and it is the one surface that already works on a phone.",
+    "evidence": "Trail 'Gear · Transformers · 3PH' (B-9 holds); the record form, the offers table and the In use pill all readable. At 375 px it is 345×510 over the book with nothing past the right edge and no internal scroll needed (scrollHeight 508 = clientHeight), and Esc closes the card only, leaving the book and its open sections intact (B-8 holds — a section survived twelve quote records, six Use switches and the card's Close).",
+    "proposal": "Document as-is. B6 fixes the ≤768 px desktop clipping and the trail's edges; the composition is not to be touched.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J7-keep",
+      "J14-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K16",
+    "title": "The share-link recipient path's mechanics",
+    "journeys": [
+      "J9"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Everything about the recipient experience is right except the labor rate: no account, their own project, nothing of theirs replaced, and nothing on a server.",
+    "evidence": "Lands in a project named after the sender with a '(shared …)' suffix (N-3 holds), rows and children intact with every quantity, labor and price identical, persists across reload, works at 375 px, and the recipient's own bids are untouched. The fragment never reaches the server — the site is static — so the whole bid stays in the two browsers.",
+    "proposal": "Document as-is. T1-15 adds one field to the envelope and B10 adds a banner; the mechanics stay.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J9-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K17",
+    "title": "Project switching, duplicating and deleting",
+    "journeys": [
+      "J10"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Every manifest round-tripped exactly through switch, duplicate, delete and reload, with correct undo semantics.",
+    "evidence": "Switch restores rows, children and the per-bid rate exactly and clears undo (no cross-bid undo, which is correct); duplicate is a deep copy that is independent immediately (99 on the copy, 30 on the original); delete removes the storage key and the index entry while dismiss changes nothing (8 → 8 keys on dismiss, 24 → 23 on accept); reload reopens the same bid.",
+    "proposal": "Document as-is. One caveat is a queued fix rather than a flaw here: the copy re-uses the source's item ids, which is what makes T1-17's cross-bid write possible.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J10-P11"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K18",
+    "title": "The local-first spine",
+    "journeys": [
+      "J11"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. No Save button and none needed — and, verified twice, no network to the cloud at all while signed out.",
+    "evidence": "A 400 ms debounce with a beforeunload flush that survived edit-then-reload-in-the-same-tick and edit-then-real-tab-close in both the walk and the verify pass; full editing offline with totals recomputing ($473.60); the legacy migration naming its project from its own date ('Takeoff — Jul 14') and leaving takeoff-workspace intact as a backup; and in the CDN-loaded observation context, one CDN script load and zero requests to *.supabase.co, with no sb-* keys written. A renderer kill inside the 400 ms window loses that edit — a design fact, recorded so it is not rediscovered.",
+    "proposal": "Document as-is. T2-15 and X2 must not disturb any of it — in particular the service worker must never cache supabase.co or the CDN, so the zero-network property stays testable.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J11-P11",
+      "J11-F3"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K19",
+    "title": "The merge semantics of the shared book",
+    "journeys": [
+      "J12"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. The rule that a user's own edits win while untouched rows follow upstream was verified row by row against the real defaults, and the corrections payload carries no job data whatsoever.",
+    "evidence": "Seeded pre-boot at defaultsVersion 1: an untouched stale row took the new default (3.9 → 5.6), an edited row survived against it (12.4 against a default of 10.8), a removed row was not resurrected, a userAdded row was kept, an untouched row upstream had dropped left with it, a missing default was added, and the meta advanced — with a second boot byte-identical. computeCorrections has no manifest parameter at all, and dumping the keys of a correction whose row carried offers, history, priceSource and partNumber confirmed none of them travel. Opt-in defaults to Off and opt-out deletes.",
+    "proposal": "Document as-is. T1-20 fixes the one datum that breaks the model (a duplicate name) and T1-26 fixes the path that skips the merge; the semantics themselves are sound.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J12-keep"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K20",
+    "title": "The role gate",
+    "journeys": [
+      "J12",
+      "J13"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Signed out, none of the three admin surfaces render — and the supplier tool needed a declared test bypass to open at all.",
+    "evidence": "Signed out the header menu renders exactly four items (New Project, Export via link, Remove items, Hard reload); #review-suggestions-btn and #manage-users-btn carry hidden with computed display: none (A-5's two rules holding), and #mc-elliot-update-btn is hidden via .btn[hidden]{display:none!important} (B-10 holds). The gating was measured before any bypass in both dossiers.",
+    "proposal": "Document as-is and add the Playwright assertion J13 P6 asks for, so this class of bug stays dead. T2-01's base [hidden] rule strengthens the same gate rather than replacing it.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J13-P6",
+      "J12-baseline-A-5"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K21",
+    "title": "The supplier matcher's speed and its recovery hatch",
+    "journeys": [
+      "J13"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. The thing the supplier tool is for is fast and correct; what fails is what it does with the result.",
+    "evidence": "34,099 rows parsed (33,177 unique) and 5,692 items matched in 670–883 ms behind a correctly styled gold progress bar (C-3 holds), with every price rendered to C-1's decimal rule (0 of 300 review rows and 0 of 900 option labels showing float noise). 'Remove overlay' genuinely restores all 13 sections / 27,556 parts and the original 2026-07-18 import date.",
+    "proposal": "Document as-is. T1-18's guard belongs in patchLaborBook, not in slowing the match down, and the recovery hatch must keep working — while telling the truth about the review queue it also deletes.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J13-walk-step-4",
+      "J13-walk-step-11"
+    ],
+    "status": "keep"
+  },
+  {
+    "tier": "keep",
+    "id": "K22",
+    "title": "The type modal on touch",
+    "journeys": [
+      "J1",
+      "J3",
+      "J14"
+    ],
+    "severity": "—",
+    "item": "Added in Phase 2b. Its six option buttons are the app's only deliberately finger-sized targets besides one book button, and it is the model B12's coarse-pointer sizing should copy.",
+    "evidence": "The six type buttons measure 194×44 at every width, and the modal scrolls internally at 664 px tall (615 > 596). Three exits all work with the type left unset — Cancel, Esc and click-outside (C-5 holds) — and the hotkeys are case-insensitive.",
+    "proposal": "Document as-is. B12 should reuse this and .labor-book-add-btn's existing 44 px idiom rather than inventing a second sizing convention; B5's modifier guard (Meta+C must not pick Conduit) does not change the sizing.",
+    "effort": "—",
+    "event": "—",
+    "sourceFindings": [
+      "J14-keep",
+      "J1-P11",
+      "J3-F11"
+    ],
+    "status": "keep"
+  }
+]

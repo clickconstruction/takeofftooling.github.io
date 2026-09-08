@@ -17,25 +17,220 @@ const TakeoffViewShared = (function () {
   }
 
   /**
+   * The run's parent panel, one line per fact and the length carrying its
+   * unit ("220 ft"). The conduit wizard used to print the same number three
+   * ways — "Quantity: 220", "Length: 220", "Current length: 220" — with no
+   * unit on any of them; every step and the wire flow now print this.
+   */
+  function renderParentSummary(item, opts = {}) {
+    const esc = TakeoffUtils.escapeHtml;
+    const unit = opts.unit === undefined ? 'ft' : opts.unit;
+    const qty = Number(item?.quantity) || 0;
+    return `
+        <div class="parent-summary">
+          <div class="parent-summary-line"><strong>Parent:</strong> ${esc(item?.description || '')}</div>
+          <div class="parent-summary-line">Length: ${qty.toLocaleString('en-US')}${unit ? ' ' + esc(unit) : ''}</div>
+        </div>`;
+  }
+
+  /**
    * The overage picker section (preset % buttons + input + computed total).
    * noun: 'Conduit' | 'Wire' — used in the total line. inputId differs per
    * flow so each flow's listeners stay unchanged.
    */
-  function renderOverageSection({ inputId, noun, baseLength, overagePercent }) {
+  // The computed total line — also patched in place while the user types a
+  // custom %, so the input keeps focus (a full re-render would drop it).
+  function overageTotalLine(noun, baseLength, overagePercent) {
     const { additional, totalQty } = computeOverage(baseLength, overagePercent);
+    return `<strong>${noun} quantity:</strong> ${baseLength} + ${additional} additional = <strong>${totalQty}</strong> total`;
+  }
+
+  // Which preset button is the current percentage. Called at render and again
+  // while a custom % is typed: 12% belongs to none of them, so the pressed
+  // state clears rather than sitting on the last button pressed.
+  function markActiveOveragePercent(percent) {
+    document.querySelectorAll('.overage-buttons button').forEach((btn) => {
+      const on = percent != null && Number(btn.dataset.percent) === Number(percent);
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function updateOverageTotal(inputId, noun, baseLength, overagePercent) {
+    const el = document.getElementById(`${inputId}-total`);
+    if (el) el.innerHTML = overageTotalLine(noun, baseLength, overagePercent);
+    markActiveOveragePercent(overagePercent);
+  }
+
+  function renderOverageSection({ inputId, noun, baseLength, overagePercent }) {
+    const buttons = [5, 10, 15, 20]
+      .map((p) => {
+        const on = overagePercent != null && Number(overagePercent) === p;
+        return `<button type="button" class="${on ? 'active' : ''}" aria-pressed="${on ? 'true' : 'false'}" data-percent="${p}">${p}%</button>`;
+      })
+      .join('');
     return `
         <div class="flow-section">
           <h3>Overage</h3>
           <p>Select overage percentage:</p>
-          <div class="overage-buttons">
-            <button type="button" data-percent="5">5%</button>
-            <button type="button" data-percent="10">10%</button>
-            <button type="button" data-percent="15">15%</button>
-            <button type="button" data-percent="20">20%</button>
-          </div>
-          <label>Overage % <input type="number" id="${inputId}" value="${overagePercent ?? ''}" min="0" max="100" step="1" placeholder="0" /></label>
-          <p><strong>${noun} quantity:</strong> ${baseLength} + ${additional} additional = <strong>${totalQty}</strong> total</p>
+          <div class="overage-buttons">${buttons}</div>
+          <label>Overage % <input type="number" inputmode="decimal" id="${inputId}" value="${overagePercent ?? ''}" min="0" max="100" step="1" placeholder="0" /></label>
+          <p class="overage-total" id="${inputId}-total">${overageTotalLine(noun, baseLength, overagePercent)}</p>
         </div>`;
+  }
+
+  // ---------- derived children (overage, trenching) ----------
+
+  // The trenching child's display string. One builder, used by the conduit
+  // wizard on save and by syncDerivedChildren when the row is corrected on
+  // the manifest, so the two can never word it differently.
+  function trenchDescription(feet, material, depth) {
+    return `Trenching: ${feet || 0} - ${material || 'N/A'} @ ${depth || 'N/A'}`;
+  }
+
+  function isOverageChild(child) {
+    return child?.type === 'overage' || (!child?.type && /overage/i.test(child?.description || ''));
+  }
+
+  function isTrenchChild(child) {
+    return child?.type === 'trenching' || (!child?.type && /^Trenching:/.test(child?.description || ''));
+  }
+
+  // The unit price an overage child inherits: the parent's, or none.
+  function parentUnitPrice(parent) {
+    const unitPrice = Number(parent?.price);
+    return !isNaN(unitPrice) && unitPrice > 0 ? unitPrice : null;
+  }
+
+  function overagePercentOf(child) {
+    const pct = child?.meta?.overagePercent;
+    return typeof pct === 'number' ? pct : null;
+  }
+
+  // Recompute one overage child from the parent's current quantity and price.
+  function syncOverageChild(parent, child) {
+    const pct = overagePercentOf(child);
+    if (pct == null) return false;
+    const { additional } = computeOverage(Number(parent.quantity) || 0, pct);
+    const price = parentUnitPrice(parent);
+    let changed = false;
+    if ((Number(child.quantity) || 0) !== additional) {
+      child.quantity = additional;
+      changed = true;
+    }
+    if ((child.price ?? null) !== price) {
+      child.price = price;
+      changed = true;
+    }
+    return changed;
+  }
+
+  // True when the row no longer holds the numbers its percentage would produce
+  // — i.e. someone typed over it on the manifest.
+  function overageWasOverridden(parent, child) {
+    const pct = overagePercentOf(child);
+    if (pct == null) return false;
+    const { additional } = computeOverage(Number(parent.quantity) || 0, pct);
+    return (Number(child.quantity) || 0) !== additional || (child.price ?? null) !== parentUnitPrice(parent);
+  }
+
+  // The estimator's number wins from here on: drop the percentage so nothing
+  // recomputes over it, and stop the label claiming one (app.js re-reads the
+  // percent out of the description when meta has none).
+  function markOverageOverridden(child) {
+    let changed = false;
+    if (child.meta && child.meta.overagePercent != null) {
+      delete child.meta.overagePercent;
+      child.meta.overageManual = true;
+      changed = true;
+    }
+    const desc = child.description || '';
+    const relabelled = desc.replace(/\s*\(\s*[\d.]+\s*%\s*\)/, ' (manual)');
+    if (relabelled !== desc) {
+      child.description = relabelled;
+      changed = true;
+    }
+    return changed;
+  }
+
+  // A trench row corrected on the manifest: its quantity is the footage and
+  // its price the price per foot, so meta has to follow or the next trip
+  // through the wizard reverts the correction.
+  function syncTrenchChild(child) {
+    if (!child.meta || typeof child.meta !== 'object') {
+      // legacy row: recover material/depth from the display string first, so
+      // regenerating it does not blank them
+      const m = (child.description || '').match(/^Trenching:\s*(.*?)\s*-\s*(.*?)\s*@\s*(.*)$/);
+      child.meta = {
+        feet: Number(child.quantity) || 0,
+        material: m && m[2] !== 'N/A' ? m[2] : '',
+        depth: m && m[3] !== 'N/A' ? m[3] : '',
+        pricePerFoot: Number(child.price) || 0,
+      };
+    }
+    const meta = child.meta;
+    const feet = Number(child.quantity) || 0;
+    const pricePerFoot = Number(child.price) || 0;
+    let changed = false;
+    if (meta.feet !== feet) {
+      meta.feet = feet;
+      changed = true;
+    }
+    if (meta.pricePerFoot !== pricePerFoot) {
+      meta.pricePerFoot = pricePerFoot;
+      changed = true;
+    }
+    const desc = trenchDescription(feet, meta.material, meta.depth);
+    if (child.description !== desc) {
+      child.description = desc;
+      changed = true;
+    }
+    return changed;
+  }
+
+  /**
+   * Reconcile the derived children of a manifest row after a field edit.
+   *
+   * Call it with the id (or the item) of the row that was just updated,
+   * immediately after the update in TakeoffManifestView's handleFieldUpdate:
+   *
+   *     TakeoffState.updateItem(id, updates);
+   *     TakeoffViewShared.syncDerivedChildren(id);
+   *
+   * Three write-time rules (nothing is derived at render: pdf.js, share links,
+   * getPurchaseList and getSummaryBreakdown all read the stored child, so a
+   * read-time variant would only add a second stored-versus-shown split):
+   *   - editing a parent recomputes every overage child that still carries
+   *     meta.overagePercent, from the parent's current quantity and price;
+   *   - editing the overage child itself is an override — meta.overagePercent
+   *     is dropped and the label loses its percentage;
+   *   - editing a trenching child's quantity or price writes meta.feet /
+   *     meta.pricePerFoot and regenerates its description.
+   *
+   * Mutates the live manifest items in place. The caller's updateItem has
+   * already taken the undo snapshot and scheduled the debounced save, so the
+   * reconciliation rides along in the same frame and the same save.
+   * Returns true when something changed.
+   */
+  function syncDerivedChildren(itemOrId) {
+    const item = typeof itemOrId === 'string' ? TakeoffState.getItemById(itemOrId) : itemOrId;
+    if (!item) return false;
+
+    if (item.parentId) {
+      const parent = TakeoffState.getItemById(item.parentId);
+      if (!parent) return false;
+      if (isOverageChild(item)) {
+        return overageWasOverridden(parent, item) ? markOverageOverridden(item) : false;
+      }
+      if (isTrenchChild(item)) return syncTrenchChild(item);
+      return false;
+    }
+
+    let changed = false;
+    for (const child of item.children || []) {
+      if (isOverageChild(child)) changed = syncOverageChild(item, child) || changed;
+    }
+    return changed;
   }
 
   // ---------- price provenance (who priced it, when, how stale) ----------
@@ -56,32 +251,55 @@ const TakeoffViewShared = (function () {
   /**
    * The provenance badge: "Elliot · 30d" with a freshness dot (fresh < 30d,
    * aging 30–90d, stale > 90d, none when no date recorded). opts.button
-   * renders a <button> (curated rows open the edit popover); opts.data is a
+   * renders a <button> (curated rows open the part card — there is no popover;
+   * the card owns provenance, js/views/laborBookCard.js); opts.data is a
    * pre-escaped data-attribute string carried onto the element. Pass
    * opts.hasPrice: false for a row with no price at all — instead of a noisy
    * "no date" badge it renders a quiet "+ price" affordance (still the part
    * card's click target).
    */
+  // A price somebody typed in is stored as 'You' (TakeoffState.HAND_PRICED)
+  // and shown as what it is: not a supply house.
+  function sourceLabel(source) {
+    const hand = typeof TakeoffState !== 'undefined' ? TakeoffState.HAND_PRICED : 'You';
+    return source === hand ? 'Hand-priced' : source;
+  }
+
   function renderPriceProvenance(source, pricedAt, opts = {}) {
     const esc = TakeoffUtils.escapeHtml;
     if (opts.hasPrice === false && !source && !pricedAt) {
       const attrs = `class="lb-prov-badge lb-prov-empty" title="No price yet — record a quote"${opts.data || ''}`;
       return opts.button ? `<button type="button" ${attrs}>+ price</button>` : `<span ${attrs}>+ price</span>`;
     }
+    const shown = sourceLabel(source);
     const days = priceAgeDays(pricedAt);
     let cls = 'none';
-    let label = source ? esc(source) : 'no date';
+    let label = shown ? esc(shown) : 'no date';
     if (days !== null) {
       cls = days < 30 ? 'fresh' : days <= 90 ? 'aging' : 'stale';
       const age = days === 0 ? 'today' : `${days}d`;
-      label = source ? `${esc(source)} · ${age}` : age;
+      label = shown ? `${esc(shown)} · ${age}` : age;
     }
-    const title = pricedAt ? `Price recorded ${esc(pricedAt)}${source ? ' from ' + esc(source) : ''}` : 'No price date recorded';
+    const title = pricedAt ? `Price recorded ${esc(pricedAt)}${shown ? ' from ' + esc(shown) : ''}` : 'No price date recorded';
     const attrs = `class="lb-prov-badge lb-prov-${cls}" title="${title}"${opts.data || ''}`;
     return opts.button
       ? `<button type="button" ${attrs}><i></i>${label}</button>`
       : `<span ${attrs}><i></i>${label}</span>`;
   }
 
-  return { TRASH_SVG, BOOK_SVG, CHILD_ARROW_SVG, computeOverage, renderOverageSection, todayISO, priceAgeDays, renderPriceProvenance };
+  return {
+    TRASH_SVG,
+    BOOK_SVG,
+    CHILD_ARROW_SVG,
+    computeOverage,
+    renderParentSummary,
+    renderOverageSection,
+    updateOverageTotal,
+    markActiveOveragePercent,
+    trenchDescription,
+    syncDerivedChildren,
+    todayISO,
+    priceAgeDays,
+    renderPriceProvenance,
+  };
 })();

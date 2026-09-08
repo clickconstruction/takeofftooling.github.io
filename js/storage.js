@@ -6,12 +6,31 @@
  * (js/cloud.js), which mirrors the data to Supabase when signed in.
  *
  * Keys:
- *   takeoff-projects-index  {v:1, currentId, projects:[{id,name,createdAt,updatedAt}]}
+ *   takeoff-projects-index  {v:1, currentId, projects:[{id,name,createdAt,
+ *                            updatedAt, archived?:true, archivedAt?}]}
  *                           (device-local — never synced; cloud rebuilds the
- *                           list from takeoff_projects rows)
- *   takeoff-project-<id>    {v:1, id, savedAt, name, manifest, laborRate}
+ *                           list from takeoff_projects rows). archived mirrors
+ *                           the project document's flag so the list can be
+ *                           split into live and closed-out bids without
+ *                           loading every document; the pair is absent on a
+ *                           live bid
+ *   takeoff-project-<id>    {v:1, id, savedAt, name, manifest, laborRate,
+ *                            details:{client,address,permitNo,
+ *                            builderOrOccupant,dueDate}, importedFrom:
+ *                            {name,exportedAt}|null, archived?:true,
+ *                            archivedAt?}  — details are the job's
+ *                            own facts (all optional; they print on the form
+ *                            PDF); importedFrom stamps the share link a copy
+ *                            came from, so the same link opened twice reopens
+ *                            it instead of making a twin; archived is a
+ *                            closed-out bid (kept in full, out of the
+ *                            switcher) and rides the cloud row's data blob
  *   takeoff-book            {v:1, savedAt, laborBook, laborBookMeta}
  *   takeoff-assemblies      device-assembly presets (unchanged)
+ *   takeoff-cloud-seen      {v:1, projects:{<id>: <remote updated_at>}} — the
+ *                           cloud stamp this device last reconciled with per
+ *                           project (device-local; drives conflict detection
+ *                           in js/cloudSync.js)
  *   takeoff-workspace       legacy single-workspace key — migrated into the
  *                           keys above on first boot, then left untouched as
  *                           a frozen rollback backup
@@ -22,6 +41,7 @@ const TakeoffStorage = (function () {
   const BOOK_KEY = 'takeoff-book';
   const ASSEMBLIES_KEY = 'takeoff-assemblies';
   const LEGACY_WORKSPACE_KEY = 'takeoff-workspace';
+  const REMOTE_SEEN_KEY = 'takeoff-cloud-seen';
 
   function readJson(key) {
     try {
@@ -81,15 +101,21 @@ const TakeoffStorage = (function () {
   }
 
   function deleteProject(id) {
-    try {
-      localStorage.removeItem(PROJECT_KEY_PREFIX + id);
-    } catch (err) {
-      console.warn('Takeoff: could not delete project', err);
-    }
+    deleteProjectLocalOnly(id);
     try {
       if (typeof TakeoffCloud !== 'undefined') TakeoffCloud.onProjectDeleted(id);
     } catch (err) {
       console.warn('Takeoff: cloud delete failed', err);
+    }
+  }
+
+  // Drop a project the cloud says was deleted elsewhere — no delete goes back
+  // up, or a device would re-announce a delete it merely heard about.
+  function deleteProjectLocalOnly(id) {
+    try {
+      localStorage.removeItem(PROJECT_KEY_PREFIX + id);
+    } catch (err) {
+      console.warn('Takeoff: could not delete project', err);
     }
   }
 
@@ -125,6 +151,20 @@ const TakeoffStorage = (function () {
     }
   }
 
+  // --- last-seen remote stamps (device-local; never synced) ---
+  // Per project id, the cloud `updated_at` this device last reconciled with.
+  // js/cloudSync.js uses it as the common ancestor: a local copy no newer than
+  // its stamp holds no unsynced work and may be replaced.
+
+  function loadRemoteSeen() {
+    const data = readJson(REMOTE_SEEN_KEY);
+    return data && data.v === 1 && data.projects && typeof data.projects === 'object' ? data : { v: 1, projects: {} };
+  }
+
+  function saveRemoteSeen(data) {
+    writeJson(REMOTE_SEEN_KEY, data);
+  }
+
   // --- legacy single-workspace migration ---
 
   function loadLegacyWorkspace() {
@@ -156,7 +196,13 @@ const TakeoffStorage = (function () {
     if (legacy.laborBook && typeof legacy.laborBook === 'object') {
       writeJson(BOOK_KEY, { v: 1, savedAt, laborBook: legacy.laborBook, laborBookMeta: legacy.laborBookMeta || null });
     }
-    saveProjectsIndex({ v: 1, currentId: id, projects: [{ id, name, createdAt: savedAt, updatedAt: savedAt }] });
+    // The index entry's `updatedAt` is when this device last wrote the
+    // project, and that is now — the migration. Stamping it with the legacy
+    // save date made the project you are looking at read "Jul 14" in the
+    // switcher on the day it arrived (J11-NEW-2). The document keeps the
+    // legacy `savedAt`, which is what the cloud compares.
+    const migratedAt = new Date().toISOString();
+    saveProjectsIndex({ v: 1, currentId: id, projects: [{ id, name, createdAt: savedAt, updatedAt: migratedAt }] });
   }
 
   return {
@@ -167,10 +213,13 @@ const TakeoffStorage = (function () {
     saveProject,
     saveProjectLocalOnly,
     deleteProject,
+    deleteProjectLocalOnly,
     loadBook,
     saveBook,
     loadAssemblies,
     saveAssemblies,
+    loadRemoteSeen,
+    saveRemoteSeen,
     loadLegacyWorkspace,
     migrateLegacyWorkspace,
   };

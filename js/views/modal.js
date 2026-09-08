@@ -3,10 +3,13 @@
  */
 
 const TakeoffModal = (function () {
-  function handleTypeSelect(type) {
+  function handleTypeSelect(rawType) {
     const itemId = TakeoffState.getModalItemId();
     if (!itemId) return;
 
+    // "No type" is the last option in the picker (X12): it is where the row's
+    // × used to be, and the only way back to an untyped row.
+    const type = rawType || null;
     TakeoffState.setType(itemId, type);
     TakeoffApp.hideTypeModal();
     // Flow types go straight into their editor; the type badge on the
@@ -14,7 +17,13 @@ const TakeoffModal = (function () {
     if (type === 'devices') TakeoffApp.navigateToDevice(itemId);
     else if (type === 'conduit') TakeoffApp.navigateToConduit(itemId);
     else if (type === 'wire') TakeoffApp.navigateToWire(itemId);
-    else TakeoffApp.render();
+    else {
+      // Everything else stays on the table, and the next thing typed on that
+      // row is its hours — so land there instead of on <body>. (D/C/W don't:
+      // they navigate into their own editor.)
+      TakeoffApp.render();
+      document.querySelector(`.manifest-view input[data-field="labor"][data-id="${itemId}"]`)?.focus();
+    }
   }
 
   function attachListeners() {

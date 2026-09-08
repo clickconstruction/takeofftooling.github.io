@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Takeoff Tooling</title>
+  <meta name="theme-color" content="#0f0f11">
+  <!-- Installable, and able to survive a reload with no signal (sw.js) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
@@ -11,12 +16,15 @@
 </head>
 <body>
   <div id="app">
+    <div id="twin-banner" class="twin-banner" role="status" hidden></div>
     <header>
       <h1 id="app-title" class="app-title-clickable" title="Click to return to manifest">Takeoff Tooling</h1>
       <div class="project-switch-wrap">
-        <button type="button" id="project-switch-btn" class="project-switch-btn" aria-haspopup="true" aria-expanded="false" title="Switch project"><span id="project-switch-name">Untitled project</span><span class="project-switch-caret">&#9662;</span></button>
+        <button type="button" id="project-switch-btn" class="project-switch-btn" aria-haspopup="true" aria-expanded="false" title="Switch project"><span class="project-switch-label"><span class="project-switch-title"><span id="project-switch-name">Untitled project</span><span id="project-switch-chip" class="project-chip" hidden></span></span><span id="project-switch-saved" class="project-switch-saved"></span></span><span class="project-switch-caret">&#9662;</span></button>
         <div id="project-menu" class="project-menu" aria-hidden="true"></div>
         <a id="project-plans-link" class="project-plans-link" href="#" target="_blank" rel="noopener noreferrer" title="Open the CountTooling plans this takeoff was counted from" hidden>Plans</a>
+        <span id="project-ref-chip" class="project-ref-chip" title="PipeTooling bid this manifest belongs to" hidden></span>
+        <span id="project-review-chip" class="project-review-chip" title="Review lane" hidden></span>
       </div>
       <div class="header-actions">
         <button type="button" id="import-count-tooling-btn" class="btn btn-success header-import-btn">Paste from CountTooling.com</button>
@@ -33,16 +41,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="header-menu-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
           </button>
           <div id="header-menu" class="header-menu" aria-hidden="true">
-            <button type="button" id="new-takeoff-btn" class="header-menu-item" title="Start a new project (the open one is kept)">New Project</button>
+            <button type="button" id="new-takeoff-btn" class="header-menu-item" title="Name a new project (the open one is kept unless it is still empty)">New project</button>
             <button type="button" id="copy-pipetooling-btn" class="header-menu-item" title="Copy the manifest as counts for PipeTooling’s Bids → Counts → Import from /Tooling">Copy for PipeTooling</button>
-            <button type="button" id="export-link-btn" class="header-menu-item">Export via link</button>
-            <button type="button" id="remove-toggle-btn" class="header-menu-item" title="Toggle remove icons" aria-pressed="false">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="trash-icon"><path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z"/></svg>
-              Remove items
-            </button>
             <button type="button" id="review-suggestions-btn" class="header-menu-item" hidden>Review suggestions</button>
             <button type="button" id="manage-users-btn" class="header-menu-item" hidden>Manage users</button>
-            <button type="button" id="cache-clear-reload-btn" class="header-menu-item header-menu-item-danger" title="Reload the app with a cleared code cache (keeps your data)">Hard reload</button>
+            <button type="button" id="cache-clear-reload-btn" class="header-menu-item" title="Loads a fresh copy of the app. Your takeoffs and your book stay where they are.">Reload app (keeps your data)</button>
           </div>
         </div>
       </div>
@@ -92,6 +95,10 @@
             <button type="button" data-type="temporaryPower">TEMPORARY POWER</button>
           </div>
         </div>
+        <div class="modal-type-option modal-type-none">
+          <button type="button" data-type=""><span class="modal-btn-label">No type</span></button>
+          <span class="modal-type-flow">Its money moves to Misc.</span>
+        </div>
       </div>
       <div class="modal-actions">
         <button type="button" id="type-modal-cancel" class="btn btn-secondary">Cancel</button>
@@ -123,6 +130,7 @@
       <div id="labor-book-content" class="labor-book-content"></div>
       <div id="labor-book-assemblies" class="labor-book-assemblies lb-hidden">
         <div class="labor-book-assemblies-toolbar">
+          <input type="text" id="mc-book-search" class="labor-book-tab-filter mc-book-search" placeholder="Filter assembly sections in this tab..." autocomplete="off" />
           <span class="mc-book-status" id="mc-book-status"></span>
         </div>
         <div id="mc-book-tree" class="mc-book-tree"></div>
@@ -165,9 +173,9 @@
       <div id="users-list"></div>
       <div class="users-add-row">
         <input type="email" id="users-add-email" placeholder="email@company.com" autocomplete="off" />
-        <input type="text" id="users-add-password" placeholder="Temporary password (6+ chars)" autocomplete="off" />
         <button type="button" id="users-add-btn" class="btn btn-primary">Add user</button>
       </div>
+      <p class="users-hint">Adding an account here gives it a role and puts it in this list. There is no password to hand over: they sign in with the 6-digit code the app emails them, and set their own password in Cloud Sync whenever they want one.</p>
       <div id="users-status" class="users-status"></div>
     </div>
   </div>
@@ -175,7 +183,7 @@
   <div id="projects-modal" class="modal" aria-hidden="true">
     <div class="modal-content projects-modal-content">
       <div class="projects-modal-header">
-        <h2>Manage Projects</h2>
+        <h2>Manage projects</h2>
         <button type="button" id="projects-modal-close" class="btn btn-secondary">Close</button>
       </div>
       <div id="projects-list"></div>
@@ -199,16 +207,9 @@
   <div id="abbreviation-key-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <h2>Abbreviation Key</h2>
-      <dl class="abbreviation-key-list">
-        <dt>SS</dt><dd>set screw</dd>
-        <dt>st</dt><dd>next to connectors and couplings is steel</dd>
-        <dt>cn</dt><dd>connector</dd>
-        <dt>insl.</dt><dd>insulated throat</dd>
-        <dt>RGS</dt><dd>rigid steel</dd>
-        <dt>RT</dt><dd>Raintight</dd>
-        <dt>N3R</dt><dd>Raintight for enclosures</dd>
-        <dt>N4R</dt><dd>dusttight for enclosures</dd>
-      </dl>
+      <!-- generated from McBook.ABBREVIATIONS, the same table the assemblies
+           tree builds its tooltips from (js/views/laborBook.js) -->
+      <div id="abbreviation-key-body"></div>
       <div class="modal-actions">
         <button type="button" id="abbreviation-key-close-btn" class="btn btn-secondary">Close</button>
       </div>
@@ -216,24 +217,24 @@
   </div>
 
   <!-- Import preview modal (CountTooling.com) -->
-  <div id="import-preview-modal" class="modal" aria-hidden="true">
+  <div id="import-preview-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="import-preview-title">
     <div class="modal-content import-preview-modal-content">
-      <h2>Import Preview</h2>
-      <p class="import-preview-intro">Compare what's in your manifest with the import. Choose how to add items.</p>
+      <h2 id="import-preview-title">Import Preview</h2>
+      <p class="import-preview-intro">What is on the bid now, beside what the count says. Counts are totals, not additions — set a type on any line before it lands.</p>
       <div class="import-preview-columns">
         <div class="import-preview-col">
-          <h3>In Manifest</h3>
+          <h3>On the bid</h3>
           <div id="import-preview-manifest-list" class="import-preview-list"></div>
         </div>
         <div class="import-preview-col">
-          <h3>Import</h3>
+          <h3>From the count</h3>
           <div id="import-preview-import-list" class="import-preview-list"></div>
         </div>
       </div>
       <div class="import-preview-actions">
         <button type="button" class="btn btn-secondary" id="import-preview-cancel-btn">Cancel</button>
-        <button type="button" class="btn btn-success" id="import-preview-overages-btn">Add Overages Only</button>
-        <button type="button" class="btn btn-success" id="import-preview-all-btn">Add All</button>
+        <button type="button" class="btn btn-link import-preview-separate" id="import-preview-separate-btn" hidden>Add as separate rows</button>
+        <button type="button" class="btn btn-success" id="import-preview-add-btn">Add</button>
       </div>
     </div>
   </div>
@@ -278,29 +279,21 @@
     </div>
   </div>
 
-  <!-- Form modal for Print with Form (Address, Permit NO, etc.) -->
-  <div id="form-modal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <h2>Fill Form Details</h2>
-      <form id="form-details" onsubmit="return false;">
-        <label>Address <input type="text" name="address" /></label>
-        <label>Permit NO <input type="text" name="permitNo" /></label>
-        <label>Builder or Occupant <input type="text" name="builderOrOccupant" /></label>
-        <label>Electrical Count <input type="text" name="electricalCount" /></label>
-      </form>
-      <div class="modal-actions">
-        <button type="button" id="form-modal-cancel">Cancel</button>
-        <button type="button" id="form-modal-print">Print with Form</button>
-      </div>
-    </div>
-  </div>
+  <!-- The Print-with-Form details modal is retired: the same five facts now
+       live on the project itself, edited under Print Options (Job details)
+       and printed on page 1 of the form PDF. -->
+
+  <!-- The one feedback region (js/toast.js). Outside #app so TakeoffApp.render()
+       cannot wipe it, and present at boot so assistive tech is already watching
+       it when the first confirmation lands. -->
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="false"></div>
 
   <!-- Third-party libs are vendored (version-pinned filenames) so the app boots with no CDN in the path. -->
-  <div id="toast-region" class="toast-region" aria-live="polite"></div>
-
   <script src="vendor/jspdf.umd-2.5.1.min.js"></script>
   <script src="vendor/supabase-js-2.49.4.min.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/toast.js"></script>
   <script src="js/data/fittings.js"></script>
   <script src="js/data/laborBookDefaults.js"></script>
   <script src="js/laborBookMerge.js"></script>
@@ -310,6 +303,7 @@
   <script src="js/state.js"></script>
   <script src="js/import.js"></script>
   <script src="js/handoff.js"></script>
+  <script src="js/explode.js"></script>
   <script src="js/elliotPriceCore.js"></script>
   <script src="js/mcElliotState.js"></script>
   <script src="js/mcElliotMatch.js"></script>
@@ -317,6 +311,7 @@
   <script src="js/mcBook.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/views/shared.js"></script>
+  <script src="js/views/printPanel.js"></script>
   <script src="js/views/manifest.js"></script>
   <script src="js/views/modal.js"></script>
   <script src="js/views/laborBookTargets.js"></script>
@@ -329,6 +324,7 @@
   <script src="js/views/device.js"></script>
   <script src="js/views/conduit.js"></script>
   <script src="js/views/wire.js"></script>
+  <script src="js/cloudSync.js"></script>
   <script src="js/views/organize.js"></script>
   <script src="js/cloud.js"></script>
   <script src="js/suggestionsReview.js"></script>

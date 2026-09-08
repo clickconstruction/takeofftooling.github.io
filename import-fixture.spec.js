@@ -25,7 +25,9 @@ test('CountTooling fixture imports faithfully and copies back out for PipeToolin
   await expect(modal).toContainText('unscaled');           // px notice
   await expect(modal).toContainText('Plans link found');   // footer detected
   await expect(modal.locator('.import-preview-item-child')).toHaveCount(3);
-  await page.locator('#import-preview-all-btn').click();
+  // the one primary button says what it is about to do
+  await expect(page.locator('#import-preview-add-btn')).toHaveText('Add 10 fixtures');
+  await page.locator('#import-preview-add-btn').click();
   await expect(modal).toHaveAttribute('aria-hidden', 'true');
 
   const shape = await page.evaluate(() => {
@@ -77,9 +79,12 @@ test('CountTooling fixture imports faithfully and copies back out for PipeToolin
   await expect(page.locator('#toast-region .toast', { hasText: 'Copied' })).toContainText('Copied 13 rows for PipeTooling');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(out.text);
 
-  // a second import as overages raises nothing (same totals) and adds nothing
+  // the same export a second time: counts are totals, so there is nothing to
+  // change — the primary button says so and is disabled; nothing is added
   await page.evaluate((text) => TakeoffImport.importText(text), FIXTURE);
-  await page.locator('#import-preview-overages-btn').click();
+  await expect(page.locator('#import-preview-add-btn')).toHaveText('Nothing to change');
+  await expect(page.locator('#import-preview-add-btn')).toBeDisabled();
+  await page.locator('#import-preview-cancel-btn').click();
   expect(await page.evaluate(() => TakeoffState.getTopLevelItems().filter((i) => (i.description || '').trim()).length)).toBe(10);
 
   expect(errors).toEqual([]);

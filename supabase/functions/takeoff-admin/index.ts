@@ -47,10 +47,14 @@ Deno.serve(async (req) => {
     const { action, email, password, userId } = await req.json();
 
     if (action === 'create-user') {
-      if (!email || !password) return json(400, { error: 'email and password are required' });
+      if (!email) return json(400, { error: 'email is required' });
+      // The password is optional and the app no longer sends one: an account
+      // with none signs in with the emailed 6-digit code and sets its own
+      // password from the cloud dialog. Still accepted so an older client, or
+      // a curl from the dashboard, keeps working.
       const { data, error } = await admin.auth.admin.createUser({
         email,
-        password,
+        ...(password ? { password } : {}),
         email_confirm: true, // admin-provisioned: no confirmation email dance
       });
       if (error) return json(400, { error: error.message });

@@ -5,8 +5,9 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "test:unit": "node --test",
+    "build:shared": "node scripts/build-shared.js",
     "test": "playwright test",
-    "check": "npm run lint && npm run test:unit"
+    "check": "npm run lint && npm run test:unit && node scripts/build-shared.js --check"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

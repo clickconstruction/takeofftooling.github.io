@@ -15,12 +15,22 @@ const TakeoffUiState = (function () {
   let conduitTempData = {};
   let deviceTempData = { outletsAndSwitches: [], boxes: [], backBoxSupport: [], covers: [], conduit: [], wire: [], screws: [], misc: [] };
   let wireTempData = { overagePercent: null, macAdapters: [] };
-  let showRemoveIcons = false;
   let showPrintOptions = false;
+  let flowHydrating = false; // open between navigateToX and the flow's first render
 
   function setCurrentView(view, itemId = null) {
     currentView = view;
     currentItemId = itemId;
+    // TakeoffApp.navigateToConduit/Wire hydrate the flow buffer right after
+    // this call; those writes must not arm the discard guard. The conduit and
+    // wire views close the window on their first render, so every later write
+    // — including the ones the labor book makes straight into the buffer —
+    // counts as an edit.
+    flowHydrating = view === 'conduit' || view === 'wire';
+  }
+
+  function endFlowHydration() {
+    flowHydrating = false;
   }
 
   function getCurrentView() {
@@ -96,6 +106,7 @@ const TakeoffUiState = (function () {
 
   function setConduitTempData(data) {
     conduitTempData = { ...conduitTempData, ...data };
+    markFlowDirtyFromBuffer();
   }
 
   function getConduitTempData() {
@@ -120,6 +131,7 @@ const TakeoffUiState = (function () {
 
   function setWireTempData(data) {
     wireTempData = { ...wireTempData, ...data };
+    markFlowDirtyFromBuffer();
   }
 
   function getWireTempData() {
@@ -136,21 +148,14 @@ const TakeoffUiState = (function () {
   function setFlowDirty(value) {
     flowDirty = !!value;
   }
+  // Any write into the conduit/wire buffer is an edit once the flow is up —
+  // including the labor book's, which writes the buffer directly (see
+  // views/laborBookTargets.js) and never touched the flag.
+  function markFlowDirtyFromBuffer() {
+    if (!flowHydrating) flowDirty = true;
+  }
   function getFlowDirty() {
     return flowDirty;
-  }
-
-  function getShowRemoveIcons() {
-    return showRemoveIcons;
-  }
-
-  function setShowRemoveIcons(value) {
-    showRemoveIcons = !!value;
-  }
-
-  function toggleShowRemoveIcons() {
-    showRemoveIcons = !showRemoveIcons;
-    return showRemoveIcons;
   }
 
   function getShowPrintOptions() {
@@ -193,9 +198,7 @@ const TakeoffUiState = (function () {
     clearWireTempData,
     setFlowDirty,
     getFlowDirty,
-    getShowRemoveIcons,
-    setShowRemoveIcons,
-    toggleShowRemoveIcons,
+    endFlowHydration,
     getShowPrintOptions,
     toggleShowPrintOptions,
   };
