@@ -11,8 +11,11 @@ const globals = require('globals');
 // Cross-file app globals (each defined in exactly one js/ file)
 const appGlobals = {
   TakeoffUtils: 'readonly',
+  TakeoffEvents: 'readonly',
+  TakeoffToast: 'readonly',
   TakeoffStorage: 'readonly',
   TakeoffCloud: 'readonly',
+  TakeoffCloudSync: 'readonly',
   TakeoffUiState: 'readonly',
   TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
@@ -21,6 +24,7 @@ const appGlobals = {
   TakeoffPDF: 'readonly',
   TakeoffApp: 'readonly',
   TakeoffViewShared: 'readonly',
+  TakeoffPrintPanel: 'readonly',
   TakeoffManifestView: 'readonly',
   TakeoffModal: 'readonly',
   TakeoffLaborBookView: 'readonly',
@@ -43,6 +47,7 @@ const appGlobals = {
   LABOR_BOOK_DEFAULTS: 'readonly',
   LABOR_BOOK_DEFAULT_GROUPS: 'readonly',
   LABOR_BOOK_DEFAULTS_VERSION: 'readonly',
+  LABOR_BOOK_RETIRED: 'readonly',
   TakeoffLaborBookMerge: 'readonly',
   TakeoffSuggestionsReview: 'readonly',
   jspdf: 'readonly',
@@ -53,7 +58,7 @@ module.exports = [
   {
     // .claude/** — Claude Code worktrees are full repo copies; without this a run
     // from the primary checkout lints every sibling worktree (thousands of errors).
-    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**', '.claude/**', 'vendor/**'],
+    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**', '.claude/**', 'vendor/**', 'test-fixtures/**'],
   },
   js.configs.recommended,
   {
@@ -65,7 +70,7 @@ module.exports = [
       'no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         caughtErrors: 'none',
-        varsIgnorePattern: '^(Takeoff[A-Z]|Mc[A-Z]|FITTINGS_LIST$|LABOR_BOOK_DEFAULT)',
+        varsIgnorePattern: '^(Takeoff[A-Z]|Mc[A-Z]|FITTINGS_LIST$|LABOR_BOOK_DEFAULT|LABOR_BOOK_RETIRED$)',
       }],
       'no-empty': ['warn', { allowEmptyCatch: true }],
     },
@@ -80,9 +85,18 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/import.js', 'js/handoff.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/events.js', 'js/import.js', 'js/handoff.js', 'js/cloudSync.js', 'js/suggestionsReview.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
+    },
+  },
+  {
+    // The app-shell service worker: its own global scope, not the page's.
+    files: ['sw.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: { ...globals.serviceworker },
     },
   },
   {

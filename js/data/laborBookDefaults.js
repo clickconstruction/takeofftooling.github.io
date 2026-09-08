@@ -8,7 +8,52 @@
 // Bump when the defaults below change: state.js merges the new values into
 // existing workspaces on load (user-edited rows always win — see
 // js/laborBookMerge.js). Version 1 is the implicit pre-versioning book.
-const LABOR_BOOK_DEFAULTS_VERSION = 3;
+// Part names must be unique within a section — the merge is name-keyed, and
+// laborBookMerge.test.js asserts it against this data.
+// v3: conduit/PVC GLUE shipped two rows both named "PVC GLUE" (15 and 5 hrs);
+// they are now PVC GLUE QUART (15) and PVC GLUE PINT (5), and books carrying
+// the old name converge on the two renamed rows (LABOR_BOOK_RETIRED below).
+// v3 also brought the curated Devices / Lighting / Special Systems starters
+// (receptacles, switches, boxes & rings, covers & plates; troffers, downlights,
+// exit & emergency, whips; fire alarm, data, security & AV), named the way
+// CountTooling's electrical export names them, with MC-book labor units and
+// prices (priceSource 'MC book').
+// v4 (X6): the device, box, disconnect, romex, MC-connector and pull-string
+// zones the book was silent on. Hours come from the MC data wherever it has
+// them — mc-assemblies/mc-price-model.json `items` carries a per-piece labor
+// unit beside every price, which is the honest source for a single part (the
+// `mc-labor-book.json` entry of the same name is a whole assembly: box, ring,
+// plate and terminations together, so its hours are roughly 2.5× the piece).
+// The handful of rows the MC data has nothing for are marked
+// `// estimated — owner to review` and are listed in the same comment in
+// each section. Prices are left blank on purpose: the supply-house catalog
+// (Elliot) is where today's price comes from, and this book is the hours.
+// v5: v3 and v4 were built on two branches; this is their union. The v4 rows
+// live under v3's section names (Boxes / Rings and Covers → Boxes & Rings,
+// Wall Plates → Covers & Plates), so a book at either version converges here.
+const LABOR_BOOK_DEFAULTS_VERSION = 5;
+
+// Names and sections that USED to be defaults. The merge is name-keyed, so a
+// stored book still carrying one of these would otherwise read as the user's
+// own addition (bootstrap) or sit beside the renamed row forever (merge).
+//   names:    {tab: {section: [old row names]}} — an untouched row by that
+//             name is a stale default: dropped, and the renamed row adopted.
+//   sections: {tab: {oldSection: newSection}} — an old section's untouched
+//             rows are dropped (the new section carries them); rows the user
+//             edited or added there move to the new section.
+const LABOR_BOOK_RETIRED = {
+  names: {
+    conduit: { 'PVC GLUE': ['PVC GLUE'] }, // v2: two rows both named PVC GLUE
+  },
+  sections: {
+    devices: {
+      // v4 (one branch) → v5 (the union, on v3's names)
+      Boxes: 'Boxes & Rings',
+      'Rings and Covers': 'Boxes & Rings',
+      'Wall Plates': 'Covers & Plates',
+    },
+  },
+};
 
 const LABOR_BOOK_DEFAULT_GROUPS = {
   conduit: [
@@ -76,6 +121,7 @@ const LABOR_BOOK_DEFAULT_GROUPS = {
         'PITCH PAN',
         'STRAP',
         'BOX Supports',
+        'Pull String and Rope',
         'Cable Tray.3" DEEP',
         'Cable Tray.4" DEEP',
         'Cable Tray.6" DEEP',
@@ -149,6 +195,47 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '15KVA', labor: 16.0, price: '' },
       { name: '25KVA', labor: 20.0, price: '' },
     ],
+    // Safety switches. Hours from mc-price-model.json items 20349-20397
+    // ("<amps> GD <phase> <enclosure> <F|NF> SW" — general duty). Fused runs
+    // heavier than non-fused, and a 3R enclosure heavier than a NEMA 1.
+    Disconnects: [
+      { name: 'Disconnect 30A 1PH non-fused NEMA 1', labor: 0.95, price: '' },
+      { name: 'Disconnect 60A 1PH non-fused NEMA 1', labor: 1.35, price: '' },
+      { name: 'Disconnect 30A 3PH non-fused NEMA 1', labor: 1.15, price: '' },
+      { name: 'Disconnect 60A 3PH non-fused NEMA 1', labor: 1.6, price: '' },
+      { name: 'Disconnect 100A 3PH non-fused NEMA 1', labor: 2.3, price: '' },
+      { name: 'Disconnect 200A 3PH non-fused NEMA 1', labor: 3.4, price: '' },
+      { name: 'Disconnect 400A 3PH non-fused NEMA 1', labor: 5.2, price: '' },
+      { name: 'Disconnect 600A 3PH non-fused NEMA 1', labor: 8.1, price: '' },
+      { name: 'Disconnect 30A 3PH non-fused NEMA 3R', labor: 1.3, price: '' },
+      { name: 'Disconnect 60A 3PH non-fused NEMA 3R', labor: 1.9, price: '' },
+      { name: 'Disconnect 100A 3PH non-fused NEMA 3R', labor: 2.75, price: '' },
+      { name: 'Disconnect 200A 3PH non-fused NEMA 3R', labor: 4, price: '' },
+      { name: 'Disconnect 30A 1PH fused NEMA 1', labor: 1.1, price: '' },
+      { name: 'Disconnect 60A 1PH fused NEMA 1', labor: 1.5, price: '' },
+      { name: 'Disconnect 100A 1PH fused NEMA 1', labor: 2.1, price: '' },
+      { name: 'Disconnect 200A 1PH fused NEMA 1', labor: 3.3, price: '' },
+      { name: 'Disconnect 400A 1PH fused NEMA 1', labor: 4.8, price: '' },
+      { name: 'Disconnect 600A 1PH fused NEMA 1', labor: 7.2, price: '' },
+      { name: 'Disconnect 30A 3PH fused NEMA 1', labor: 1.39, price: '' },
+      { name: 'Disconnect 60A 3PH fused NEMA 1', labor: 1.9, price: '' },
+      { name: 'Disconnect 100A 3PH fused NEMA 1', labor: 2.7, price: '' },
+      { name: 'Disconnect 200A 3PH fused NEMA 1', labor: 4.4, price: '' },
+      { name: 'Disconnect 400A 3PH fused NEMA 1', labor: 6.6, price: '' },
+      { name: 'Disconnect 600A 3PH fused NEMA 1', labor: 8.8, price: '' },
+      { name: 'Disconnect 30A 1PH fused NEMA 3R', labor: 1.1, price: '' },
+      { name: 'Disconnect 60A 1PH fused NEMA 3R', labor: 1.5, price: '' },
+      { name: 'Disconnect 100A 1PH fused NEMA 3R', labor: 2.1, price: '' },
+      { name: 'Disconnect 200A 1PH fused NEMA 3R', labor: 3.3, price: '' },
+      { name: 'Disconnect 400A 1PH fused NEMA 3R', labor: 4.8, price: '' },
+      { name: 'Disconnect 600A 1PH fused NEMA 3R', labor: 7.2, price: '' },
+      { name: 'Disconnect 30A 3PH fused NEMA 3R', labor: 1.5, price: '' },
+      { name: 'Disconnect 60A 3PH fused NEMA 3R', labor: 2.1, price: '' },
+      { name: 'Disconnect 100A 3PH fused NEMA 3R', labor: 3, price: '' },
+      { name: 'Disconnect 200A 3PH fused NEMA 3R', labor: 4.9, price: '' },
+      { name: 'Disconnect 400A 3PH fused NEMA 3R', labor: 7.2, price: '' },
+      { name: 'Disconnect 600A 3PH fused NEMA 3R', labor: 9.4, price: '' },
+    ],
     'Transformers.3PH': [
       { name: '3KVA', labor: 3.9, price: '' },
       { name: '6KVA', labor: 5.2, price: '' },
@@ -190,12 +277,17 @@ const LABOR_BOOK_DEFAULTS = {
       { name: "4' Steel Flex Fixture Whip", labor: 0.272, price: 30.52, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: "6' Steel Flex Fixture Whip", labor: 0.336, price: 38.37, priceSource: 'MC book', pricedAt: '2026-07-17' },
     ],
+    // Hours from mc-price-model.json items 22498-22501 (photocontrols).
+    Photocells: [
+      { name: 'Photocell 120V', labor: 1, price: '' },
+      { name: 'Photocell 208/277V', labor: 1, price: '' },
+    ],
   },
   devices: {
     // Curated starters (v3), named the way CountTooling's electrical export
     // names them so imported rows find their labor and price by name. MC
     // book labor units; supplier catalog sections render below.
-    'Receptacles': [
+    Receptacles: [
       { name: '15A Duplex Receptacle', labor: 0.485, price: 20.89, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '20A Duplex Receptacle', labor: 0.488, price: 23.6, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '20A GFCI Receptacle', labor: 0.505, price: 61.52, priceSource: 'MC book', pricedAt: '2026-07-17' },
@@ -205,13 +297,36 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '15A Receptacle w/ USB Charger', labor: 0.538, price: 39.93, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: 'Floor Box w/ Duplex', labor: 1.3, price: 165.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
     ],
-    'Switches': [
+    Switches: [
       { name: '20A Single-Pole Switch', labor: 0.45, price: 12.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '20A 3-Way Switch', labor: 0.5, price: 16.8, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '20A 4-Way Switch', labor: 0.55, price: 28.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '600W Dimmer', labor: 0.49, price: 31.28, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: 'Occupancy Sensor Switch', labor: 0.638, price: 48.62, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '20A Weatherproof Switch', labor: 0.76, price: 44.11, priceSource: 'MC book', pricedAt: '2026-07-17' },
+    // Hours from mc-price-model.json items 24513-24548 (toggle switches),
+    // 24576-24579 (weatherproof), 24267 (dimmer), 24572-24573 (momentary).
+      { name: 'Single pole toggle switch 15A', labor: 0.2, price: '' },
+      { name: 'Single pole toggle switch 20A', labor: 0.2, price: '' },
+      { name: '3-way toggle switch 15A', labor: 0.25, price: '' },
+      { name: '3-way toggle switch 20A', labor: 0.25, price: '' },
+      { name: '4-way toggle switch 15A', labor: 0.3, price: '' },
+      { name: '4-way toggle switch 20A', labor: 0.3, price: '' },
+      { name: 'Single pole key switch 20A', labor: 0.2, price: '' },
+      { name: '3-way key switch 20A', labor: 0.25, price: '' },
+      { name: 'Single pole weatherproof switch 20A', labor: 0.2, price: '' },
+      { name: '3-way weatherproof switch 20A', labor: 0.25, price: '' },
+      { name: 'Momentary switch 20A', labor: 0.2, price: '' },
+      { name: 'Dimmer switch 600W', labor: 0.25, price: '' },
+    ],
+    // Hours from mc-price-model.json items 24334-24335 (wall occupancy
+    // sensors), 24349-24350 (ceiling sensors), 22792 (wall motion sensor).
+    'Occupancy Sensors': [
+      { name: 'Occupancy sensor, wall switch', labor: 0.3, price: '' },
+      { name: 'Occupancy sensor, wall switch with dimmer', labor: 0.3, price: '' },
+      { name: 'Occupancy sensor, ceiling dual technology', labor: 0.4, price: '' },
+      { name: 'Occupancy sensor, ceiling with relay', labor: 0.4, price: '' },
+      { name: 'Motion sensor, wall', labor: 0.5, price: '' },
     ],
     'Boxes & Rings': [
       { name: '4" Square Box, 1-1/2" deep', labor: 0.25, price: 3.9, priceSource: 'MC book', pricedAt: '2026-07-17' },
@@ -221,6 +336,45 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '4" Square 2-Gang Mud Ring', labor: 0.12, price: 3.1, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '1-Gang Handy Box', labor: 0.22, price: 3.2, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: 'Old-Work 1-Gang Box', labor: 0.3, price: 4.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
+    // Hours from mc-price-model.json items 25109-25231 (boxes) and
+    // 26170-26173 (plastic device boxes). A 1900 box is the 4" square
+    // 1-1/2" deep box, so both names sit on the one row.
+      { name: '1900 box (4" square, 1-1/2" deep)', labor: 0.1, price: '' },
+      { name: '4" square box, 2-1/8" deep', labor: 0.1, price: '' },
+      { name: '4" square box with bracket, 1-1/2" deep', labor: 0.1, price: '' },
+      { name: '4-11/16" square box, 1-1/2" deep', labor: 0.12, price: '' },
+      { name: 'Octagon box 4", 1-1/2" deep', labor: 0.166, price: '' },
+      { name: 'Octagon box 4", 2-1/8" deep', labor: 0.166, price: '' },
+      { name: 'Octagon box 3", 1-1/2" deep', labor: 0.166, price: '' },
+      { name: 'Handy box, 1-7/8" deep', labor: 0.2, price: '' },
+      { name: 'Switch box 1 gang, plastic', labor: 0.19, price: '' },
+      { name: 'Switch box 2 gang, plastic', labor: 0.19, price: '' },
+      { name: 'Switch box 3 gang, plastic', labor: 0.19, price: '' },
+      { name: 'Gang box 3 gang, 1-5/8" deep', labor: 0.1, price: '' },
+      { name: 'Gang box 4 gang, 1-5/8" deep', labor: 0.1, price: '' },
+      { name: 'Gang box 5 gang, 1-5/8" deep', labor: 0.183, price: '' },
+    // Hours from mc-price-model.json items 24649-24670 (raised covers),
+    // 25116-25203 (mud rings, blank covers, extension rings) and
+    // 25155-25161 (4-11/16" rings and covers).
+      { name: '4" square mud ring 1 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 1 gang, 5/8" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 1 gang, 3/4" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 2 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 2 gang, 5/8" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 2 gang, 3/4" deep', labor: 0.05, price: '' },
+      { name: '4" square blank cover', labor: 0.05, price: '' },
+      { name: '4" square extension ring', labor: 0.05, price: '' },
+      { name: '4" square raised cover, 1-19/32" deep', labor: 0.07, price: '' },
+      { name: '4" square raised cover, 2-5/32" deep', labor: 0.09, price: '' },
+      { name: '4-11/16" mud ring 1 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4-11/16" mud ring 2 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4-11/16" flat blank cover', labor: 0.03, price: '' },
+      { name: '4-11/16" raised cover, 2-5/32" deep', labor: 0.09, price: '' },
+      { name: 'Octagon box mud ring, 1/2" deep', labor: 0.083, price: '' },
+      { name: 'Mud ring 3 gang, 15/16" deep', labor: 0.05, price: '' },
+      { name: 'Mud ring 4 gang, 15/16" deep', labor: 0.05, price: '' },
+      { name: 'Mud ring 5 gang, 15/16" deep', labor: 0.083, price: '' },
+      { name: 'Mud ring 6 gang, 15/16" deep', labor: 0.083, price: '' },
     ],
     'Covers & Plates': [
       { name: '1-Gang Decora Plate', labor: 0.05, price: 1.1, priceSource: 'MC book', pricedAt: '2026-07-17' },
@@ -229,6 +383,41 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '4" Square Blank Cover', labor: 0.07, price: 1.4, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: '4/S 1-Duplex Raised Cover', labor: 0.16, price: 21.57, priceSource: 'MC book', pricedAt: '2026-07-17' },
       { name: 'Weatherproof In-Use Cover', labor: 0.25, price: 18.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
+    // Hours from mc-price-model.json items 24582-24595 (switch plates).
+      { name: 'Switch plate 1 gang, plastic', labor: 0.05, price: '' },
+      { name: 'Switch plate 2 gang, plastic', labor: 0.06, price: '' },
+      { name: 'Switch plate 3 gang, plastic', labor: 0.07, price: '' },
+      { name: 'Switch plate 4 gang, plastic', labor: 0.0825, price: '' },
+      { name: 'Switch plate 5 gang, plastic', labor: 0.095, price: '' },
+      { name: 'Switch plate 6 gang, plastic', labor: 0.133, price: '' },
+      { name: 'Switch plate 1 gang, stainless steel', labor: 0.05, price: '' },
+      { name: 'Switch plate 2 gang, stainless steel', labor: 0.06, price: '' },
+      { name: 'Switch plate 3 gang, stainless steel', labor: 0.07, price: '' },
+      { name: 'Switch plate 4 gang, stainless steel', labor: 0.0825, price: '' },
+      { name: 'Switch plate 5 gang, stainless steel', labor: 0.095, price: '' },
+      { name: 'Switch plate 6 gang, stainless steel', labor: 0.133, price: '' },
+    ],
+    // The MAC adapters the wire flow asks for. The supply-house catalog holds
+    // 15 "MC CONN" rows with a price and zero hours on every one of them; the
+    // only MC labor units for this part are items 424-425 (3/8" snap-in) and
+    // 269-283 (romex/NM connectors). The larger MC sizes below are scaled off
+    // the 3/8" unit and are the rows to check first:
+    //   MC connector 3/8" duplex, 1/2", 3/4", 1", 1-1/2", 2", 3"
+    'MC and NM Connectors': [
+      { name: 'MC connector 3/8" snap-in', labor: 0.05, price: '' },
+      { name: 'MC connector 3/8" snap-in, 4 wire', labor: 0.05, price: '' },
+      { name: 'MC connector 3/8" duplex (two cables)', labor: 0.07, price: '' }, // estimated — owner to review
+      { name: 'MC connector 1/2"', labor: 0.06, price: '' }, // estimated — owner to review
+      { name: 'MC connector 3/4"', labor: 0.08, price: '' }, // estimated — owner to review
+      { name: 'MC connector 1"', labor: 0.1, price: '' }, // estimated — owner to review
+      { name: 'MC connector 1-1/2"', labor: 0.15, price: '' }, // estimated — owner to review
+      { name: 'MC connector 2"', labor: 0.2, price: '' }, // estimated — owner to review
+      { name: 'MC connector 3"', labor: 0.3, price: '' }, // estimated — owner to review
+      { name: 'Romex connector 3/8"', labor: 0.03, price: '' },
+      { name: 'Romex connector 3/4"', labor: 0.03, price: '' },
+      { name: 'Romex connector 1"', labor: 0.03, price: '' },
+      { name: 'Romex connector 1-1/4"', labor: 0.03, price: '' },
+      { name: 'NM/SE cable connector 1"', labor: 0.055, price: '' },
     ],
   },
   conduit: {
@@ -640,6 +829,14 @@ const LABOR_BOOK_DEFAULTS = {
       { name: 'PVC GLUE QUART', labor: 15, price: '' },
       { name: 'PVC GLUE PINT', labor: 5, price: '' },
     ],
+    // Hours per foot of run. The MC data carries no pull line at all (no item
+    // and no assembly), so all three are standard manual units:
+    //   Pull string (jet line), Mule tape 1250 lb, Pull rope 1/4"
+    'Pull String and Rope': [
+      { name: 'Pull string (jet line), per foot', labor: 0.002, price: '' }, // estimated — owner to review
+      { name: 'Mule tape 1250 lb, per foot', labor: 0.004, price: '' }, // estimated — owner to review
+      { name: 'Pull rope 1/4", per foot', labor: 0.005, price: '' }, // estimated — owner to review
+    ],
     'Grounding rod': [
       { name: '1/2" X 8\'', labor: 12, price: '' },
       { name: '1/2" X 10\'', labor: 15, price: '' },
@@ -731,6 +928,36 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '750', labor: 0.06, price: '3800.00' },
       { name: 'WP 352', labor: 0.01, price: '90.00' },
       { name: 'PW', labor: 0.005, price: '0.03' },
+    ],
+    // Hours per foot from mc-price-model.json items 252-266 (NM-B).
+    'NM-B (Romex)': [
+      { name: '14/2 NM-B Romex with ground', labor: 0.015, price: '' },
+      { name: '14/3 NM-B Romex with ground', labor: 0.018, price: '' },
+      { name: '14/4 NM-B Romex with ground', labor: 0.019, price: '' },
+      { name: '12/2 NM-B Romex with ground', labor: 0.018, price: '' },
+      { name: '12/3 NM-B Romex with ground', labor: 0.019, price: '' },
+      { name: '12/4 NM-B Romex with ground', labor: 0.023, price: '' },
+      { name: '10/2 NM-B Romex with ground', labor: 0.019, price: '' },
+      { name: '10/3 NM-B Romex with ground', labor: 0.022, price: '' },
+      { name: '10/4 NM-B Romex with ground', labor: 0.024, price: '' },
+      { name: '8/2 NM-B Romex with ground', labor: 0.021, price: '' },
+      { name: '8/3 NM-B Romex with ground', labor: 0.024, price: '' },
+      { name: '6/2 NM-B Romex with ground', labor: 0.025, price: '' },
+      { name: '6/3 NM-B Romex with ground', labor: 0.028, price: '' },
+      { name: '4/3 NM-B Romex with ground', labor: 0.032, price: '' },
+    ],
+    // Hours per foot from mc-price-model.json items 450-522 (MC cable).
+    'MC Cable': [
+      { name: '14/2 MC cable, copper', labor: 0.02, price: '' },
+      { name: '14/3 MC cable, copper', labor: 0.022, price: '' },
+      { name: '12/2 MC cable, copper', labor: 0.022, price: '' },
+      { name: '12/3 MC cable, copper', labor: 0.025, price: '' },
+      { name: '10/2 MC cable, copper', labor: 0.025, price: '' },
+      { name: '10/3 MC cable, copper', labor: 0.028, price: '' },
+      { name: '8/2 MC cable, copper', labor: 0.028, price: '' },
+      { name: '8/3 MC cable, copper', labor: 0.032, price: '' },
+      { name: '6/2 MC cable, copper', labor: 0.032, price: '' },
+      { name: '6/3 MC cable, copper', labor: 0.038, price: '' },
     ],
     'Wire Terminations': [
       { name: '# 22-6', labor: 0.2, price: '' },

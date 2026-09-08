@@ -300,23 +300,63 @@ const McElliotCore = (function () {
   const PRICE_RATIO_MIN = 0.2;
   const PRICE_RATIO_MAX = 5;
 
+  /** Dollars and cents above $1, four places below (wire is priced in fractions of a cent). */
+  function formatUnitPrice(price) {
+    const n = Number(price) || 0;
+    return n >= 1 ? n.toFixed(2) : n.toFixed(4);
+  }
+
+  /**
+   * Why a match was not taken automatically, in words the maintainer can act
+   * on. The near-tie case is the important one: the reviewer's row can only
+   * show three candidates, so the rival at a different price — the very thing
+   * that kept the match out — is otherwise invisible.
+   */
+  function reviewReason(f) {
+    const { best, rivals, samePrice, priceOk, ratio, scoreBar, tied } = f;
+    if (tied && !samePrice) {
+      const other = rivals.find((c) => c.row.perEach !== best.row.perEach);
+      if (other) {
+        return {
+          code: 'near-tie',
+          text: `Another part fits the name just as well but costs a different price: ${other.row.description || other.row.name} at $${formatUnitPrice(other.row.perEach)}.`,
+        };
+      }
+    }
+    if (!priceOk) {
+      return {
+        code: 'price-jump',
+        text:
+          ratio < 1
+            ? `The supplier price is ${(1 / ratio).toFixed(1)}× lower than the book's — too far apart to take on its own.`
+            : `The supplier price is ${ratio.toFixed(1)}× higher than the book's — too far apart to take on its own.`,
+      };
+    }
+    if (best.score < scoreBar) {
+      return { code: 'partial-name', text: `Only part of the name matches (${Math.round(best.score * 100)}%).` };
+    }
+    return { code: 'unsure', text: 'Not certain enough to take on its own.' };
+  }
+
   /**
    * Classify scored candidates for one MC item.
    * candidates: [{row, score}] sorted desc. oldPerEach: current model price.
-   * Returns {kind: 'auto'|'review'|'none', best, candidates}
+   * Returns {kind: 'auto'|'review'|'none', best, candidates}; a review also
+   * carries {reason} — see reviewReason.
    */
   function classifyMatches(candidates, oldPerEach) {
     if (!candidates.length) return { kind: 'none', best: null, candidates: [] };
     const best = candidates[0];
     const second = candidates[1];
-    let margin = second ? best.score - second.score : 1;
+    const rawMargin = second ? best.score - second.score : 1;
     // Ambiguity between near-tied candidates is immaterial when they agree on
     // price (e.g. the 10 colors of THHN #12 all cost the same) — treat as clear.
-    if (margin < AUTO_MARGIN && best.row.perEach > 0) {
-      const rivals = candidates.filter((c) => best.score - c.score < AUTO_MARGIN);
-      const samePrice = rivals.every((c) => Math.abs(c.row.perEach - best.row.perEach) / best.row.perEach <= 0.01);
-      if (samePrice) margin = 1;
-    }
+    // Every near-tied rival counts, not just the three a review row can show.
+    const rivals = candidates.filter((c) => best.score - c.score < AUTO_MARGIN);
+    const tied = rawMargin < AUTO_MARGIN;
+    const samePrice =
+      best.row.perEach > 0 && rivals.every((c) => Math.abs(c.row.perEach - best.row.perEach) / best.row.perEach <= 0.01);
+    const margin = tied && samePrice ? 1 : rawMargin;
     const ratio = oldPerEach > 0 && best.row.perEach > 0 ? best.row.perEach / oldPerEach : 1;
     const priceOk = ratio >= PRICE_RATIO_MIN && ratio <= PRICE_RATIO_MAX;
     // No old price = no sanity band; demand near-certainty before auto-accepting.
@@ -325,9 +365,30 @@ const McElliotCore = (function () {
       return { kind: 'auto', best, candidates };
     }
     if (best.score >= REVIEW_SCORE) {
-      return { kind: 'review', best, candidates: candidates.slice(0, 3) };
+      return {
+        kind: 'review',
+        best,
+        candidates: candidates.slice(0, 3),
+        reason: reviewReason({ best, rivals, samePrice, priceOk, ratio, scoreBar, tied }),
+      };
     }
     return { kind: 'none', best: null, candidates: [] };
+  }
+
+  /**
+   * Drop rows the maintainer has already passed on ("Not this"). Without this
+   * the next upload re-derives the identical queue and the work is undone.
+   * skipped: Set, array or object keyed by MC item number.
+   */
+  function withoutSkipped(review, skipped) {
+    const list = review || [];
+    if (!skipped) return list;
+    const set =
+      skipped instanceof Set
+        ? skipped
+        : new Set((Array.isArray(skipped) ? skipped : Object.keys(skipped)).map(Number));
+    if (!set.size) return list;
+    return list.filter((q) => !set.has(Number(q.itemNum)));
   }
 
   // ---------- Recompute ----------
@@ -399,8 +460,68 @@ const McElliotCore = (function () {
     });
   }
 
+  /**
+   * The newest price date in a catalog (YYYY-MM-DD), or null when none of
+   * its parts carry one. This — not the day the file was loaded — is when the
+   * catalog on screen was last priced, so re-loading a file that moved no
+   * prices leaves every "priced N days ago" badge exactly where it was.
+   */
+  function newestPartDate(newItems) {
+    let newest = null;
+    for (const it of newItems || []) {
+      const at = it[4];
+      if (at && (!newest || at > newest)) newest = at;
+    }
+    return newest;
+  }
+
+  /**
+   * The overlay as it should leave this computer: bookkeeping this browser
+   * keeps for itself (row counts, per-category tallies, storage flags) is not
+   * part of the artifact anyone else reads.
+   */
+  const OVERLAY_LOCAL_FIELDS = ['newItemsCount', 'categoryCounts', 'newItemsIncomplete', 'newItemsTruncated', 'allCats'];
+
+  function sanitizeOverlayForDownload(overlay) {
+    const out = { ...(overlay || {}) };
+    for (const field of OVERLAY_LOCAL_FIELDS) delete out[field];
+    return out;
+  }
+
+  function isSupplierSection(section) {
+    return !!(section && (section.supplier || section.level1 === 'Elliot'));
+  }
+
+  /** How many supply-house parts a book carries, across every tab. */
+  function countSupplierEntries(book) {
+    let n = 0;
+    for (const tab of Object.values((book && book.tabs) || {})) {
+      for (const section of tab) {
+        if (isSupplierSection(section)) n += (section.entries || []).length;
+      }
+    }
+    return n;
+  }
+
+  /**
+   * True when an overlay carries a parts catalog of its own — the only case
+   * in which it may replace the catalog already committed to the book.
+   * An overlay with no parts list (never had one, or this device could not
+   * store it) leaves the committed catalog exactly where it is.
+   */
+  function overlayReplacesCatalog(overlay) {
+    return !!(
+      overlay &&
+      Array.isArray(overlay.newItems) &&
+      overlay.newItems.length &&
+      !overlay.newItemsTruncated &&
+      !overlay.newItemsIncomplete
+    );
+  }
+
   function patchLaborBook(book, recompute, overlay, categoryMapping) {
     const patched = JSON.parse(JSON.stringify(book));
+    const committed = (patched.meta && patched.meta.elliot) || null;
     const prices = recompute ? recompute.assemblyPrices : {};
     for (const tab of Object.values(patched.tabs)) {
       for (const section of tab) {
@@ -412,8 +533,11 @@ const McElliotCore = (function () {
         }
       }
     }
-    // Elliot branch: new items grouped per category section, appended per tab
-    if (overlay && Array.isArray(overlay.newItems) && overlay.newItems.length) {
+    // Supplier branch: new items grouped per category section, appended per
+    // tab. Only an overlay that actually carries a parts list gets to replace
+    // the committed catalog — "no new items" means "leave the book alone".
+    const replacesCatalog = overlayReplacesCatalog(overlay);
+    if (replacesCatalog) {
       const enabled = new Set(overlay.enabledCategories || []);
       const byTab = {};
       for (const [category, name, partNumber, price, pricedAt] of overlay.newItems) {
@@ -424,10 +548,13 @@ const McElliotCore = (function () {
         if (!byTab[tabName][category]) byTab[tabName][category] = [];
         byTab[tabName][category].push({ name, labor: 0, price, partNumber, pricedAt: pricedAt || undefined });
       }
+      // the overlay's catalog is the whole catalog: drop the previous
+      // supplier sections everywhere, then lay this one down
+      for (const tabName of Object.keys(patched.tabs)) {
+        patched.tabs[tabName] = patched.tabs[tabName].filter((s) => !isSupplierSection(s));
+      }
       for (const [tabName, cats] of Object.entries(byTab)) {
         if (!patched.tabs[tabName]) patched.tabs[tabName] = [];
-        // drop any previous supplier sections (idempotent re-patch)
-        patched.tabs[tabName] = patched.tabs[tabName].filter((s) => !s.supplier && s.level1 !== 'Elliot');
         const vendorLabel = overlay.vendorLabel || 'Elliot';
         for (const [category, entries] of Object.entries(cats)) {
           patched.tabs[tabName].push({
@@ -442,22 +569,89 @@ const McElliotCore = (function () {
           });
         }
       }
-    } else {
-      for (const tabName of Object.keys(patched.tabs)) {
-        patched.tabs[tabName] = patched.tabs[tabName].filter((s) => !s.supplier && s.level1 !== 'Elliot');
-      }
     }
     patched.meta = patched.meta || {};
-    patched.meta.elliot = overlay
-      ? {
-          sourceFile: overlay.sourceFile,
-          importedAt: overlay.importedAt,
-          updated: recompute ? recompute.stats.updated : 0,
-          flagged: recompute ? recompute.stats.flagged : 0,
-          newItems: (overlay.newItems || []).length,
-        }
-      : undefined;
+    if (overlay) {
+      patched.meta.elliot = {
+        // sourceFile/importedAt describe the catalog on screen, which is what
+        // the per-part "priced N days ago" badges date themselves from
+        sourceFile: replacesCatalog ? overlay.sourceFile : (committed && committed.sourceFile) || overlay.sourceFile,
+        importedAt: replacesCatalog
+          ? newestPartDate(overlay.newItems) || overlay.importedAt
+          : (committed && committed.importedAt) || overlay.importedAt,
+        updated: recompute ? recompute.stats.updated : 0,
+        flagged: recompute ? recompute.stats.flagged : 0,
+        newItems: countSupplierEntries(patched),
+        catalogSource: replacesCatalog ? 'import' : 'published',
+        pricesFrom: overlay.sourceFile,
+        pricesImportedAt: overlay.importedAt,
+      };
+    }
     return patched;
+  }
+
+  // ---------- one part number, one MC item ----------
+
+  /**
+   * A supplier part number may price exactly one MC item. An automatic match
+   * that would take a part number already promised to another item does not
+   * win silently: it goes to the review queue, saying which item holds it now.
+   *
+   * result: {auto, review, mappedApplied} from McElliotMatch.runMatching.
+   * items:  priceModel.items ({itemNum: {n, p}}) — for names on the queue row.
+   * rows:   the deduped supplier rows — for the part's description.
+   *
+   * Returns a new result with {heldBack} added: the number of automatic
+   * matches sent to review instead of overwriting a part number in use.
+   */
+  function resolveMatchCollisions(result, items, rows) {
+    const rowByPn = new Map((rows || []).map((r) => [r.partNumber, r]));
+    const auto = {};
+    const held = []; // these go to the top of the queue: 4 rows in a list of 2,500
+    const holder = new Map(); // partNumber -> itemNum currently pricing it
+    const entries = Object.entries(result.auto || {});
+    // saved matches hold their part numbers first; automatic ones then take
+    // what is left, best score first so the strongest guess keeps the part
+    const saved = entries.filter(([, m]) => m.via !== 'auto');
+    const guesses = entries
+      .filter(([, m]) => m.via === 'auto')
+      .sort((a, b) => (b[1].score || 0) - (a[1].score || 0) || Number(a[0]) - Number(b[0]));
+    for (const [itemNum, m] of saved) {
+      auto[itemNum] = m;
+      holder.set(m.partNumber, itemNum);
+    }
+    let heldBack = 0;
+    for (const [itemNum, m] of guesses) {
+      const holderItem = holder.get(m.partNumber);
+      if (holderItem === undefined) {
+        auto[itemNum] = m;
+        holder.set(m.partNumber, itemNum);
+        continue;
+      }
+      if (String(holderItem) === String(itemNum)) continue;
+      heldBack++;
+      const item = items && items[itemNum];
+      const other = items && items[holderItem];
+      const row = rowByPn.get(m.partNumber);
+      held.push({
+        itemNum: Number(itemNum),
+        itemName: item ? item.n : String(itemNum),
+        oldPerEach: item ? item.p : 0,
+        category: (row && row.category) || '',
+        heldPartNumber: m.partNumber,
+        heldByItemNum: Number(holderItem),
+        heldByItemName: other ? other.n : String(holderItem),
+        candidates: [
+          {
+            pn: m.partNumber,
+            desc: (row && (row.description || row.name)) || m.partNumber,
+            perEach: Math.round((m.perEach || 0) * 10000) / 10000,
+            score: Math.round((m.score || 0) * 100) / 100,
+          },
+        ],
+      });
+    }
+    return { ...result, auto, review: held.concat(result.review || []), heldBack };
   }
 
   return {
@@ -473,9 +667,16 @@ const McElliotCore = (function () {
     metaFor,
     scoreMatch,
     classifyMatches,
+    withoutSkipped,
+    formatUnitPrice,
     recomputeAssemblies,
     stampNewItemDates,
+    newestPartDate,
+    sanitizeOverlayForDownload,
     patchLaborBook,
+    countSupplierEntries,
+    overlayReplacesCatalog,
+    resolveMatchCollisions,
     AUTO_SCORE,
     REVIEW_SCORE,
   };

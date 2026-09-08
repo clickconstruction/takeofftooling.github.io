@@ -46,8 +46,8 @@ test('structured #import= handoff shows the preview modal', async ({ page }) => 
   const modal = page.locator('#import-preview-modal');
   await expect(modal).toHaveAttribute('aria-hidden', 'false');
   await expect(modal).toContainText('Duplex Receptacle');
-  await page.locator('#import-preview-all-btn').click();
-  // imported item is appended after the blank seed row — assert via state
+  await page.locator('#import-preview-add-btn').click();
+  // imported item takes the blank seed row's place — assert via state
   await expect.poll(() =>
     page.evaluate(() => TakeoffState.getTopLevelItems().some((i) => i.description === 'Duplex Receptacle'))
   ).toBe(true);

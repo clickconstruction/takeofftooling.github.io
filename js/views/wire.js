@@ -9,7 +9,25 @@ const TakeoffWireView = (function () {
     return TakeoffUtils.escapeHtml(str);
   }
 
+  // Same rule as everywhere else (2 places at or above $1, 4 below; hours to
+  // 2), minus the thousands separators a type=number field would reject.
+  function moneyValue(v) {
+    if (v === '' || v == null) return '';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    return TakeoffUtils.formatMoney(n).replace(/,/g, '');
+  }
+  function hoursValue(v) {
+    if (v === '' || v == null) return '';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '';
+    return TakeoffUtils.formatHours(n).replace(/,/g, '');
+  }
+
   function render(itemId) {
+    // the buffer is hydrated before this first render; from here on every
+    // write to it — the labor book's included — counts as an edit
+    TakeoffState.endFlowHydration();
     const item = TakeoffState.getItemById(itemId);
     if (!item) return '';
 
@@ -22,10 +40,11 @@ const TakeoffWireView = (function () {
       .map(
         (m, i) => `
       <tr>
-        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-mac-index="${i}" title="Part Book Search">PB</button></td>
+        <td class="labor-book-cell"><button type="button" class="part-book-icon-btn icon-btn" data-mac-index="${i}" title="Fill this row from the Labor and Price Book">Book</button></td>
         <td><input type="text" data-mac-index="${i}" data-field="description" value="${escapeHtml(m.description || '')}" placeholder="Description" /></td>
-        <td><input type="number" data-mac-index="${i}" data-field="quantity" value="${m.quantity ?? ''}" min="0" /></td>
-        <td><input type="number" data-mac-index="${i}" data-field="labor" value="${m.labor !== undefined ? m.labor : ''}" min="0" step="0.1" /></td>
+        <td><input type="number" inputmode="decimal" data-mac-index="${i}" data-field="quantity" value="${escapeHtml(m.quantity ?? '')}" min="0" /></td>
+        <td><input type="number" inputmode="decimal" data-mac-index="${i}" data-field="labor" value="${escapeHtml(hoursValue(m.labor))}" min="0" step="0.1" /></td>
+        <td><input type="number" inputmode="decimal" data-mac-index="${i}" data-field="price" value="${escapeHtml(moneyValue(m.price))}" min="0" step="0.01" dir="ltr" placeholder="Price" /></td>
         <td><button type="button" class="remove-mac-btn icon-btn" data-index="${i}" title="Remove">${TRASH_SVG}</button></td>
       </tr>
     `
@@ -35,15 +54,12 @@ const TakeoffWireView = (function () {
     return `
       <div class="flow-page wire-flow">
         <h2>Wire - Overage and MAC Adapters</h2>
-        <div class="parent-summary">
-          <div class="parent-summary-line"><strong>Parent:</strong> ${escapeHtml(item.description || '')}</div>
-          <div class="parent-summary-line">Current length: ${baseLength}</div>
-        </div>
+        ${TakeoffViewShared.renderParentSummary(item)}
         ${TakeoffViewShared.renderOverageSection({ inputId: 'wire-overage-percent', noun: 'Wire', baseLength, overagePercent })}
         <div class="flow-section">
           <h3>MAC Adapters (optional)</h3>
           <div class="flow-table-scroll"><table>
-            <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Description</th><th>Quantity</th><th>Labor</th><th>Price</th><th></th></tr></thead>
             <tbody>${macRows}</tbody>
           </table></div>
           <button type="button" class="btn add-mac-btn">Add MAC Adapter</button>
@@ -74,17 +90,20 @@ const TakeoffWireView = (function () {
       });
     });
 
+    // typing a custom %: update the buffer and patch the total line in place
+    // (a re-render here would steal focus after the first digit)
     document.getElementById('wire-overage-percent')?.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
-      TakeoffState.setWireTempData({ overagePercent: isNaN(val) ? null : val });
+      const percent = isNaN(val) ? null : val;
+      TakeoffState.setWireTempData({ overagePercent: percent });
       TakeoffState.setFlowDirty(true);
-      TakeoffApp.render();
+      TakeoffViewShared.updateOverageTotal('wire-overage-percent', 'Wire', item.quantity || 0, percent);
     });
 
     document.querySelector('.add-mac-btn')?.addEventListener('click', () => {
       const temp = TakeoffState.getWireTempData();
       temp.macAdapters = temp.macAdapters || [];
-      temp.macAdapters.push({ description: '', quantity: 0, labor: 0 });
+      temp.macAdapters.push({ description: '', quantity: 0, labor: 0, price: '' });
       TakeoffState.setWireTempData(temp);
       TakeoffState.setFlowDirty(true);
       TakeoffApp.render();
@@ -104,7 +123,7 @@ const TakeoffWireView = (function () {
         temp.macAdapters = temp.macAdapters || [];
         temp.macAdapters.splice(index, 1);
         if (temp.macAdapters.length === 0) {
-          temp.macAdapters.push({ description: '', quantity: 0, labor: 0 });
+          temp.macAdapters.push({ description: '', quantity: 0, labor: 0, price: '' });
         }
         TakeoffState.setWireTempData(temp);
         TakeoffState.setFlowDirty(true);
@@ -118,6 +137,7 @@ const TakeoffWireView = (function () {
         const field = e.target.dataset.field;
         let value = e.target.value;
         if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
+        if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
         const temp = TakeoffState.getWireTempData();
         if (temp.macAdapters?.[index]) temp.macAdapters[index][field] = value;
         TakeoffState.setWireTempData(temp);
@@ -169,6 +189,7 @@ const TakeoffWireView = (function () {
       }
 
       TakeoffState.endBatch();
+      TakeoffEvents.log('flow_saved', { kind: 'wire', rows: (parent.children || []).length, componentPrice: (parent.children || []).some((c) => c.price != null) });
       TakeoffState.setFlowDirty(false);
       TakeoffApp.navigateToManifest();
     });
