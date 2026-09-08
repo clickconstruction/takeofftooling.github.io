@@ -69,7 +69,10 @@ for f in pending:
     code, out = sql(open(f).read())
     print(('  OK   ' if code == 200 else '  FAIL ') + f + ('' if code == 200 else '  [%s] %s' % (code, out)))
 
-WANT = ['https://takeofftooling.github.io/', 'http://localhost:4173/']
+# The app's real origin is the custom domain on the Pages CNAME, not the
+# *.github.io address — a reset link back to the wrong origin is silently
+# swapped for the Site URL and the new-password form never appears.
+WANT = ['https://takeofftooling.com/', 'http://localhost:4173/']
 code, cfg = api('/config/auth')
 if code != 200:
     print('Auth config: FAILED to read [%s] %s' % (code, cfg))
