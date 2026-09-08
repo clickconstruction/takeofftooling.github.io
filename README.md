@@ -96,7 +96,7 @@ Two sides, toggled at the top of the modal:
 
 Optional — the app works fully offline in this browser without it. **Sign In** (header) takes your email and password (or can email you a 6-digit code instead); once signed in, the manifest, labor book, labor rate, and saved assemblies sync to Supabase so the same takeoff follows you across devices. Each account sees only its own data. Newest save wins for the workspace; assemblies merge. Signing out keeps the local copy.
 
-**Improve the shared book** (opt-in, in the Cloud Sync dialog): share your price and labor corrections so the shared parts book gets more accurate for everyone. Only Labor & Price Book edits are shared — never your takeoffs or job data — and you can see exactly what's shared or turn it off (which withdraws it) at any time. Accepted corrections ship to all users in an app update, and updated defaults merge into your book without touching rows you've customized.
+**Improve the shared book** (opt-in, in the Cloud Sync dialog): share your price and labor corrections — and, once you've reorganized in Organize Categories, your category layout — so the shared parts book gets more accurate for everyone. Only Labor & Price Book edits and layout are shared — never your takeoffs or job data — and you can see exactly what's shared or turn it off (which withdraws it) at any time. Accepted corrections ship to all users in an app update, and updated defaults merge into your book without touching rows you've customized. Admins reviewing a member's layout can copy it as ready-to-commit defaults code.
 
 ### Other
 

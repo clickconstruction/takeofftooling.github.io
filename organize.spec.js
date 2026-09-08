@@ -46,6 +46,24 @@ test('organize view opens from the book, boards render, drawer and place mode wo
   await page.locator('#org-discard-btn').click();
   await expect(page.locator('#org-summary')).toContainText('No pending changes');
 
+  // merge one group into another: pick up Connectors, click Fittings' center
+  const conduitLane2 = page.locator('.org-lane', { has: page.locator('.org-lane-name', { hasText: 'Conduit' }) });
+  const connectorsHead = conduitLane2.locator('.org-group-head', { has: page.locator('.org-gname', { hasText: 'Connectors' }) });
+  const fittingsBefore = await conduitLane2
+    .locator('.org-group-head', { has: page.locator('.org-gname', { hasText: 'Fittings' }) })
+    .locator('.org-gcount').textContent();
+  await connectorsHead.locator('[data-act="pick-group"]').click();
+  await expect(page.locator('#org-place-banner')).toBeVisible();
+  await conduitLane2.locator('.org-group-head', { has: page.locator('.org-gname', { hasText: 'Fittings' }) }).click();
+  await expect(page.locator('.org-confirm-bar')).toContainText('Merge group');
+  await page.locator('.org-confirm-bar [data-mg="yes"]').click();
+  await expect(conduitLane2.locator('.org-gname', { hasText: 'Connectors' })).toHaveCount(0);
+  const fittingsAfter = await conduitLane2
+    .locator('.org-group-head', { has: page.locator('.org-gname', { hasText: 'Fittings' }) })
+    .locator('.org-gcount').textContent();
+  expect(Number(fittingsAfter)).toBeGreaterThan(Number(fittingsBefore));
+  await page.locator('#org-discard-btn').click();
+
   // back returns to the manifest with the book modal reopened
   await page.locator('#org-back-btn').click();
   await expect(page.locator('#labor-book-modal')).toHaveAttribute('aria-hidden', 'false');
