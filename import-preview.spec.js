@@ -148,11 +148,12 @@ test('a wrong envelope version is not reported as an empty link', async ({ page 
   // X11: the message is a toast now, not a dialog — nothing about a bad link
   // is worth blocking the page for, so a stray dialog is itself a failure
   page.on('dialog', (d) => { d.dismiss(); throw new Error('unexpected dialog: ' + d.message()); });
-  const b64 = Buffer.from(JSON.stringify({ v: 2, items: [{ description: 'Duplex Receptacle', count: 12 }] })).toString('base64');
+  // (v1 and v2 are both read now — see the "#import= contract" in ARCHITECTURE)
+  const b64 = Buffer.from(JSON.stringify({ v: 3, items: [{ description: 'Duplex Receptacle', count: 12 }] })).toString('base64');
   await page.goto('/#import=' + b64);
   const toast = page.locator('#toast-region .toast');
   await expect(toast).toHaveCount(1);
-  await expect(toast).toContainText('version 2');
+  await expect(toast).toContainText('version 3');
   await expect(toast).not.toContainText('no valid items');
 });
 

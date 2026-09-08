@@ -20,6 +20,7 @@ const appGlobals = {
   TakeoffSelectors: 'readonly',
   TakeoffState: 'readonly',
   TakeoffImport: 'readonly',
+  TakeoffHandoff: 'readonly',
   TakeoffPDF: 'readonly',
   TakeoffApp: 'readonly',
   TakeoffViewShared: 'readonly',
@@ -36,6 +37,7 @@ const appGlobals = {
   TakeoffDeviceView: 'readonly',
   TakeoffConduitView: 'readonly',
   TakeoffWireView: 'readonly',
+  TakeoffOrganizeView: 'readonly',
   McElliotCore: 'readonly',
   McElliotState: 'readonly',
   McElliotMatch: 'readonly',
@@ -45,15 +47,18 @@ const appGlobals = {
   LABOR_BOOK_DEFAULTS: 'readonly',
   LABOR_BOOK_DEFAULT_GROUPS: 'readonly',
   LABOR_BOOK_DEFAULTS_VERSION: 'readonly',
+  LABOR_BOOK_RETIRED: 'readonly',
   TakeoffLaborBookMerge: 'readonly',
   TakeoffSuggestionsReview: 'readonly',
   jspdf: 'readonly',
-  supabase: 'readonly', // @supabase/supabase-js UMD (CDN)
+  supabase: 'readonly', // @supabase/supabase-js UMD (vendor/)
 };
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**'],
+    // .claude/** — Claude Code worktrees are full repo copies; without this a run
+    // from the primary checkout lints every sibling worktree (thousands of errors).
+    ignores: ['node_modules/**', 'source-data/**', 'mc-assemblies/**', 'test-results/**', 'playwright-report/**', '.claude/**', 'vendor/**', 'test-fixtures/**'],
   },
   js.configs.recommended,
   {
@@ -65,7 +70,7 @@ module.exports = [
       'no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         caughtErrors: 'none',
-        varsIgnorePattern: '^(Takeoff[A-Z]|Mc[A-Z]|FITTINGS_LIST$|LABOR_BOOK_DEFAULT)',
+        varsIgnorePattern: '^(Takeoff[A-Z]|Mc[A-Z]|FITTINGS_LIST$|LABOR_BOOK_DEFAULT|LABOR_BOOK_RETIRED$)',
       }],
       'no-empty': ['warn', { allowEmptyCatch: true }],
     },
@@ -80,7 +85,7 @@ module.exports = [
   },
   {
     // dual browser/Node modules use guarded require/module.exports
-    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/events.js', 'js/import.js', 'js/cloudSync.js', 'js/suggestionsReview.js'],
+    files: ['js/elliotPriceCore.js', 'js/mcElliotMatch.js', 'js/selectors.js', 'js/laborBookMerge.js', 'js/utils.js', 'js/events.js', 'js/import.js', 'js/handoff.js', 'js/cloudSync.js', 'js/suggestionsReview.js'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...appGlobals },
     },

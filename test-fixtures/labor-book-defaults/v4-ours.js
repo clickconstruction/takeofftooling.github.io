@@ -11,13 +11,7 @@
 // Part names must be unique within a section — the merge is name-keyed, and
 // laborBookMerge.test.js asserts it against this data.
 // v3: conduit/PVC GLUE shipped two rows both named "PVC GLUE" (15 and 5 hrs);
-// they are now PVC GLUE QUART (15) and PVC GLUE PINT (5), and books carrying
-// the old name converge on the two renamed rows (LABOR_BOOK_RETIRED below).
-// v3 also brought the curated Devices / Lighting / Special Systems starters
-// (receptacles, switches, boxes & rings, covers & plates; troffers, downlights,
-// exit & emergency, whips; fire alarm, data, security & AV), named the way
-// CountTooling's electrical export names them, with MC-book labor units and
-// prices (priceSource 'MC book').
+// the 5-hr duplicate is gone, so books that carry it converge on 15 hrs.
 // v4 (X6): the device, box, disconnect, romex, MC-connector and pull-string
 // zones the book was silent on. Hours come from the MC data wherever it has
 // them — mc-assemblies/mc-price-model.json `items` carries a per-piece labor
@@ -28,32 +22,7 @@
 // `// estimated — owner to review` and are listed in the same comment in
 // each section. Prices are left blank on purpose: the supply-house catalog
 // (Elliot) is where today's price comes from, and this book is the hours.
-// v5: v3 and v4 were built on two branches; this is their union. The v4 rows
-// live under v3's section names (Boxes / Rings and Covers → Boxes & Rings,
-// Wall Plates → Covers & Plates), so a book at either version converges here.
-const LABOR_BOOK_DEFAULTS_VERSION = 5;
-
-// Names and sections that USED to be defaults. The merge is name-keyed, so a
-// stored book still carrying one of these would otherwise read as the user's
-// own addition (bootstrap) or sit beside the renamed row forever (merge).
-//   names:    {tab: {section: [old row names]}} — an untouched row by that
-//             name is a stale default: dropped, and the renamed row adopted.
-//   sections: {tab: {oldSection: newSection}} — an old section's untouched
-//             rows are dropped (the new section carries them); rows the user
-//             edited or added there move to the new section.
-const LABOR_BOOK_RETIRED = {
-  names: {
-    conduit: { 'PVC GLUE': ['PVC GLUE'] }, // v2: two rows both named PVC GLUE
-  },
-  sections: {
-    devices: {
-      // v4 (one branch) → v5 (the union, on v3's names)
-      Boxes: 'Boxes & Rings',
-      'Rings and Covers': 'Boxes & Rings',
-      'Wall Plates': 'Covers & Plates',
-    },
-  },
-};
+const LABOR_BOOK_DEFAULTS_VERSION = 4;
 
 const LABOR_BOOK_DEFAULT_GROUPS = {
   conduit: [
@@ -252,31 +221,6 @@ const LABOR_BOOK_DEFAULTS = {
     ],
   },
   lighting: {
-    // Curated starters (v3). Labor hours and prices come from the MC
-    // assemblies book (troffers/lay-in LED, exit & emergency, fixture whips);
-    // the supplier catalog still renders below these as "Supplier parts".
-    'Troffers & Lay-in (LED)': [
-      { name: '2x4 LED Troffer', labor: 1.511, price: 67.02, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '2x2 LED Troffer', labor: 1.511, price: 67.02, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '1x4 LED Troffer', labor: 1.511, price: 67.02, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '2x4 LED Troffer, gasketed', labor: 2.161, price: 88.86, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    'Downlights & Surface': [
-      { name: '6" LED Downlight, recessed', labor: 0.85, price: 48.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'LED Wraparound, 4 ft', labor: 1.2, price: 58.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'LED Strip, 4 ft', labor: 1.0, price: 42.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'LED Wall Pack', labor: 1.75, price: 145.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'LED High Bay', labor: 1.95, price: 185.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    'Exit & Emergency': [
-      { name: 'LED Exit Sign, battery', labor: 0.9, price: 38.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'LED Exit/Emergency Combo', labor: 1.1, price: 62.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Emergency Battery Unit, twin head', labor: 1.0, price: 48.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    'Fixture Connections': [
-      { name: "4' Steel Flex Fixture Whip", labor: 0.272, price: 30.52, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: "6' Steel Flex Fixture Whip", labor: 0.336, price: 38.37, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
     // Hours from mc-price-model.json items 22498-22501 (photocontrols).
     Photocells: [
       { name: 'Photocell 120V', labor: 1, price: '' },
@@ -284,28 +228,9 @@ const LABOR_BOOK_DEFAULTS = {
     ],
   },
   devices: {
-    // Curated starters (v3), named the way CountTooling's electrical export
-    // names them so imported rows find their labor and price by name. MC
-    // book labor units; supplier catalog sections render below.
-    Receptacles: [
-      { name: '15A Duplex Receptacle', labor: 0.485, price: 20.89, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A Duplex Receptacle', labor: 0.488, price: 23.6, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A GFCI Receptacle', labor: 0.505, price: 61.52, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A Weatherproof GFCI Receptacle', labor: 0.558, price: 65.9, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A Quad Receptacle', labor: 0.72, price: 44.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A Dedicated Receptacle', labor: 0.5, price: 24.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '15A Receptacle w/ USB Charger', labor: 0.538, price: 39.93, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Floor Box w/ Duplex', labor: 1.3, price: 165.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    Switches: [
-      { name: '20A Single-Pole Switch', labor: 0.45, price: 12.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A 3-Way Switch', labor: 0.5, price: 16.8, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A 4-Way Switch', labor: 0.55, price: 28.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '600W Dimmer', labor: 0.49, price: 31.28, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Occupancy Sensor Switch', labor: 0.638, price: 48.62, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '20A Weatherproof Switch', labor: 0.76, price: 44.11, priceSource: 'MC book', pricedAt: '2026-07-17' },
     // Hours from mc-price-model.json items 24513-24548 (toggle switches),
     // 24576-24579 (weatherproof), 24267 (dimmer), 24572-24573 (momentary).
+    Switches: [
       { name: 'Single pole toggle switch 15A', labor: 0.2, price: '' },
       { name: 'Single pole toggle switch 20A', labor: 0.2, price: '' },
       { name: '3-way toggle switch 15A', labor: 0.25, price: '' },
@@ -328,17 +253,10 @@ const LABOR_BOOK_DEFAULTS = {
       { name: 'Occupancy sensor, ceiling with relay', labor: 0.4, price: '' },
       { name: 'Motion sensor, wall', labor: 0.5, price: '' },
     ],
-    'Boxes & Rings': [
-      { name: '4" Square Box, 1-1/2" deep', labor: 0.25, price: 3.9, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4" Square Box, 2-1/8" deep', labor: 0.27, price: 5.6, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4-11/16" Square Box', labor: 0.3, price: 9.8, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4" Square 1-Gang Mud Ring', labor: 0.1, price: 2.4, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4" Square 2-Gang Mud Ring', labor: 0.12, price: 3.1, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '1-Gang Handy Box', labor: 0.22, price: 3.2, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Old-Work 1-Gang Box', labor: 0.3, price: 4.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
     // Hours from mc-price-model.json items 25109-25231 (boxes) and
     // 26170-26173 (plastic device boxes). A 1900 box is the 4" square
     // 1-1/2" deep box, so both names sit on the one row.
+    Boxes: [
       { name: '1900 box (4" square, 1-1/2" deep)', labor: 0.1, price: '' },
       { name: '4" square box, 2-1/8" deep', labor: 0.1, price: '' },
       { name: '4" square box with bracket, 1-1/2" deep', labor: 0.1, price: '' },
@@ -353,9 +271,11 @@ const LABOR_BOOK_DEFAULTS = {
       { name: 'Gang box 3 gang, 1-5/8" deep', labor: 0.1, price: '' },
       { name: 'Gang box 4 gang, 1-5/8" deep', labor: 0.1, price: '' },
       { name: 'Gang box 5 gang, 1-5/8" deep', labor: 0.183, price: '' },
+    ],
     // Hours from mc-price-model.json items 24649-24670 (raised covers),
     // 25116-25203 (mud rings, blank covers, extension rings) and
     // 25155-25161 (4-11/16" rings and covers).
+    'Rings and Covers': [
       { name: '4" square mud ring 1 gang, 1/2" deep', labor: 0.05, price: '' },
       { name: '4" square mud ring 1 gang, 5/8" deep', labor: 0.05, price: '' },
       { name: '4" square mud ring 1 gang, 3/4" deep', labor: 0.05, price: '' },
@@ -376,14 +296,8 @@ const LABOR_BOOK_DEFAULTS = {
       { name: 'Mud ring 5 gang, 15/16" deep', labor: 0.083, price: '' },
       { name: 'Mud ring 6 gang, 15/16" deep', labor: 0.083, price: '' },
     ],
-    'Covers & Plates': [
-      { name: '1-Gang Decora Plate', labor: 0.05, price: 1.1, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '1-Gang Duplex Plate', labor: 0.05, price: 0.9, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '2-Gang Plate', labor: 0.06, price: 1.6, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4" Square Blank Cover', labor: 0.07, price: 1.4, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: '4/S 1-Duplex Raised Cover', labor: 0.16, price: 21.57, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Weatherproof In-Use Cover', labor: 0.25, price: 18.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
     // Hours from mc-price-model.json items 24582-24595 (switch plates).
+    'Wall Plates': [
       { name: 'Switch plate 1 gang, plastic', labor: 0.05, price: '' },
       { name: 'Switch plate 2 gang, plastic', labor: 0.06, price: '' },
       { name: 'Switch plate 3 gang, plastic', labor: 0.07, price: '' },
@@ -826,8 +740,7 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '4" PVC C', labor: 57.84, price: '' },
     ],
     'PVC GLUE': [
-      { name: 'PVC GLUE QUART', labor: 15, price: '' },
-      { name: 'PVC GLUE PINT', labor: 5, price: '' },
+      { name: 'PVC GLUE', labor: 15, price: '' },
     ],
     // Hours per foot of run. The MC data carries no pull line at all (no item
     // and no assembly), so all three are standard manual units:
@@ -967,31 +880,5 @@ const LABOR_BOOK_DEFAULTS = {
       { name: '# 600-1000', labor: 1.5, price: '' },
     ],
   },
-  specialSystems: {
-    // Curated starters (v3): fire alarm devices from the MC book's generic FA
-    // sections; low-voltage drops priced per drop (the CountTooling data-drop
-    // convention: count × average cable length lives on the row's meta).
-    'Fire Alarm': [
-      { name: 'FA Smoke Detector', labor: 1.46, price: 63.2, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Addressable Smoke Detector', labor: 1.56, price: 66.56, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Heat Detector', labor: 1.46, price: 63.2, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Duct Smoke Detector', labor: 1.86, price: 62.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Pull Station', labor: 1.0, price: 58.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Horn/Strobe', labor: 1.25, price: 54.77, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'FA Strobe', labor: 1.1, price: 48.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    'Data & Communications': [
-      { name: 'Data Drop, Cat6 (1 jack)', labor: 1.2, price: 28.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Data Drop, Cat6 (2 jacks)', labor: 1.6, price: 42.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Cat6 Cable, per ft', labor: 0.006, price: 0.32, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Wireless Access Point Drop', labor: 1.3, price: 30.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Voice/Data Rack, self-mount', labor: 0.4, price: 34.6, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-    'Security & AV': [
-      { name: 'Security Camera Drop', labor: 1.4, price: 38.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Card Reader Rough-in', labor: 1.2, price: 35.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'Door Contact', labor: 0.6, price: 18.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-      { name: 'TV / AV Outlet Rough-in', labor: 0.9, price: 26.0, priceSource: 'MC book', pricedAt: '2026-07-17' },
-    ],
-  },
+  specialSystems: {},
 };

@@ -1,5 +1,6 @@
 /**
- * TakeoffCloud — optional Supabase-backed sync for the workspace + assemblies.
+ * TakeoffCloud — optional Supabase-backed sync for projects, the Labor &
+ * Price Book, and saved assemblies.
  *
  * The app stays local-first: TakeoffStorage (localStorage) remains the
  * synchronous source the app boots from. When signed in, this module
@@ -13,22 +14,27 @@
  *     when the tab hides, and again at pagehide/beforeunload as keepalive
  *     fetches, which outlive the page (js/cloudSync.js builds those).
  *
- * Signed out (or with the CDN blocked) the app behaves exactly as before.
- * Auth: email + password, or a 6-digit emailed code that also creates the
+ * Signed out (or with supabase-js unavailable) the app behaves exactly as
+ * before. Auth: email + password, or a 6-digit emailed code that also creates the
  * account. A signed-in account can set or change its own password here, and
  * "Forgot your password?" sends a reset link back to this page (that link is
  * the only thing needing a redirect URL — see supabase/README.md).
  *
- * Cloud rows live in public.takeoff_store (user_id, key, value jsonb) with
- * row-level security scoping every operation to auth.uid() = user_id.
- * Keys: 'book', 'assemblies', 'share' (sharing consent), 'deleted'
- * (tombstones for projects + assemblies) and the legacy 'workspace'.
+ * Roles (user < admin < dev) come from takeoff_profiles.
+ *
+ * Cloud rows: public.takeoff_projects (one row per project; data holds
+ * manifest, laborRate, taxRate, plansUrl, details, importedFrom, archived),
+ * public.takeoff_store (user_id, key, value jsonb), all under row-level
+ * security scoping every operation to auth.uid() = user_id.
+ * takeoff_store keys: 'book', 'assemblies', 'share' (sharing consent),
+ * 'deleted' (tombstones for projects + assemblies) and the legacy
+ * pre-projects 'workspace' row that sign-in migrates once.
  *
  * Deletes: a deleted project or assembly is recorded under 'deleted' with the
  * time. Every device honours that record — otherwise the next device to sync
  * re-uploads its own copy and the bid comes back.
  *
- * Shared-book corrections (opt-in): after each workspace push, a consenting
+ * Shared-book corrections (opt-in): after each book push, a consenting
  * user's Parts-book diff (TakeoffState.getBookCorrections) is upserted into
  * public.takeoff_suggestions; the admin account reviews it via
  * js/suggestionsReview.js. Opting out deletes the user's shared rows. The
@@ -256,6 +262,7 @@ const TakeoffCloud = (function () {
       manifest: Array.isArray(project.manifest) ? project.manifest : [],
       laborRate: typeof project.laborRate === 'number' ? project.laborRate : 0,
       taxRate: typeof project.taxRate === 'number' ? project.taxRate : undefined,
+      plansUrl: typeof project.plansUrl === 'string' && project.plansUrl ? project.plansUrl : undefined,
       details: project.details && typeof project.details === 'object' ? project.details : undefined,
     };
     TakeoffStorage.saveProjectLocalOnly(copy);
@@ -295,6 +302,8 @@ const TakeoffCloud = (function () {
       laborRate: typeof d.laborRate === 'number' ? d.laborRate : 0,
     };
     if (typeof d.taxRate === 'number') project.taxRate = d.taxRate;
+    // the CountTooling plans link the counts came from (set by the import)
+    if (typeof d.plansUrl === 'string' && d.plansUrl) project.plansUrl = d.plansUrl;
     if (d.details && typeof d.details === 'object') project.details = d.details;
     if (d.importedFrom && typeof d.importedFrom === 'object') project.importedFrom = d.importedFrom;
     // a bid closed out on one device is closed out on all of them
@@ -308,6 +317,7 @@ const TakeoffCloud = (function () {
   function projectPayload(project) {
     const payload = { manifest: project.manifest, laborRate: project.laborRate };
     if (typeof project.taxRate === 'number') payload.taxRate = project.taxRate;
+    if (typeof project.plansUrl === 'string' && project.plansUrl) payload.plansUrl = project.plansUrl;
     if (project.details && typeof project.details === 'object') payload.details = project.details;
     if (project.importedFrom && typeof project.importedFrom === 'object') payload.importedFrom = project.importedFrom;
     if (project.archived === true) {

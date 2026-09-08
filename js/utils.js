@@ -266,6 +266,24 @@ const TakeoffUtils = (function () {
     return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  /**
+   * Thin alias onto TakeoffToast.show (js/toast.js), the app's one feedback
+   * channel. Kept so callers written as `TakeoffUtils.toast(message, {kind})`
+   * keep working; `kind` 'error' maps to the toast 'warn' style and lingers,
+   * `durationMs` maps to `timeout`. Inert outside a document (unit tests) —
+   * falls back to console.
+   */
+  function toast(message, opts) {
+    const o = opts || {};
+    const kind = o.kind === 'error' ? 'warn' : o.kind === 'success' ? 'success' : o.kind === 'warn' ? 'warn' : 'info';
+    if (typeof document === 'undefined' || typeof TakeoffToast === 'undefined') {
+      (kind === 'warn' ? console.error : console.log)('[toast] ' + message);
+      return null;
+    }
+    const timeout = o.durationMs || (kind === 'warn' ? 9000 : undefined);
+    return TakeoffToast.show(message, { kind, timeout, action: o.action, key: o.key });
+  }
+
   return {
     escapeHtml,
     searchNorm,
@@ -276,6 +294,7 @@ const TakeoffUtils = (function () {
     parseMoney,
     formatMoney,
     formatHours,
+    toast,
   };
 })();
 

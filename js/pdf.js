@@ -8,7 +8,11 @@
  *
  * Money and hours come from TakeoffUtils, and every type label from
  * TakeoffManifestView's maps, so a PDF never prints a number or a word the
- * screen would not print.
+ * screen would not print. Quantities print with their unit (ft, px); an
+ * unscaled (px) row prints "px · unscaled" and no hours or money, the way
+ * the screen keeps it out of every total. Every page carries the project
+ * name, the date and "Page n of N" (stampPages), and long tables repeat
+ * their header after a page break.
  */
 
 const TakeoffPDF = (function () {
@@ -86,6 +90,45 @@ const TakeoffPDF = (function () {
 
   function todayLong() {
     return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  // The quantity the way the screen shows it: a count bare, a length with
+  // its unit, an unscaled row named as such (pixels, not feet).
+  function quantityText(item) {
+    const qty = Number(item.quantity) || 0;
+    if (!qty) return '';
+    const n = String(Math.round(qty * 100) / 100);
+    if (item.unit === 'px') return n + ' px · unscaled';
+    if (item.unit === 'ft') return n + ' ft';
+    return n;
+  }
+
+  // Cut a run to a width by character, with an ellipsis — for the one-line
+  // footer, where wrapping would collide with the page number.
+  function fitToWidth(doc, text, width) {
+    let str = String(text == null ? '' : text);
+    if (doc.getTextWidth(str) <= width) return str;
+    while (str.length > 1 && doc.getTextWidth(str + '…') > width) str = str.slice(0, -1);
+    return str + '…';
+  }
+
+  // Every page, once the document is complete: the project name and the date
+  // on the left, "Page n of N" on the right, below the table area so a page
+  // pulled out of a stack still says which job and where it belongs.
+  function stampPages(doc, projectName) {
+    const total = doc.getNumberOfPages ? doc.getNumberOfPages() : 1;
+    const footerY = PAGE_H - MARGIN + 18;
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      const pageText = `Page ${i} of ${total}`;
+      const pageW = doc.getTextWidth(pageText);
+      doc.text(pageText, MARGIN + CONTENT_W, footerY, { align: 'right' });
+      doc.text(fitToWidth(doc, `${projectName || 'Untitled project'}  ·  ${todayLong()}`, CONTENT_W - pageW - 12), MARGIN, footerY);
+      doc.setTextColor(0);
+      doc.setFontSize(BODY_SIZE);
+    }
   }
 
   // Wrap to a measured width. Words first; a single token wider than the box
@@ -169,7 +212,10 @@ const TakeoffPDF = (function () {
   }
 
   function ensureDoc() {
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) return null;
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+      if (typeof TakeoffToast !== 'undefined') TakeoffToast.show('The PDF library did not load. Reload the page and try again.', { kind: 'warn', timeout: 9000 });
+      return null;
+    }
     return new jspdf.jsPDF({ unit: 'pt', format: 'letter' });
   }
 
@@ -240,10 +286,7 @@ const TakeoffPDF = (function () {
 
   function printForReview() {
     const doc = ensureDoc();
-    if (!doc) {
-      alert('PDF library not loaded. Please refresh the page.');
-      return;
-    }
+    if (!doc) return; // ensureDoc said why
     const project = TakeoffState.getCurrentProject();
     const breakdown = TakeoffState.getSummaryBreakdown();
     const laborRate = Number(TakeoffState.getLaborRate()) || 0;
@@ -268,16 +311,18 @@ const TakeoffPDF = (function () {
         ? labels.child[rawType] || labels.type[rawType] || rawType
         : labels.type[rawType] || rawType;
       // Extended columns use the same rule as the summary (quantity 0 means
-      // none of it), so the columns add up to the totals on page 1.
+      // none of it; a px row is pixels, not feet, so it has no hours and no
+      // money), so the columns add up to the totals on page 1.
+      const unscaled = item.unit === 'px';
       const qty = Number(item.quantity) || 0;
-      const unitLabor = Number(item.labor) || 0;
+      const unitLabor = unscaled ? 0 : Number(item.labor) || 0;
       const unitPrice = Number(item.price);
-      const priced = item.price != null && item.price !== '' && !isNaN(unitPrice) && unitPrice > 0;
+      const priced = !unscaled && item.price != null && item.price !== '' && !isNaN(unitPrice) && unitPrice > 0;
 
       const values = {
         type: typeLabel,
         description: item.description || '',
-        quantity: qty ? String(Math.round(qty * 100) / 100) : '',
+        quantity: quantityText(item),
         labor: unitLabor ? hours(unitLabor) : '',
         extLabor: unitLabor && qty ? hours(unitLabor * qty) : '',
         price: priced ? money(unitPrice) : '',
@@ -310,6 +355,7 @@ const TakeoffPDF = (function () {
     doc.text('Grand Total: ' + money(breakdown.materialsTotal + breakdown.laborTotal * laborRate + breakdown.otherTotal, { fixed2: true }), MARGIN + CONTENT_W, y, { align: 'right' });
     doc.setFont(undefined, 'normal');
 
+    stampPages(doc, project.name);
     TakeoffEvents.log('pdf_exported', { variant: 'review', rows: getFlattenedItems().length, pages: doc.getNumberOfPages?.() ?? 0 });
     doc.save(fileName('review'));
   }
@@ -328,10 +374,7 @@ const TakeoffPDF = (function () {
    */
   function printForPurchaseOrder() {
     const doc = ensureDoc();
-    if (!doc) {
-      alert('PDF library not loaded. Please refresh the page.');
-      return;
-    }
+    if (!doc) return; // ensureDoc said why
     const project = TakeoffState.getCurrentProject();
     const report = TakeoffState.getPurchaseList();
 
@@ -391,6 +434,7 @@ const TakeoffPDF = (function () {
       doc.setTextColor(0);
     }
 
+    stampPages(doc, project.name);
     TakeoffEvents.log('pdf_exported', { variant: 'purchase-list', rows: report.lines.length, pages: doc.getNumberOfPages?.() ?? 0 });
     doc.save(fileName('purchase-list'));
   }
@@ -423,10 +467,7 @@ const TakeoffPDF = (function () {
 
   function printWithForm(details) {
     const doc = ensureDoc();
-    if (!doc) {
-      alert('PDF library not loaded. Please refresh the page.');
-      return;
-    }
+    if (!doc) return; // ensureDoc said why
     const project = TakeoffState.getCurrentProject();
     pageTitle(doc, 'Takeoff Tooling - Form', project.name + '  ·  ' + todayLong());
     doc.setFontSize(BODY_SIZE);
@@ -438,7 +479,7 @@ const TakeoffPDF = (function () {
       const indent = (item._depth || 0) * 10;
       const values = {
         description: item.description || '',
-        quantity: String(Number(item.quantity) || 0),
+        quantity: quantityText(item) || '0',
       };
       const cells = layoutRow(doc, FORM_COLUMNS, values, indent);
       const h = cells.reduce((m, c) => Math.max(m, c.length), 1) * LINE_H;
@@ -452,6 +493,7 @@ const TakeoffPDF = (function () {
       y += h;
     }
 
+    stampPages(doc, project.name);
     TakeoffEvents.log('pdf_exported', { variant: 'form', rows: getFlattenedItems().length, pages: doc.getNumberOfPages?.() ?? 0 });
     doc.save(fileName('form'));
   }

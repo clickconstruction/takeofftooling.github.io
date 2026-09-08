@@ -9,14 +9,27 @@
  * to the new defaults while user changes survive — and the same flags yield
  * the correction list shared through cloud sync (js/cloud.js).
  *
+ * Three maps say why a default is absent from its home tab/section, and only
+ * one of them is a correction:
+ *   removed       — the user deleted it (trash on the row, or Organize
+ *                   Categories' Apply). Blocks the merge; shared as a
+ *                   'remove' correction.
+ *   relocated     — the user moved or renamed the section it lived in
+ *                   (Organize Categories). Blocks the merge at the OLD spot
+ *                   so the section is not resurrected there; never shared —
+ *                   a move is not a deletion suggestion.
+ *   removedLegacy — a pre-split `removed` map (books written before the
+ *                   inferred/deleted split, `removedV` absent) that mixed the
+ *                   user's own deletes with gaps bootstrap inferred, and
+ *                   nothing can tell them apart. Blocks the merge (a real
+ *                   delete is never resurrected); never shared.
+ *
  * Only a user's own delete or rename writes `removed`. A default simply
  * missing from an older book is an *inferred* gap, not a decision: bootstrap
  * used to blacklist those forever (and propose each one to the maintainer as
  * a removal), so a book that predated a section's newer rows never received
- * them. Inferred gaps are now healed by mergeDefaults instead. Books written
- * before that fix carry a map that mixes the two, so it migrates into
- * `removedLegacy` (see migrateRemovedMeta): still honoured, so a real delete
- * is never resurrected, but never shared as a correction.
+ * them. Inferred gaps are now healed by mergeDefaults instead (see
+ * migrateRemovedMeta for how older maps become `removedLegacy`).
  *
  * Dual browser/Node (unit-tested in laborBookMerge.test.js). No state:
  * `book` is mutated in place by bootstrap/merge; callers persist it.
@@ -62,6 +75,33 @@ const TakeoffLaborBookMerge = (function () {
   }
 
   /**
+   * Default rows missing from their home tab/section in `book`. By default,
+   * sections the book doesn't have at all are skipped (bootstrap semantics —
+   * they were never adopted); pass `includeMissingSections` to record their
+   * rows too (reorganization semantics — the section was moved or deleted).
+   * Pure; returns a fresh `removed`-shaped map. Organize Categories' Apply
+   * recomputes it wholesale so stale entries drop out when a default row
+   * comes back.
+   */
+  function computeRemoved(book, defaults, includeMissingSections) {
+    const removed = {};
+    for (const tab of Object.keys(defaults)) {
+      const bookTab = book[tab];
+      if (!bookTab) continue;
+      for (const section of Object.keys(defaults[tab])) {
+        const rows = bookTab[section];
+        if (!rows && !includeMissingSections) continue;
+        for (const def of defaults[tab][section]) {
+          if (!rows || !rows.some((r) => r.name === def.name)) {
+            recordRemoved(removed, tab, section, def.name);
+          }
+        }
+      }
+    }
+    return removed;
+  }
+
+  /**
    * Split a stored `laborBookMeta` into the two removal maps this module now
    * uses. A meta written before the inferred/deleted split (`removedV` absent)
    * has a `removed` map that mixes the user's own deletes with gaps bootstrap
@@ -72,12 +112,16 @@ const TakeoffLaborBookMerge = (function () {
    * Pure — does not mutate `meta`.
    */
   function migrateRemovedMeta(meta) {
+    const clone = (m) => JSON.parse(JSON.stringify(m));
     const stored = meta && meta.removed && typeof meta.removed === 'object' ? meta.removed : {};
     const legacy = meta && meta.removedLegacy && typeof meta.removedLegacy === 'object' ? meta.removedLegacy : {};
+    // `relocated` was always written by a user action (Organize Categories),
+    // so it carries over unchanged whatever the meta's removedV.
+    const relocated = meta && meta.relocated && typeof meta.relocated === 'object' ? clone(meta.relocated) : {};
     if (meta && meta.removedV === 2) {
-      return { removed: JSON.parse(JSON.stringify(stored)), removedLegacy: JSON.parse(JSON.stringify(legacy)) };
+      return { removed: clone(stored), removedLegacy: clone(legacy), relocated };
     }
-    return { removed: {}, removedLegacy: JSON.parse(JSON.stringify(stored)) };
+    return { removed: {}, removedLegacy: clone(stored), relocated };
   }
 
   /**
@@ -122,20 +166,19 @@ const TakeoffLaborBookMerge = (function () {
    * Default names absent from the user's section are NOT recorded as removed:
    * a pre-provenance book cannot record a delete, so every gap here is equally
    * consistent with "this book predates that row". mergeDefaults heals them.
+   * A row carrying a RETIRED default name (`retired.names`, see
+   * LABOR_BOOK_RETIRED) is a stale default, not the user's own part: it stays
+   * unflagged so mergeDefaults drops it in favour of the renamed row.
    * Mutates `book` rows; returns { missing } — the inferred gaps, for
    * diagnostics only.
    */
-  function bootstrap(book, defaults) {
+  function bootstrap(book, defaults, retired) {
+    const retiredNames = (retired && retired.names) || {};
     const missing = [];
-    for (const tab of Object.keys(defaults)) {
-      const bookTab = book[tab];
-      if (!bookTab) continue;
-      for (const section of Object.keys(defaults[tab])) {
-        const rows = bookTab[section];
-        if (!rows) continue;
-        for (const def of defaults[tab][section]) {
-          if (!rows.some((r) => r.name === def.name)) missing.push({ tab, section, name: def.name });
-        }
+    const gaps = computeRemoved(book, defaults);
+    for (const tab of Object.keys(gaps)) {
+      for (const section of Object.keys(gaps[tab])) {
+        for (const name of gaps[tab][section]) missing.push({ tab, section, name });
       }
     }
     for (const tab of Object.keys(book)) {
@@ -152,6 +195,9 @@ const TakeoffLaborBookMerge = (function () {
             // a surplus copy of a default name (a stale duplicate from an
             // older book): leave it unflagged so mergeDefaults drops it
             continue;
+          } else if (isRemoved([retiredNames], tab, section, row.name)) {
+            // an old name of a default (renamed since): mergeDefaults drops it
+            continue;
           } else {
             row.userAdded = true;
           }
@@ -164,21 +210,47 @@ const TakeoffLaborBookMerge = (function () {
   /**
    * Upgrade a book to a newer set of defaults. Untouched rows take the new
    * default values; edited/userAdded rows are left alone; default rows the
-   * user removed stay removed (`removed`, plus the migrated `removedLegacy`);
-   * new default rows/sections/tabs are added; untouched rows dropped from the
-   * defaults are dropped here too.
+   * user removed stay removed (`removed`, plus the migrated `removedLegacy`
+   * and the `relocated` map Organize Categories writes — every name in any of
+   * the three blocks the merge); new default rows/sections/tabs are added,
+   * except a whole section whose every row is blocked (the user moved or
+   * deleted it) — that stays gone; untouched rows dropped from the defaults
+   * are dropped here too.
    *
    * Mutates `book`. Returns { changed, updated, added, dropped } — `changed`
    * is the old row count, and `updated` names the rows whose numbers actually
    * moved under the user, which is the only honest thing to tell them about
    * (a wholesale new section is not "your book changed").
    */
-  function mergeDefaults(book, defaults, removed, removedLegacy) {
-    const blockMaps = [removed, removedLegacy];
+  function mergeDefaults(book, defaults, removed, removedLegacy, relocated, retired) {
+    const blockMaps = [removed, removedLegacy, relocated];
     const updated = [];
     const added = [];
     const dropped = [];
     let changed = 0;
+    // Retired sections (LABOR_BOOK_RETIRED.sections): the defaults moved their
+    // rows under a new section name. Untouched rows are the old defaults and
+    // go (the new section brings them back under the new name); rows the user
+    // edited or added there follow them to the new section.
+    const retiredSections = (retired && retired.sections) || {};
+    for (const tab of Object.keys(retiredSections)) {
+      if (!book[tab]) continue;
+      for (const oldName of Object.keys(retiredSections[tab])) {
+        const rows = book[tab][oldName];
+        if (!Array.isArray(rows)) continue;
+        const newName = retiredSections[tab][oldName];
+        const kept = rows.filter((r) => r.edited || r.userAdded);
+        changed += rows.length - kept.length;
+        for (const r of rows) if (!(r.edited || r.userAdded)) dropped.push({ tab, section: oldName, name: r.name || '' });
+        delete book[tab][oldName];
+        if (kept.length) {
+          if (!book[tab][newName]) book[tab][newName] = [];
+          for (const r of kept) {
+            if (!book[tab][newName].some((x) => x.name === r.name)) book[tab][newName].push(r);
+          }
+        }
+      }
+    }
     for (const tab of Object.keys(defaults)) {
       if (!book[tab]) book[tab] = {};
       for (const section of Object.keys(defaults[tab])) {
@@ -190,8 +262,16 @@ const TakeoffLaborBookMerge = (function () {
           continue;
         }
         if (!book[tab][section]) {
-          book[tab][section] = JSON.parse(JSON.stringify(defRows));
-          changed += defRows.length;
+          // a section the user moved away or deleted (every row blocked)
+          // stays gone; otherwise adopt the new default section — an empty
+          // default section too, so the book's structure matches the shipped one
+          const fresh = defRows.filter((d) => !isRemoved(blockMaps, tab, section, d.name));
+          const wholeSectionBlocked = defRows.length > 0 && fresh.length === 0;
+          if (!wholeSectionBlocked) {
+            book[tab][section] = JSON.parse(JSON.stringify(fresh));
+            for (const d of fresh) added.push({ tab, section, name: d.name });
+            changed += fresh.length;
+          }
           continue;
         }
         const rows = book[tab][section];
@@ -297,6 +377,7 @@ const TakeoffLaborBookMerge = (function () {
     bootstrap,
     mergeDefaults,
     computeCorrections,
+    computeRemoved,
     rowsEqual,
     duplicateNames,
     duplicateDefaultSections,

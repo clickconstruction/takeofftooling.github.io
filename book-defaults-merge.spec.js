@@ -9,7 +9,7 @@ function seedBook(page, doc) {
   return page.addInitScript((d) => localStorage.setItem('takeoff-book', JSON.stringify(d)), doc);
 }
 
-test('a book stored with the duplicate PVC GLUE rows converges on one row', async ({ page }) => {
+test('a book stored with the duplicate PVC GLUE rows converges on the renamed QUART / PINT rows', async ({ page }) => {
   await seedBook(page, {
     v: 1,
     savedAt: '2026-01-01T00:00:00.000Z',
@@ -28,7 +28,12 @@ test('a book stored with the duplicate PVC GLUE rows converges on one row', asyn
   await page.waitForTimeout(800); // past the 400 ms book-save debounce
 
   const doc = await readBook(page);
-  expect(doc.laborBook.conduit['PVC GLUE']).toEqual([{ name: 'PVC GLUE', labor: 15, price: '' }]);
+  // v3 renamed the two same-named rows by can size; the stale pair is dropped
+  // and both renamed defaults adopted (neither is proposed as a correction)
+  expect(doc.laborBook.conduit['PVC GLUE']).toEqual([
+    { name: 'PVC GLUE QUART', labor: 15, price: '' },
+    { name: 'PVC GLUE PINT', labor: 5, price: '' },
+  ]);
   expect(doc.laborBook.conduit.STRAP[0].labor).toBe(9); // the user's edit stands
   // a merge-only save must not move the book's clock ahead of another
   // device's copy in the cloud

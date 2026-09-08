@@ -183,8 +183,9 @@ test('the sales tax rate is the project\'s, and it survives a reload', async ({ 
   await seed(page, [{ type: 'gear', description: 'Panel LP-2', quantity: 1, price: 1000 }]);
 
   const tax = page.locator('#tax-rate-input');
-  await expect(tax).toHaveValue('8.5');
-  await expect(page.locator('[data-summary="salesTax"]')).toHaveText('$85.00');
+  // a new bid starts at 8.25% (Texas' combined maximum)
+  await expect(tax).toHaveValue('8.25');
+  await expect(page.locator('[data-summary="salesTax"]')).toHaveText('$82.50');
 
   await tax.fill('10.25');
   await tax.dispatchEvent('change');
@@ -215,7 +216,7 @@ test('a trench and a rental are other charges — untaxed, and not on the purcha
   // $3,300 of trench + $1,400 of backhoe sit under Other charges, untaxed
   await expect(page.locator('[data-summary="oth.siteWork"]')).toHaveText('$4,700.00');
   await expect(page.locator('[data-summary="mat.conduit"]')).toHaveText('$460.00'); // run + sand
-  await expect(page.locator('[data-summary="salesTax"]')).toHaveText('$39.10');     // 8.5% of $460
+  await expect(page.locator('[data-summary="salesTax"]')).toHaveText('$37.95');     // 8.25% of $460
   // and nobody is asked to order a backhoe from the supply house
   await expect(page.locator('.purchase-list-table')).toContainText('TRENCHING SAND');
   await expect(page.locator('.purchase-list-table')).not.toContainText('BACKHOE');

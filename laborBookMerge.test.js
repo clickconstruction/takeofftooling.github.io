@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const vm = require('node:vm');
 const Merge = require('./js/laborBookMerge.js');
 const Utils = require('./js/utils.js');
@@ -19,6 +20,29 @@ const realDefaults = (() => {
   assert.ok(out.defaults && out.defaults.conduit, 'labor book defaults did not evaluate');
   return out;
 })();
+
+// js/data/laborBookDefaults.js is a browser <script> global (no exports);
+// evaluate it in a sandbox to read LABOR_BOOK_DEFAULTS here.
+function loadShippedDefaults() {
+  const file = path.join(__dirname, 'js', 'data', 'laborBookDefaults.js');
+  const src = fs.readFileSync(file, 'utf8');
+  // top-level const doesn't become a context property; evaluate to the value
+  return vm.runInNewContext(`${src};LABOR_BOOK_DEFAULTS`, {});
+}
+
+// LABOR_BOOK_RETIRED: the old names/sections the merge must recognise.
+const RETIRED = (() => {
+  const src = fs.readFileSync(require.resolve('./js/data/laborBookDefaults.js'), 'utf8');
+  return vm.runInNewContext(`${src};LABOR_BOOK_RETIRED`, {});
+})();
+
+// The defaults as they shipped at each earlier version (test-fixtures/
+// labor-book-defaults/README.md). A book saved at any of them must converge
+// on the current defaults.
+function loadHistoricalDefaults(file) {
+  const src = fs.readFileSync(path.join(__dirname, 'test-fixtures', 'labor-book-defaults', file), 'utf8');
+  return vm.runInNewContext(`${src};({ defaults: LABOR_BOOK_DEFAULTS, version: LABOR_BOOK_DEFAULTS_VERSION })`, {});
+}
 
 function defaults() {
   return {
@@ -121,6 +145,7 @@ test('migrateRemovedMeta keeps both maps once the split has been recorded', () =
   assert.deepEqual(Merge.migrateRemovedMeta(meta), {
     removed: { wire: { 'THHN CU': ['14'] } },
     removedLegacy: { wire: { 'THHN CU': ['12'] } },
+    relocated: {},
   });
 });
 
@@ -213,30 +238,39 @@ test('a partial legacy book self-heals to the full shipped defaults', () => {
   assert.deepEqual(Merge.computeCorrections(book, realDefaults.defaults, removed), []);
 });
 
-test('an older book carrying a duplicate default row converges on one row', () => {
+test('an older book carrying the two same-named PVC GLUE rows converges on QUART / PINT', () => {
   // the v2 shape: conduit/PVC GLUE held two rows both named "PVC GLUE"
   const book = clone(realDefaults.defaults);
   book.conduit['PVC GLUE'] = [
-    { name: 'PVC GLUE', labor: 5, price: '' },
+    { name: 'PVC GLUE', labor: 15, price: '' },
     { name: 'PVC GLUE', labor: 5, price: '' },
   ];
   const res = Merge.mergeDefaults(book, realDefaults.defaults, {});
-  assert.deepEqual(book.conduit['PVC GLUE'], [{ name: 'PVC GLUE', labor: 15, price: '' }]);
-  assert.equal(res.changed, 2); // one row corrected, one duplicate dropped
+  assert.deepEqual(book.conduit['PVC GLUE'], [
+    { name: 'PVC GLUE QUART', labor: 15, price: '' },
+    { name: 'PVC GLUE PINT', labor: 5, price: '' },
+  ]);
+  assert.equal(res.changed, 4); // two stale rows dropped, two renamed rows adopted
   assert.equal(Merge.mergeDefaults(book, realDefaults.defaults, {}).changed, 0); // settled
 });
 
-test('bootstrap leaves a surplus duplicate unflagged (no phantom correction)', () => {
+test('bootstrap leaves a retired default name unflagged (no phantom "new" correction)', () => {
+  // a pre-provenance book (never versioned) still carrying the old name:
+  // without LABOR_BOOK_RETIRED both rows would read as the user's own parts
   const book = clone(realDefaults.defaults);
   book.conduit['PVC GLUE'] = [
     { name: 'PVC GLUE', labor: 15, price: '' },
     { name: 'PVC GLUE', labor: 5, price: '' },
   ];
   const removed = {};
-  Merge.bootstrap(book, realDefaults.defaults);
+  Merge.bootstrap(book, realDefaults.defaults, RETIRED);
   assert.deepEqual(Merge.computeCorrections(book, realDefaults.defaults, removed), []);
-  Merge.mergeDefaults(book, realDefaults.defaults, removed);
-  assert.deepEqual(book.conduit['PVC GLUE'], [{ name: 'PVC GLUE', labor: 15, price: '' }]);
+  Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
+  assert.deepEqual(book.conduit['PVC GLUE'].map((r) => r.name), ['PVC GLUE QUART', 'PVC GLUE PINT']);
+  // ...while a genuinely user-added part under the same section is kept and shared
+  book.conduit['PVC GLUE'].push({ name: 'PVC primer', labor: 2, price: '' });
+  Merge.bootstrap(book, realDefaults.defaults, RETIRED);
+  assert.equal(book.conduit['PVC GLUE'][2].userAdded, true);
 });
 
 test('mergeDefaults refuses a defaults section with duplicate names', () => {
@@ -302,15 +336,16 @@ test('the MAC-adapter query lands on MC connectors, not on any row that says cab
   assert.ok(hits.some((h) => h.includes('MC and NM Connectors/MC connector')), hits.join(' | '));
 });
 
-test('the new sections carry hours on every row', () => {
+test('the curated sections carry hours on every row', () => {
+  // X6 (v4) sections live under v3's names where the two overlapped
   const added = [
     ['gear', 'Disconnects'],
     ['lighting', 'Photocells'],
+    ['devices', 'Receptacles'],
     ['devices', 'Switches'],
     ['devices', 'Occupancy Sensors'],
-    ['devices', 'Boxes'],
-    ['devices', 'Rings and Covers'],
-    ['devices', 'Wall Plates'],
+    ['devices', 'Boxes & Rings'],
+    ['devices', 'Covers & Plates'],
     ['devices', 'MC and NM Connectors'],
     ['wire', 'NM-B (Romex)'],
     ['wire', 'MC Cable'],
@@ -321,20 +356,21 @@ test('the new sections carry hours on every row', () => {
     assert.ok(rows && rows.length, `${tab}/${section} is missing`);
     for (const r of rows) {
       assert.ok(Number(r.labor) > 0, `${tab}/${section}/${r.name} has no hours`);
-      // price is deliberately blank: the supply house owns today's price
-      assert.equal(r.price, '');
+      // X6 rows leave the price blank on purpose (the supply house owns today's
+      // price); v3's curated starters carry an MC-book price and say so
+      if (r.price !== '') assert.equal(r.priceSource, 'MC book', `${tab}/${section}/${r.name} is priced without provenance`);
     }
   }
 });
 
 test('a book at the previous defaults version takes the new sections on merge', () => {
   const v3 = clone(realDefaults.defaults);
-  delete v3.devices.Boxes;
+  delete v3.devices['Boxes & Rings'];
   delete v3.conduit['Pull String and Rope'];
   const removed = {};
   Merge.bootstrap(v3, realDefaults.defaults);
   const res = Merge.mergeDefaults(v3, realDefaults.defaults, removed, {});
-  assert.ok(v3.devices.Boxes.some((r) => r.name.startsWith('1900 box')), 'the boxes come back');
+  assert.ok(v3.devices['Boxes & Rings'].some((r) => r.name.startsWith('1900 box')), 'the boxes come back');
   assert.ok(v3.conduit['Pull String and Rope'].length === 3);
   // a wholesale new section is not "your book changed" — nothing to announce
   assert.deepEqual(res.updated, []);
@@ -349,4 +385,170 @@ test('computeCorrections never emits one tab/section/name twice', () => {
   ];
   const list = Merge.computeCorrections(book, defaults(), {});
   assert.equal(list.filter((c) => c.name === '14').length, 1);
+});
+
+// --- every shape a stored book can be in converges on the current defaults ---
+
+// The same rows, whatever order the merge appended them in: a section that
+// arrived through two branches lists one branch's rows first.
+function normalized(book) {
+  const out = {};
+  for (const tab of Object.keys(book)) {
+    out[tab] = {};
+    for (const section of Object.keys(book[tab] || {})) {
+      out[tab][section] = book[tab][section]
+        .map((r) => ({ name: r.name, labor: Number(r.labor) || 0, price: String(r.price ?? '') }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }
+  // the shipped defaults are evaluated in a vm context, whose Array prototype
+  // deepStrictEqual would otherwise refuse to match — round-trip to plain data
+  return clone(out);
+}
+
+function historicalShapes() {
+  const v2 = loadHistoricalDefaults('v2.js');
+  const v3main = loadHistoricalDefaults('v3-main.js');
+  const v4ours = loadHistoricalDefaults('v4-ours.js');
+  // v3 on the journey-map branch: the PVC GLUE collapse before the X6 rows
+  const v3ours = { version: 3, defaults: clone(v4ours.defaults) };
+  delete v3ours.defaults.gear.Disconnects;
+  v3ours.defaults.lighting = {};
+  v3ours.defaults.devices = {};
+  delete v3ours.defaults.wire['NM-B (Romex)'];
+  delete v3ours.defaults.wire['MC Cable'];
+  delete v3ours.defaults.conduit['Pull String and Rope'];
+  return { v2, 'v3-main': v3main, 'v3-ours': v3ours, 'v4-ours': v4ours };
+}
+
+for (const [label, shape] of Object.entries(historicalShapes())) {
+  test(`a book saved at ${label} converges on the current defaults with no phantom corrections`, () => {
+    assert.ok(shape.version < realDefaults.version, `${label} predates the current version`);
+    // an untouched book at that version, as TakeoffState.upgradeLaborBook sees
+    // it: defaultsVersion > 0, so no bootstrap — straight to the merge
+    const book = clone(shape.defaults);
+    const removed = {};
+    const res = Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
+    assert.deepEqual(normalized(book), normalized(realDefaults.defaults), `${label} did not converge`);
+    assert.deepEqual(Merge.computeCorrections(book, realDefaults.defaults, removed), []);
+    // a wholesale upgrade is announced only for rows whose numbers moved
+    assert.deepEqual(res.updated, []);
+    assert.equal(Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED).changed, 0, 'settled');
+  });
+
+  test(`a pre-provenance book holding the ${label} data converges too`, () => {
+    // the same rows with no laborBookMeta at all: bootstrap runs first
+    const book = clone(shape.defaults);
+    const removed = {};
+    Merge.bootstrap(book, realDefaults.defaults, RETIRED);
+    Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
+    assert.deepEqual(normalized(book), normalized(realDefaults.defaults), `${label} did not converge`);
+    assert.deepEqual(Merge.computeCorrections(book, realDefaults.defaults, removed), []);
+  });
+}
+
+test('a v4-ours book keeps the rows the user edited or added in a retired section', () => {
+  const v4 = loadHistoricalDefaults('v4-ours.js');
+  const book = clone(v4.defaults);
+  book.devices.Boxes[0].labor = 0.5;
+  book.devices.Boxes[0].edited = true;
+  book.devices['Wall Plates'].push({ name: 'Jumbo plate 1 gang', labor: 0.05, price: '', userAdded: true });
+  const removed = {};
+  Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
+  assert.equal(book.devices.Boxes, undefined, 'the retired section is gone');
+  const moved = book.devices['Boxes & Rings'].find((r) => r.name === v4.defaults.devices.Boxes[0].name);
+  assert.equal(moved.labor, 0.5);
+  assert.equal(moved.edited, true);
+  assert.ok(book.devices['Covers & Plates'].some((r) => r.name === 'Jumbo plate 1 gang' && r.userAdded));
+  // and the edit is the only correction proposed
+  const corrections = Merge.computeCorrections(book, realDefaults.defaults, removed);
+  assert.deepEqual(corrections.map((c) => [c.kind, c.name]), [['edit', v4.defaults.devices.Boxes[0].name], ['new', 'Jumbo plate 1 gang']]);
+});
+
+test('migrateRemovedMeta carries the relocated map, and it blocks the merge without being shared', () => {
+  const maps = Merge.migrateRemovedMeta({ defaultsVersion: 3, removed: { wire: { 'THHN CU': ['12'] } }, relocated: { wire: { Terminations: ['# 22-6'] } } });
+  assert.deepEqual(maps.removedLegacy, { wire: { 'THHN CU': ['12'] } }); // pre-split → legacy
+  assert.deepEqual(maps.removed, {});
+  assert.deepEqual(maps.relocated, { wire: { Terminations: ['# 22-6'] } });
+  const book = clone(defaults());
+  delete book.wire.Terminations; // moved to another tab via Organize Categories
+  Merge.mergeDefaults(book, defaults(), maps.removed, maps.removedLegacy, maps.relocated);
+  assert.equal(book.wire.Terminations, undefined, 'not resurrected at the old spot');
+  assert.deepEqual(Merge.computeCorrections(book, defaults(), maps.removed), [], 'a move is not a removal suggestion');
+});
+
+test('computeRemoved skips missing sections by default, includes them when asked', () => {
+  const book = clone(defaults());
+  delete book.wire.Terminations; // whole section gone (moved or deleted)
+  book.wire['THHN CU'].splice(1, 1); // one row gone from a surviving section
+
+  assert.deepEqual(Merge.computeRemoved(book, defaults()), { wire: { 'THHN CU': ['12'] } });
+  assert.deepEqual(Merge.computeRemoved(book, defaults(), true), {
+    wire: { 'THHN CU': ['12'], Terminations: ['# 22-6'] },
+  });
+});
+
+test('shipped defaults have unique row names within every section', () => {
+  // bootstrap/mergeDefaults/computeCorrections all match rows by name within
+  // a section, so duplicate names break provenance (see the tests below).
+  const shipped = loadShippedDefaults();
+  for (const [tab, sections] of Object.entries(shipped)) {
+    for (const [section, rows] of Object.entries(sections)) {
+      const seen = new Set();
+      for (const row of rows) {
+        assert.ok(!seen.has(row.name), `duplicate row name "${row.name}" in ${tab} / ${section}`);
+        seen.add(row.name);
+      }
+    }
+  }
+});
+
+test('bootstrap matches each default row once, so two same-named rows raise no bogus edit', () => {
+  // Why default row names must be unique per section: a name-keyed merge is
+  // ambiguous over duplicates. bootstrap used to compare the second row
+  // against the first's values and flag it edited (computeCorrections then
+  // reported an edit the user never made); it now claims each default once.
+  // The uniqueness test above keeps the shipped data out of this situation.
+  const defs = { conduit: { GLUE: [
+    { name: 'GLUE', labor: 15, price: '' },
+    { name: 'GLUE', labor: 5, price: '' },
+  ] } };
+  const book = clone(defs);
+  Merge.bootstrap(book, clone(defs));
+  assert.equal(book.conduit.GLUE[0].edited, undefined);
+  assert.equal(book.conduit.GLUE[1].edited, undefined); // untouched, and not flagged
+  assert.deepEqual(Merge.computeCorrections(book, clone(defs), {}), []);
+});
+
+test('renaming default rows migrates untouched books to the new names', () => {
+  // The v3 PVC GLUE fix: two same-named untouched rows are dropped (no default
+  // carries the old name anymore) and the renamed defaults are adopted.
+  const book = { conduit: { 'PVC GLUE': [
+    { name: 'PVC GLUE', labor: 15, price: '' },
+    { name: 'PVC GLUE', labor: 5, price: '' },
+  ] } };
+  const next = { conduit: { 'PVC GLUE': [
+    { name: 'PVC GLUE QUART', labor: 15, price: '' },
+    { name: 'PVC GLUE PINT', labor: 5, price: '' },
+  ] } };
+  Merge.mergeDefaults(book, next, {});
+  assert.deepEqual(
+    book.conduit['PVC GLUE'].map((r) => r.name).sort(),
+    ['PVC GLUE PINT', 'PVC GLUE QUART']
+  );
+});
+
+test('mergeDefaults does not resurrect a fully removed/relocated section', () => {
+  const book = clone(defaults());
+  delete book.wire.Terminations; // e.g. moved to another tab via Organize Categories
+  const removed = { wire: { Terminations: ['# 22-6'] } };
+
+  Merge.mergeDefaults(book, defaults(), removed);
+  assert.equal(book.wire.Terminations, undefined);
+
+  // ...but a genuinely new default row in that section is still adopted
+  const next = defaults();
+  next.wire.Terminations.push({ name: '# 4-1', labor: 0.3, price: '' });
+  Merge.mergeDefaults(book, next, removed);
+  assert.deepEqual(book.wire.Terminations, [{ name: '# 4-1', labor: 0.3, price: '' }]);
 });

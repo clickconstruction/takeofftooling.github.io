@@ -9,7 +9,8 @@
  *
  * Strategy, deliberately small:
  *   - install  : precache the shell (index.html, the stylesheet, every js/
- *                file in index.html's load order, the manifest and icons).
+ *                and vendor/ file in index.html's load order, the manifest
+ *                and icons).
  *   - navigate : network first, fall back to the cached index.html. Online
  *                you always get fresh code; offline you get the app.
  *   - shell    : network first, fall back to cache — same reason.
@@ -25,7 +26,7 @@
  * returning visitors keep the old copy until their next network-first hit.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `takeoff-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `takeoff-data-${CACHE_VERSION}`;
 
@@ -43,12 +44,13 @@ const CORE_ASSETS = [
  * The rest of the shell is read out of index.html at install time rather
  * than listed here: index.html already holds the authoritative load order,
  * and a hand-copied second list goes stale the first time a script tag is
- * added. Only same-origin js/ and css/ references are taken — the CDN
- * <script>s and the Google Fonts <link> are skipped on purpose.
+ * added. Only same-origin js/, css/ and vendor/ references are taken (the
+ * vendored jsPDF and supabase-js are shell too) — anything cross-origin,
+ * the Google Fonts <link> included, is skipped on purpose.
  */
 function shellAssetsFrom(html) {
   const found = new Set();
-  const re = /(?:src|href)\s*=\s*"((?:js|css)\/[^"]+)"/g;
+  const re = /(?:src|href)\s*=\s*"((?:js|css|vendor)\/[^"]+)"/g;
   let m;
   while ((m = re.exec(html)) !== null) found.add(m[1]);
   return [...found];

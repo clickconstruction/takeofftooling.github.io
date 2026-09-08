@@ -92,11 +92,12 @@ test('X6 — a book stored at the previous defaults version takes the new sectio
   await page.waitForTimeout(800); // past the 400 ms book-save debounce
 
   const doc = await page.evaluate(() => JSON.parse(localStorage.getItem('takeoff-book')));
-  expect(Object.keys(doc.laborBook.devices)).toContain('Boxes');
+  expect(Object.keys(doc.laborBook.devices)).toContain('Boxes & Rings'); // the X6 boxes live under v3's section name
+  expect(doc.laborBook.devices['Boxes & Rings'].some((r) => r.name.startsWith('1900 box'))).toBe(true);
   expect(Object.keys(doc.laborBook.devices)).toContain('MC and NM Connectors');
   expect(Object.keys(doc.laborBook.lighting)).toContain('Photocells');
   expect(Object.keys(doc.laborBook.gear)).toContain('Disconnects');
-  expect(doc.laborBookMeta.defaultsVersion).toBe(4);
+  expect(doc.laborBookMeta.defaultsVersion).toBe(5);
   // the boot merge alone must not move the book's clock past another device's
   expect(doc.savedAt).toBe('2026-01-01T00:00:00.000Z');
 });

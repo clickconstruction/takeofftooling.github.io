@@ -38,9 +38,15 @@ async function recordPdf(page, buttonId) {
       const doc = new Orig(...arguments);
       const origText = doc.text.bind(doc);
       const origAddPage = doc.addPage.bind(doc);
+      const origSetPage = doc.setPage.bind(doc);
       doc.addPage = function () {
         window.__pageNo += 1;
         return origAddPage(...arguments);
+      };
+      // the page footers are stamped in a final pass that revisits every page
+      doc.setPage = function (n) {
+        window.__pageNo = n;
+        return origSetPage(...arguments);
       };
       doc.text = function (text, x, y, options) {
         const str = String(text);

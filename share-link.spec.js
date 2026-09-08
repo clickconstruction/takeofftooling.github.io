@@ -15,6 +15,7 @@ async function seedAndShare(page, rate) {
     for (const item of TakeoffState.getTopLevelItems().slice()) TakeoffState.removeItem(item.id);
     TakeoffState.setProjectName('Cedar Ridge Clinic');
     TakeoffState.setLaborRate(rate);
+    TakeoffState.setTaxRate(8.5); // the dossier's bid was taxed at 8.5% (a new bid now starts at 8.25)
     for (const r of rows) TakeoffState.addItem({ ...r, planPage: '', parentId: null });
     TakeoffApp.render();
     // build the same envelope the "Export via link" menu item builds
@@ -24,6 +25,7 @@ async function seedAndShare(page, rate) {
       exportedAt: new Date().toISOString(),
       name: TakeoffState.getCurrentProject().name,
       laborRate: TakeoffState.getLaborRate(),
+      taxRate: TakeoffState.getTaxRate(),
       manifest: TakeoffState.getManifest(),
     };
     const s = TakeoffState.getSummaryBreakdown();

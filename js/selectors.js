@@ -12,9 +12,16 @@ const TakeoffSelectors = (function () {
   const utils = typeof TakeoffUtils !== 'undefined' ? TakeoffUtils : require('./utils.js');
   const MATERIAL_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems'];
   const OTHER_TYPES = ['permits', 'powerCoCharges', 'temporaryPower'];
-  // Sales tax is a per-project number (the project document carries it); 8.5%
-  // is only where a new bid starts. Every reader passes the project's rate in.
-  const DEFAULT_TAX_RATE = 8.5; // percent
+  // Sales tax is a per-project number (the project document carries it); 8.25%
+  // (Texas' combined maximum) is only where a NEW bid starts — a document
+  // saved before the field existed keeps the 8.5% it was bid at (state.js).
+  // Every reader passes the project's rate in, as a PERCENT.
+  const DEFAULT_TAX_RATE = 8.25; // percent
+  // Row units: 'ea' (a count), 'ft' (a length), 'px' (an UNSCALED length
+  // from CountTooling — pixels, not feet). px rows are never priced, labored
+  // or summed: they are flagged for the estimator to rescale and re-copy.
+  const UNITS = ['ea', 'ft', 'px'];
+  const isUnscaled = (item) => !!item && item.unit === 'px';
   const SITE_CHARGE_KEY = 'siteWork';
   // Every bucket under OTHER CHARGES: the three typed types plus the site work
   // moved out of materials below.
@@ -100,7 +107,7 @@ const TakeoffSelectors = (function () {
     function addLine(item) {
       const desc = (item.description || '').trim();
       const qty = nonNegative(item.quantity);
-      if (!desc || qty <= 0) return null;
+      if (!desc || qty <= 0 || isUnscaled(item)) return null;
       const key = utils.descKey(desc);
       let line = byKey.get(key);
       if (!line) {
@@ -211,8 +218,10 @@ const TakeoffSelectors = (function () {
         // Rounded per line, the way the purchase list rounds it: two
         // 4-decimal supplier prices used to leave the summary and the list a
         // cent apart on the same bid.
-        const priceAmount = Math.round(nonNegative(item.price) * qty * 100) / 100;
-        const laborHrs = nonNegative(item.labor) * qty;
+        // A px row is pixels, not feet: it has no money and no hours until
+        // it is rescaled and re-copied.
+        const priceAmount = isUnscaled(item) ? 0 : Math.round(nonNegative(item.price) * qty * 100) / 100;
+        const laborHrs = isUnscaled(item) ? 0 : nonNegative(item.labor) * qty;
 
         let laborBucket;
         if (isSiteCharge(item)) {
@@ -257,7 +266,20 @@ const TakeoffSelectors = (function () {
       laborTotal,
       otherCharges,
       otherTotal,
+      unscaledCount: countUnscaled(manifest),
     };
+  }
+
+  // Rows still carrying pixel lengths (unit 'px') anywhere in the manifest.
+  function countUnscaled(manifest) {
+    let n = 0;
+    (function walk(items) {
+      for (const item of items) {
+        if (isUnscaled(item)) n++;
+        if (item.children && item.children.length) walk(item.children);
+      }
+    })(topLevel(manifest));
+    return n;
   }
 
   return {
@@ -265,12 +287,15 @@ const TakeoffSelectors = (function () {
     getPurchaseList,
     getFlattenedItems,
     getSummaryBreakdown,
+    countUnscaled,
     isSiteCharge,
+    isUnscaled,
     MATERIAL_TYPES,
     OTHER_TYPES,
     OTHER_CHARGE_KEYS,
     SITE_CHARGE_KEY,
     DEFAULT_TAX_RATE,
+    UNITS,
   };
 })();
 

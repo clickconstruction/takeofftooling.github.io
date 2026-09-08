@@ -16,8 +16,16 @@ const TakeoffState = (function () {
   let assemblies = TakeoffStorage.loadAssemblies();
   let laborRate = 0;
   // Sales tax is the jurisdiction's, not the app's: it travels with the
-  // project (and with a share link), starting at 8.5% for a new bid.
+  // project (and with a share link), as a PERCENT, starting at 8.25% (Texas'
+  // combined maximum) for a new bid.
   let taxRate = TakeoffSelectors.DEFAULT_TAX_RATE;
+  // The rate the app hardcoded before it was a project setting. A document
+  // saved without a taxRate was bid at this, so that is what it keeps.
+  const LEGACY_TAX_RATE = 8.5;
+  // Link back to the CountTooling project the counts came from (the
+  // `?t=<token>` view link CountTooling appends to its export). Shown in the
+  // header; travels on to PipeTooling with the counts.
+  let plansUrl = '';
 
   // The open project (manifest + laborRate are its contents)
   let projectId = null;
@@ -49,11 +57,20 @@ const TakeoffState = (function () {
   const LABOR_BOOK_GROUPS = LABOR_BOOK_DEFAULT_GROUPS;
   let activeLaborBookTab = 'gear';
   let laborBook = JSON.parse(JSON.stringify(LABOR_BOOK_DEFAULTS));
+  // User-defined section groups from the Organize Categories view, keyed by
+  // tab: {type: [{name, sections:[names]}]}. null → the shipped defaults
+  // config (LABOR_BOOK_DEFAULT_GROUPS) applies. Persisted in the book doc.
+  let laborBookGroups = null;
   // Provenance for the shared-book feedback loop (js/laborBookMerge.js):
   // which defaults the user deleted, and which defaults version the stored
   // book was last reconciled against.
   let laborBookRemoved = {}; // removals the user made — shared as corrections
   let laborBookRemovedLegacy = {}; // pre-split map: honoured, never shared
+  // Defaults missing from their home tab/section but present elsewhere in the
+  // book (moved/renamed via Organize Categories). The defaults merge treats
+  // them like removed (no resurrection at the old spot) but they are NOT
+  // shared as remove-corrections — a move is not a deletion suggestion.
+  let laborBookRelocated = {};
   let laborBookDefaultsVersion = LABOR_BOOK_DEFAULTS_VERSION;
   // Rows a defaults upgrade rewrote under the user, for the one-time "the
   // shared book moved" line (read once by js/cloud.js at boot).
@@ -70,6 +87,11 @@ const TakeoffState = (function () {
     return manifest;
   }
 
+  // Row units (see TakeoffSelectors.UNITS): anything unknown is a count.
+  function normalizeUnit(u) {
+    return typeof u === 'string' && TakeoffSelectors.UNITS.includes(u) ? u : 'ea';
+  }
+
   // Imported rows always get fresh ids. Reusing the sender's ids let a shared
   // copy and its source share row ids, so an open flow editor kept rendering
   // after a project switch and saved into the wrong bid.
@@ -82,8 +104,10 @@ const TakeoffState = (function () {
       type: typeof raw.type === 'string' ? raw.type : null,
       description: typeof raw.description === 'string' ? raw.description : '',
       quantity: Number(raw.quantity) || 0,
+      unit: normalizeUnit(raw.unit),
       labor: Number(raw.labor) || 0,
       planPage: typeof raw.planPage === 'string' ? raw.planPage : '',
+      group: typeof raw.group === 'string' && raw.group.trim() ? raw.group.trim() : null,
       parentId: parentId ?? null,
       price: isNaN(price) || raw.price == null || raw.price === '' ? null : price,
       children: [],
@@ -184,6 +208,7 @@ const TakeoffState = (function () {
     if (!projectId) return;
     const savedAt = new Date().toISOString();
     const doc = { v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate, taxRate, details: projectDetails, importedFrom: projectImportedFrom };
+    if (plansUrl) doc.plansUrl = plansUrl;
     if (projectArchived) {
       doc.archived = true;
       doc.archivedAt = projectArchivedAt;
@@ -211,14 +236,18 @@ const TakeoffState = (function () {
       v: 1,
       savedAt,
       laborBook,
+      // null = the shipped groups config (LABOR_BOOK_DEFAULT_GROUPS) applies
+      laborBookGroups,
       laborBookMeta: {
         defaultsVersion: laborBookDefaultsVersion,
         // removedV: 2 — `removed` holds only removals the user made; the
         // pre-split map (which mixed those with gaps bootstrap inferred)
-        // lives on as removedLegacy. See js/laborBookMerge.js.
+        // lives on as removedLegacy; `relocated` is what Organize Categories
+        // moved or renamed. See js/laborBookMerge.js.
         removedV: 2,
         removed: laborBookRemoved,
         removedLegacy: laborBookRemovedLegacy,
+        relocated: laborBookRelocated,
       },
     });
   }
@@ -248,16 +277,19 @@ const TakeoffState = (function () {
     const maps = TakeoffLaborBookMerge.migrateRemovedMeta(meta);
     laborBookRemoved = maps.removed;
     laborBookRemovedLegacy = maps.removedLegacy;
+    laborBookRelocated = maps.relocated;
     const storedVersion = meta && typeof meta.defaultsVersion === 'number' ? meta.defaultsVersion : 0;
     let dirty = false;
     if (storedVersion === 0) {
       // flags only — a missing default is an inferred gap, not a removal, and
       // the merge below fills it back in (J11-F12)
-      TakeoffLaborBookMerge.bootstrap(laborBook, LABOR_BOOK_DEFAULTS);
+      TakeoffLaborBookMerge.bootstrap(laborBook, LABOR_BOOK_DEFAULTS, LABOR_BOOK_RETIRED);
       dirty = true;
     }
     if (storedVersion < LABOR_BOOK_DEFAULTS_VERSION) {
-      const res = TakeoffLaborBookMerge.mergeDefaults(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved, laborBookRemovedLegacy);
+      // relocated defaults count as removed for the merge — moved sections
+      // must not be resurrected at their old location
+      const res = TakeoffLaborBookMerge.mergeDefaults(laborBook, LABOR_BOOK_DEFAULTS, laborBookRemoved, laborBookRemovedLegacy, laborBookRelocated, LABOR_BOOK_RETIRED);
       // Only a stored book that was already at a real defaults version can be
       // told "your book changed": a bootstrap pass rewrites rows the user
       // never saw as defaults, and a first boot has nothing to compare with.
@@ -273,10 +305,12 @@ const TakeoffState = (function () {
   }
 
   // A stored, imported or typed tax rate, as a percent between 0 and 100.
-  // Anything unreadable falls back to the 8.5% the app used to hardcode.
+  // A missing or unreadable rate falls back to the 8.5% the app used to
+  // hardcode: that is the rate the document was bid at (new bids start at
+  // TakeoffSelectors.DEFAULT_TAX_RATE, set where the project is created).
   function sanitizeTaxRate(value) {
     const n = Number(value);
-    if (typeof value === 'boolean' || value === null || value === '' || !isFinite(n)) return TakeoffSelectors.DEFAULT_TAX_RATE;
+    if (typeof value === 'boolean' || value === null || value === '' || !isFinite(n)) return LEGACY_TAX_RATE;
     return Math.min(100, Math.max(0, n));
   }
 
@@ -309,6 +343,7 @@ const TakeoffState = (function () {
     // a project saved before the rate was editable carries none: it was bid at
     // the old hardcoded 8.5%, so that is what it keeps
     taxRate = sanitizeTaxRate(data.taxRate);
+    plansUrl = typeof data.plansUrl === 'string' && /^https?:\/\//i.test(data.plansUrl) ? data.plansUrl : '';
     projectDetails = sanitizeDetails(data.details);
     projectImportedFrom = sanitizeImportedFrom(data.importedFrom);
     const arch = sanitizeArchived(data);
@@ -321,6 +356,7 @@ const TakeoffState = (function () {
     const book = TakeoffStorage.loadBook();
     if (book && book.laborBook && typeof book.laborBook === 'object') {
       laborBook = book.laborBook;
+      if (book.laborBookGroups && typeof book.laborBookGroups === 'object') laborBookGroups = book.laborBookGroups;
       upgradeLaborBook(book.laborBookMeta, book.savedAt);
     }
     const idx = TakeoffStorage.loadProjectsIndex();
@@ -341,6 +377,7 @@ const TakeoffState = (function () {
   function adoptBook(data) {
     if (!data || data.v !== 1 || !data.laborBook || typeof data.laborBook !== 'object') return false;
     laborBook = data.laborBook;
+    laborBookGroups = data.laborBookGroups && typeof data.laborBookGroups === 'object' ? data.laborBookGroups : null;
     upgradeLaborBook(data.laborBookMeta, data.savedAt);
     return true;
   }
@@ -366,7 +403,17 @@ const TakeoffState = (function () {
   }
 
   function getCurrentProject() {
-    return { id: projectId, name: projectName };
+    return { id: projectId, name: projectName, plansUrl };
+  }
+
+  // The CountTooling plans link for this project (set by the import; shown in
+  // the header and forwarded to PipeTooling). Empty string clears it.
+  function setPlansUrl(url) {
+    const next = typeof url === 'string' ? url.trim() : '';
+    if (next && !/^https?:\/\//i.test(next)) return false;
+    plansUrl = next;
+    schedulePersist();
+    return true;
   }
 
   function setProjectName(name) {
@@ -463,8 +510,10 @@ const TakeoffState = (function () {
     // a new bid — however it arrived, share link included — is always live
     projectArchived = false;
     projectArchivedAt = null;
+    plansUrl = ''; // the counts for a new bid have not come from anywhere yet
+    // laborRate and taxRate carry over as the new project's defaults
     manifest = [
-      { id: generateId(), type: null, description: '', quantity: 1, labor: 0, planPage: '', parentId: null, price: null, children: [], conduitMeta: null, meta: null },
+      { id: generateId(), type: null, description: '', quantity: 1, unit: 'ea', labor: 0, planPage: '', group: null, parentId: null, price: null, children: [], conduitMeta: null, meta: null },
     ];
     clearManifestHistory();
     persistNow();
@@ -484,7 +533,7 @@ const TakeoffState = (function () {
 
   function duplicateProject(id) {
     const source = id === projectId
-      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, details: projectDetails }
+      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, plansUrl, details: projectDetails }
       : TakeoffStorage.loadProject(id);
     if (!source) return null;
     const savedAt = new Date().toISOString();
@@ -501,6 +550,7 @@ const TakeoffState = (function () {
       details: sanitizeDetails(source.details),
       importedFrom: null,
     };
+    if (typeof source.plansUrl === 'string' && source.plansUrl) copy.plansUrl = source.plansUrl;
     TakeoffStorage.saveProject(copy);
     const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
     idx.projects.push({ id: copy.id, name: copy.name, createdAt: savedAt, updatedAt: savedAt });
@@ -658,8 +708,10 @@ const TakeoffState = (function () {
       type: item.type || null,
       description: item.description || '',
       quantity: Number(item.quantity) || 0,
+      unit: normalizeUnit(item.unit),
       labor: Number(item.labor) || 0,
       planPage: item.planPage ?? '',
+      group: typeof item.group === 'string' && item.group.trim() ? item.group.trim() : null,
       parentId: item.parentId ?? null,
       price: coercePrice(item.price),
       children: item.children || [],
@@ -722,6 +774,7 @@ const TakeoffState = (function () {
     const list = parent ? parent.children : manifest;
     const idx = list.findIndex((i) => i.id === id);
     if (idx === -1) return null;
+    if ('unit' in updates) updates = { ...updates, unit: normalizeUnit(updates.unit) };
     Object.assign(list[idx], updates);
     return list[idx];
   }
@@ -853,7 +906,76 @@ const TakeoffState = (function () {
   }
 
   function getLaborBookGroups(type) {
+    if (laborBookGroups) return laborBookGroups[type] || null;
     return LABOR_BOOK_GROUPS[type] || null;
+  }
+
+  /**
+   * Commit a reorganization from the Organize Categories view. `payload` is
+   * {tabs: [{key, groups: [{name|null, sections: [{name, items:[rows],
+   * origin?: {tab, name}}]}]}]} — the full structure for every tab. Rows
+   * already carry provenance flags (stamped by the view as the user edited
+   * them); `origin` is where a section lived in the book when the view
+   * opened (absent for sections created in the view). Rebuilds each tab's
+   * section map in the given order, stores named groups as the user's group
+   * config, and re-derives the removed/relocated maps: defaults whose home
+   * section survived somewhere (moved/renamed — matched by origin) become
+   * `relocated` (no resurrection on merge, but not shared as a remove
+   * suggestion); defaults whose section is gone, or rows deleted from a
+   * surviving section, become `removed`. Not undoable (labor-book changes
+   * never are).
+   */
+  function applyBookReorganization(payload) {
+    if (!payload || !Array.isArray(payload.tabs)) return false;
+    const newBook = {};
+    const newGroups = {};
+    const survivingOrigins = new Set(); // "tab\nsection" of sections that still exist somewhere
+    for (const tab of payload.tabs) {
+      if (!LABOR_BOOK_TAB_ORDER.includes(tab.key)) continue;
+      const sections = {};
+      const named = [];
+      for (const group of tab.groups || []) {
+        const sectionNames = [];
+        for (const sec of group.sections || []) {
+          const name = String(sec.name || '').trim();
+          if (!name || sections[name]) continue; // duplicates collapse silently
+          sections[name] = Array.isArray(sec.items) ? sec.items : [];
+          sectionNames.push(name);
+          if (sec.origin && sec.origin.tab && sec.origin.name) {
+            survivingOrigins.add(sec.origin.tab + '\n' + sec.origin.name);
+          }
+        }
+        if (group.name !== null && group.name !== undefined) {
+          named.push({ name: String(group.name), sections: sectionNames });
+        }
+      }
+      newBook[tab.key] = sections;
+      newGroups[tab.key] = named;
+    }
+    // any tab the payload skipped keeps its current sections
+    for (const key of LABOR_BOOK_TAB_ORDER) {
+      if (!newBook[key]) newBook[key] = laborBook[key] || {};
+    }
+    laborBook = newBook;
+    laborBookGroups = newGroups;
+
+    const missing = TakeoffLaborBookMerge.computeRemoved(laborBook, LABOR_BOOK_DEFAULTS, true);
+    laborBookRemoved = {};
+    laborBookRelocated = {};
+    for (const tabKey of Object.keys(missing)) {
+      for (const section of Object.keys(missing[tabKey])) {
+        // a section still present at home lost individual rows → removed;
+        // a section that survived elsewhere (moved/renamed) → relocated;
+        // a section that is gone entirely → removed
+        const atHome = !!laborBook[tabKey][section];
+        const movedAway = !atHome && survivingOrigins.has(tabKey + '\n' + section);
+        const dest = movedAway ? laborBookRelocated : laborBookRemoved;
+        if (!dest[tabKey]) dest[tabKey] = {};
+        dest[tabKey][section] = missing[tabKey][section].slice();
+      }
+    }
+    persistBookNow();
+    return true;
   }
 
   function getLaborBookType(type) {
@@ -880,6 +1002,7 @@ const TakeoffState = (function () {
     if (!name) return;
     TakeoffLaborBookMerge.unrecordRemoved(laborBookRemoved, type, section, name);
     TakeoffLaborBookMerge.unrecordRemoved(laborBookRemovedLegacy, type, section, name);
+    TakeoffLaborBookMerge.unrecordRemoved(laborBookRelocated, type, section, name);
   }
 
   // The shipped row of that name, if any — used to tell a real edit from a
@@ -1281,10 +1404,13 @@ const TakeoffState = (function () {
     setLaborRate,
     getTaxRate,
     setTaxRate,
+    LEGACY_TAX_RATE,
+    setPlansUrl,
     clearManifestHistory,
     getLaborBook,
     getLaborBookTabOrder,
     getLaborBookGroups,
+    applyBookReorganization,
     getLaborBookType,
     setLaborBookSection,
     addLaborBookRow,

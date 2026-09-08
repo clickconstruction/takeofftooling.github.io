@@ -142,7 +142,7 @@ const TakeoffManifestView = (function () {
 
     const planPageCell = isChild
       ? '<td></td>'
-      : `<td><input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></td>`;
+      : `<td><div class="plan-cell-wrap">${item.group ? `<span class="group-tag" title="Group / circuit from CountTooling">${escapeHtml(item.group)}</span>` : ''}<input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></div></td>`;
 
     const typeLabelDisplay = item.type
       ? (isChild ? CHILD_TYPE_LABELS[item.type] || TYPE_LABELS[item.type] || item.type : TYPE_LABELS[item.type] || item.type)
@@ -195,12 +195,12 @@ const TakeoffManifestView = (function () {
     const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn row-btn" tabindex="0" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}</td>`;
 
     return `
-      <tr class="${isChild ? 'child-row' : ''}" data-id="${item.id}">
+      <tr class="${isChild ? 'child-row' : ''} ${item.unit === 'px' ? 'row-unscaled' : ''}" data-id="${item.id}">
         ${removeCell}
         ${laborBookCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Assembly Description" /></td>
         ${typeCell}
-        <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn row-btn" tabindex="-1" data-id="${item.id}" title="Subtract 1">−</button><input type="number" class="${isParkedAtZero(item) ? 'qty-zero' : ''}" data-field="quantity" data-id="${item.id}" dir="ltr" inputmode="decimal" value="${isParkedAtZero(item) ? 0 : item.quantity || ''}" min="0" step="1" placeholder="0" /><button type="button" class="qty-up-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add 1">+</button></div></td>
+        <td class="qty-cell"><div class="qty-spinner"><button type="button" class="qty-down-btn row-btn" tabindex="-1" data-id="${item.id}" title="Subtract 1">−</button><input type="number" class="${isParkedAtZero(item) ? 'qty-zero' : ''}" data-field="quantity" data-id="${item.id}" dir="ltr" inputmode="decimal" value="${isParkedAtZero(item) ? 0 : item.quantity || ''}" min="0" step="${item.unit === 'ea' ? 1 : 'any'}" placeholder="0" /><button type="button" class="qty-up-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add 1">+</button></div>${renderUnitSelect(item)}</td>
         <td class="labor-cell"><input type="number" data-field="labor" data-id="${item.id}" dir="ltr" inputmode="decimal" value="${item.labor || ''}" min="0" step="0.1" placeholder="0" /></td>
         <td class="price-cell"><input type="number" data-field="price" data-id="${item.id}" dir="ltr" inputmode="decimal" value="${item.price ?? ''}" min="0" step="1" placeholder="Price" />${bookChipSlot(item)}</td>
         ${planPageCell}
@@ -210,6 +210,16 @@ const TakeoffManifestView = (function () {
 
   function escapeHtml(str) {
     return TakeoffUtils.escapeHtml(str);
+  }
+
+  // Unit beside the quantity: ea (a count) or ft (a length). px is CountTooling's
+  // unscaled-run flag — shown, never chosen; it clears by picking ea or ft
+  // once the estimator has a real length.
+  function renderUnitSelect(item) {
+    const unit = item.unit || 'ea';
+    const opts = [['ea', 'ea'], ['ft', 'ft']];
+    if (unit === 'px') opts.push(['px', 'px · unscaled']);
+    return `<select class="qty-unit-select ${unit === 'px' ? 'is-px' : ''}" data-field="unit" data-id="${item.id}" title="${unit === 'px' ? 'Unscaled: a pixel length from CountTooling. Left out of every total — set the scale there and re-import, or pick a unit once you know the length.' : 'Quantity unit'}">${opts.map(([v, l]) => `<option value="${v}" ${v === unit ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   }
 
   const SUMMARY_LABELS = {
@@ -288,6 +298,10 @@ const TakeoffManifestView = (function () {
     v.laborDollars = '$' + formatMoney(s.laborTotal * rate);
     v.otherTotal = '$' + formatMoney(s.otherTotal);
     v.grandTotal = 'Grand Total: $' + formatMoney(s.materialsTotal + s.laborTotal * rate + s.otherTotal);
+    // px rows are pixels, not feet: they sit outside every total until rescaled
+    v.unscaledNote = s.unscaledCount
+      ? `${s.unscaledCount} unscaled row${s.unscaledCount === 1 ? '' : 's'} (px) left out of totals — set the scale in CountTooling and re-import.`
+      : '';
     return v;
   }
 
@@ -310,6 +324,7 @@ const TakeoffManifestView = (function () {
       laborDollars: 'Labor total hours × the labor rate',
       otherTotal: 'Every other charge above, added up',
       grandTotal: 'Materials total + labor $ + other charges',
+      unscaledNote: 'Rows still carrying a pixel length (px) from Count Tooling: no price and no hours until the page is scaled there and re-imported',
     };
     return titles[key] || '';
   }
@@ -356,6 +371,8 @@ const TakeoffManifestView = (function () {
           </table>
         </div>
         <div class="manifest-summary-grand-total" data-summary="grandTotal" title="${escapeHtml(summaryTitle('grandTotal'))}">${v.grandTotal}</div>
+        <div class="manifest-summary-grand-note">Cost only — margin and the bid price are set in PipeTooling.</div>
+        <div class="summary-unscaled-note" data-summary="unscaledNote" title="${escapeHtml(summaryTitle('unscaledNote'))}" ${v.unscaledNote ? '' : 'hidden'}>${escapeHtml(v.unscaledNote)}</div>
       </div>
     `;
   }
@@ -379,6 +396,7 @@ const TakeoffManifestView = (function () {
       summaryEl.querySelectorAll('[data-summary]').forEach((el) => {
         const next = v[el.dataset.summary];
         if (next !== undefined && el.textContent !== next) el.textContent = next;
+        if (el.dataset.summary === 'unscaledNote') el.hidden = !next;
       });
     }
     updatePurchaseListOnly();
@@ -733,6 +751,12 @@ const TakeoffManifestView = (function () {
       if (field === 'quantity' || field === 'labor') value = parseFloat(value) || 0;
       if (field === 'price') value = value === '' ? null : (parseFloat(value) ?? null);
       const updates = { [field]: value };
+      if (field === 'unit') {
+        // unit changes re-render the row (px flag, step) and the totals
+        TakeoffState.updateItem(id, updates);
+        TakeoffApp.render();
+        return;
+      }
       if (field === 'description') {
         const item = TakeoffState.getItemById(id);
         const descVal = (value || '').trim();

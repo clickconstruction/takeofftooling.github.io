@@ -155,7 +155,9 @@ const TakeoffLaborBookView = (function () {
 
     let html = filterHtml;
 
-    if (groups && type === 'conduit') {
+    // Grouped rendering wherever groups exist: the conduit defaults config,
+    // or any tab the user gave groups via Organize Categories.
+    if (groups && groups.length) {
       const expandGroup = TakeoffState.getLaborBookExpandGroup?.() || null;
       const grouped = new Set();
       for (const group of groups) {
@@ -179,18 +181,20 @@ const TakeoffLaborBookView = (function () {
       `;
         }
       }
-      let importedSectionsHtml = '';
+      let ungroupedSectionsHtml = '';
       for (const section of sections) {
         if (grouped.has(section)) continue;
-        importedSectionsHtml += renderSectionBlock(type, section, data);
+        ungroupedSectionsHtml += renderSectionBlock(type, section, data);
       }
-      if (importedSectionsHtml) {
-        const collapsedClass = expandGroup === 'Imported' || openGroups.has(sectionStateKey('Imported')) ? '' : ' labor-book-group-collapsed';
+      if (ungroupedSectionsHtml) {
+        // was labeled "Imported" before Organize Categories made the
+        // ungrouped bucket a first-class concept (state key kept for both)
+        const isOpen = ['Ungrouped', 'Imported'].some((k) => expandGroup === k || openGroups.has(sectionStateKey(k)));
         html += `
-        <div class="labor-book-group${collapsedClass}" data-group="Imported">
-          <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>Imported</h2>
+        <div class="labor-book-group${isOpen ? '' : ' labor-book-group-collapsed'}" data-group="Ungrouped">
+          <h2 class="labor-book-group-header"><span class="labor-book-section-chevron"></span>Ungrouped</h2>
           <div class="labor-book-group-body">
-            ${importedSectionsHtml}
+            ${ungroupedSectionsHtml}
           </div>
         </div>
       `;
@@ -447,12 +451,19 @@ const TakeoffLaborBookView = (function () {
       lines.push(labels[type] || type);
       lines.push('');
 
-      if (groups && type === 'conduit') {
+      if (groups && groups.length) {
+        const grouped = new Set(groups.flatMap((g) => g.sections));
         for (const group of groups) {
           lines.push('  ' + group.name);
           for (const section of group.sections) {
             if (data[section]) lines.push('    - ' + section);
           }
+          lines.push('');
+        }
+        const ungrouped = sections.filter((s) => !grouped.has(s));
+        if (ungrouped.length) {
+          lines.push('  Ungrouped');
+          for (const section of ungrouped) lines.push('    - ' + section);
           lines.push('');
         }
       } else {
@@ -742,6 +753,10 @@ const TakeoffLaborBookView = (function () {
         </dl>`
     ).join('');
   }
+  document.getElementById('labor-book-organize-btn')?.addEventListener('click', () => {
+    TakeoffApp.hideLaborBookModal();
+    TakeoffApp.navigateToOrganize();
+  });
 
   document.getElementById('labor-book-abbreviation-key-btn')?.addEventListener('click', () => {
     const modal = document.getElementById('abbreviation-key-modal');

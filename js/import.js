@@ -1,14 +1,40 @@
 /**
- * Import from Count Tooling clipboard format
- * Format: fixture\tcount\tpage per line
- * fixture — Item name
- * count — Count or length (number)
- * page — Comma-separated page numbers (e.g. 1, 3, 5)
- * Line types: [unit] of [name] (e.g. ft of Conduit, in of Pipe)
+ * Import from CountTooling — two doors into the same preview modal.
+ *
+ * 1. Clipboard / paste (the "Copy to /Tooling" text). One row per line,
+ *    tab-separated: `fixture \t quantity \t pages`. CountTooling's conventions,
+ *    all honored here (they are the same ones PipeTooling's importer reads):
+ *      - `[Group] ` prefix on the name → the row's group (a circuit, a panel,
+ *        an area). Kept OFF the description so the name can match the book.
+ *      - `ft of <name>` → a length in feet (unit 'ft'); `px of <name>` → an
+ *        UNSCALED length in pixels (unit 'px'): imported flagged, never
+ *        priced or summed — the estimator rescales in CountTooling and
+ *        copies again. Everything else is a count (unit 'ea').
+ *      - a two-space indent → a child of the row above it (CountTooling's
+ *        child counts: couplings under a conduit, connectors under a box).
+ *      - a trailing `View link:\t<url>` footer → the project's plans link.
+ *    Type (lighting/gear/devices/conduit/wire/specialSystems) is inferred
+ *    from the name and unit, since the text carries none; the preview lets
+ *    the estimator fix any line's type before the rows exist.
+ *
+ * 2. Structured handoff (`#import=<base64 JSON>`, js/app.js): CountTooling
+ *    states facts and nothing is inferred that it provided.
+ *      v1: { v:1, source, items:[{ description, count|quantity, page?, type? }] }
+ *      v2: { v:2, source, project?: { name?, plansUrl? },
+ *            items:[{ description, quantity|count, unit?: 'ea'|'ft'|'px',
+ *                     type?, pages?|page?, group?, meta?,
+ *                     children?: [{ description, quantity, unit?, type? }] }] }
+ *    An invalid `type` falls back to inference; missing `unit` is 'ea'.
  *
  * Counts are TOTALS, never additions: a line that matches a row already on
- * the bid sets that row to the import's number, up or down. See the
- * "#import= contract" section of docs/ARCHITECTURE.md.
+ * the bid (same description key + unit) sets that row to the import's number,
+ * up or down, and its children follow the same rule under it. The one primary
+ * button says what it is about to do ("Update 1 count · add 2 fixtures");
+ * "Add as separate rows" is the deliberate duplicate door. One undo frame
+ * either way. See the "#import= contract" section of docs/ARCHITECTURE.md.
+ *
+ * The parser is pure and unit-tested (import.test.js) against a checked-in
+ * CountTooling export (import-files/counttooling-export.fixture.txt).
  */
 
 const TakeoffImport = (function () {
@@ -16,8 +42,15 @@ const TakeoffImport = (function () {
   // in Node (import.test.js) we require it.
   const utils = typeof TakeoffUtils !== 'undefined' ? TakeoffUtils : require('./utils.js');
 
-  let pendingImportItems = [];
+  let pending = { items: [], project: null };
   let lastFocusBeforeModal = null;
+
+  const GROUP_PREFIX_RE = /^\[([^\]]*)\]\s*/;
+  const FT_PREFIX_RE = /^(ft|feet|foot|lf|lin\.?\s?ft|linear\s+(feet|foot|ft))\.?\s+of\s+/i;
+  const PX_PREFIX_RE = /^px\s+of\s+/i;
+  // CountTooling's view-link footer: the `t=<uuid>` param, or the label itself.
+  const PLANS_LINK_RE = /https?:\/\/\S*[?&]t=[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+  const UNITS = ['ea', 'ft', 'px'];
 
   // Types the preview's picker offers, in the type modal's own order.
   const PICKABLE_TYPES = ['gear', 'lighting', 'devices', 'conduit', 'wire', 'specialSystems'];
@@ -33,30 +66,40 @@ const TakeoffImport = (function () {
     temporaryPower: 'Temporary power',
   };
 
+  // A length is conduit unless the name says cable or wire.
+  const WIRE_RE = /\b(mc|ac|nm|nm-b|romex|thhn|thwn|xhhw|use|ser|seu|cable|wire|cord|cat\s?[56]e?|fiber|coax)\b/i;
+
   /**
-   * Ordered type rules — the first pattern that hits wins, and every term is
-   * whole-word. Order carries the meaning: compound gear names that contain a
-   * device or lighting word are tested before those words on their own, so
-   * "Transfer Switch" is gear while "switch" alone is a device, and "LED Flat
-   * Panel" is lighting while "Panel LP-2" is gear. Terms with a known false
-   * positive in this trade are deliberately absent (lamp → beam clamp,
-   * strip → strip heater, jack → jack chain, meter → voltmeter).
+   * Ordered type rules for a COUNT — the first pattern that hits wins, and
+   * every term is whole-word. Order carries the meaning: compound gear names
+   * that contain a device or lighting word are tested before those words on
+   * their own, so "Transfer Switch" is gear while "switch" alone is a device,
+   * and "LED Flat Panel" is lighting while "Panel LP-2" is gear. Terms with a
+   * known false positive in this trade are deliberately absent (lamp → beam
+   * clamp, strip → strip heater, jack → jack chain, meter → voltmeter).
    */
   const TYPE_RULES = [
     ['conduit', /\bof\s+conduit\b|\bwhip\b/],
     ['wire', /\bof\s+wire\b/],
     // gear names that swallow a device/lighting word
     ['gear', /\bswitchgear\b|\bswitchboard\b|\btransfer\s+switch\b|\bdisconnect\b|\bsafety\s+switch\b|\bcontactor\b|\bmcc\b|\bmotor\s+control\b/],
-    ['lighting', /\btroffer\b|\bdownlight\b|\bhigh[\s-]?bay\b|\blow[\s-]?bay\b|\bsconce\b|\bexit\b|\bemergency\b|\bwall[\s-]?pack\b|\bpendant\b|\bluminaire\b|\bflat\s+panel\b|\bled\s+panel\b|\bcanopy\b|\bbollard\b|\bflood[\s-]?light\b|\bstrip\s+light\b|\blinear\s+light\b|\bcan\s+light\b|\brecessed\s+can\b|\bvapor[\s-]?tight\b|\blight\s*fixture\b|\blighting\b|\bfixture\b/],
-    ['specialSystems', /\bfire\s+alarm\b|\bsmoke\s+detector\b|\bpull\s+station\b|\bstrobe\b|\bnurse\s+call\b|\bcard\s+reader\b|\baccess\s+control\b|\bcctv\b|\bcamera\b|\bdata\s+jack\b|\bdata\s+port\b|\bspeaker\b/],
-    ['devices', /\breceptacles?\b|\brecept\b|\brecp\b|\boutlets?\b|\bswitch(es)?\b|\bdimmers?\b|\bgfci\b|\bocc(upancy)?\s+sensor\b|\bvacancy\s+sensor\b|\bphoto\s?cell\b|\btoggle\b|\bquad\b/],
+    // fire alarm before lighting: "FA Horn/Strobe" is not an emergency light
+    ['specialSystems', /\bfire\s+alarm\b|\bfa\b|\bsmoke\s+detector\b|\bheat\s+detector\b|\bpull\s+station\b|\bhorn\b|\bstrobe\b|\bnurse\s+call\b|\bcard\s+reader\b|\baccess\s+control\b|\bdoor\s+contact\b|\bcctv\b|\bcamera\b|\bdata\s+(drop|jack|port|outlet)\b|\bwap\b|\baccess\s+point\b|\bspeaker\b|\bintercom\b|\bsecurity\b/],
+    // "Type A" / "Type F2" is how a lighting schedule names a fixture
+    ['lighting', /\btype\s?[a-z]{1,3}\d*\b|\btroffer\b|\bdownlight\b|\bhigh[\s-]?bay\b|\blow[\s-]?bay\b|\bsconce\b|\bexit\b|\bemergency\b|\bwall[\s-]?pack\b|\bpendant\b|\bluminaire\b|\bflat\s+panel\b|\bled\s+panel\b|\bcanopy\b|\bbollard\b|\bflood[\s-]?light\b|\bstrip\s+light\b|\blinear\s+light\b|\bcan\s+light\b|\brecessed\s+can\b|\bvapor[\s-]?tight\b|\blight\s*fixture\b|\blighting\b|\bfixture\b/],
+    ['devices', /\breceptacles?\b|\brecept\b|\brecp\b|\boutlets?\b|\bswitch(es)?\b|\bdimmers?\b|\bgfci\b|\bgfi\b|\bocc(upancy)?\s+sensor\b|\bvacancy\s+sensor\b|\bphoto\s?cell\b|\btoggle\b|\bquad\b|\bduplex\b|\bfloor\s+box\b|\bj-?box\b|\bjunction\s+box\b|\busb\b/],
     // generic gear last, so the compounds above win
-    ['gear', /\bpanel(board)?\b|\bgear\b|\btransformers?\b|\bxfmr\b|\bbreakers?\b|\bload\s+cent(er|re)\b|\bmeter\s+(socket|base|can)\b|\bct\s+cabinet\b|\bats\b/],
+    ['gear', /\bpanel(board)?\b|\bgear\b|\btransformers?\b|\bxfmr\b|\bbreakers?\b|\bload\s+cent(er|re)\b|\bmeter\s+(socket|base|can)\b|\bct\s+cabinet\b|\bats\b|\bmdp\b|\bgenerator\b|\bvfd\b/],
   ];
 
-  function inferType(description) {
+  /**
+   * Type for a row from its name and (optional) unit. Lengths are conduit
+   * unless the name says cable or wire; counts run the ordered rules.
+   */
+  function inferType(description, unit) {
     const d = (description || '').trim().toLowerCase();
     if (!d) return null;
+    if (unit === 'ft' || unit === 'px') return WIRE_RE.test(d) ? 'wire' : 'conduit';
     for (const [type, re] of TYPE_RULES) {
       if (re.test(d)) return type;
     }
@@ -80,60 +123,158 @@ const TakeoffImport = (function () {
     return Number.isFinite(n) ? n : null;
   }
 
-  // Count Tooling appends 'View link:\t<url>' when its user is signed in.
-  // It is a footer, not a fixture — see docs/ARCHITECTURE.md.
-  function isViewLinkFooter(cells) {
-    return /^view\s+link:?$/i.test(cells[0] || '') && /^https?:\/\//i.test(cells[1] || '');
+  function normalizeUnit(u) {
+    return typeof u === 'string' && UNITS.includes(u) ? u : 'ea';
   }
 
-  // A 'px of …' row means the plan page was never scaled in Count Tooling,
-  // so the number is pixels and not feet. We can't fix it here; we can name it.
-  function isUnscaled(description) {
-    return /^\s*px\s+of\s+/i.test(description || '');
-  }
-
-  function parseCountToolingClipboard(text) {
-    const lines = String(text == null ? '' : text).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const items = [];
-    for (const line of lines) {
-      const parts = line.split(/\t/).map((p) => p.trim());
-      if (parts.length < 2) continue;
-      if (isViewLinkFooter(parts)) continue;
-      const fixture = parts[0] || '';
-      const page = parts[2] || '';
-      if (!fixture) continue;
-      items.push({
-        description: fixture,
-        quantity: parseCount(parts[1]),
-        labor: null,
-        planPage: page,
-        type: inferType(fixture),
-      });
+  // Split a CountTooling fixture name into { group, unit, description }.
+  function parseFixtureName(raw) {
+    let name = String(raw || '').trim();
+    let group = null;
+    const g = name.match(GROUP_PREFIX_RE);
+    if (g) {
+      group = g[1].trim() || null;
+      name = name.slice(g[0].length);
     }
-    return items;
+    let unit = 'ea';
+    if (PX_PREFIX_RE.test(name)) {
+      unit = 'px';
+      name = name.replace(PX_PREFIX_RE, '');
+    } else if (FT_PREFIX_RE.test(name)) {
+      unit = 'ft';
+      name = name.replace(FT_PREFIX_RE, '');
+    }
+    return { group, unit, description: name.trim() };
   }
 
-  // One key for "the same fixture", shared with the purchase list.
-  function descKey(s) {
-    return utils.descKey(s);
+  // CountTooling appends 'View link:\t<url>' when its user is signed in. It is
+  // a footer, not a fixture — recognised by its label + URL, or by the
+  // `t=<uuid>` token alone. Returns the URL, or null when the line is a row.
+  function viewLinkOf(line, cells) {
+    if (/^view\s+link:?$/i.test(cells[0] || '') && /^https?:\/\//i.test(cells[1] || '')) return cells[1];
+    const m = line.match(PLANS_LINK_RE);
+    return m ? m[0] : null;
+  }
+
+  /**
+   * Parse the clipboard text. Returns { items, plansUrl, skipped, unreadable }
+   * where each item is { description, quantity, unit, type, group, planPage,
+   * labor, meta, children: [item] } (children carry no children of their own
+   * — the manifest is two levels deep). `skipped` counts lines that could not
+   * be a row at all (one cell, no name); a row whose count cannot be read is
+   * KEPT with quantity null (shown as '× ?') and counted in `unreadable`.
+   */
+  function parseCountToolingClipboard(text) {
+    const items = [];
+    let plansUrl = null;
+    let skipped = 0;
+    let unreadable = 0;
+    let lastTop = null;
+    for (const rawLine of String(text == null ? '' : text).split(/\r?\n/)) {
+      if (!rawLine.trim()) continue;
+      const indented = /^\s{2,}/.test(rawLine);
+      const parts = rawLine.trim().split(/\t/).map((p) => p.trim());
+      const link = viewLinkOf(rawLine, parts);
+      if (link) {
+        if (!plansUrl) plansUrl = link;
+        continue;
+      }
+      if (parts.length < 2) { skipped++; continue; }
+      const parsed = parseFixtureName(parts[0]);
+      if (!parsed.description) { skipped++; continue; }
+      const quantity = parseCount(parts[1]);
+      if (quantity == null) unreadable++;
+      // 4 cells = PipeTooling-style `fixture, count, group, pages`
+      const group = parts.length >= 4 ? (parts[2] || parsed.group) : parsed.group;
+      const planPage = (parts.length >= 4 ? parts[3] : parts[2]) || '';
+      const item = {
+        description: parsed.description,
+        quantity: quantity == null ? null : Math.max(0, quantity),
+        unit: parsed.unit,
+        type: inferType(parsed.description, parsed.unit),
+        group,
+        planPage,
+        labor: null,
+        meta: null,
+        children: [],
+      };
+      if (indented && lastTop) {
+        item.children = undefined;
+        lastTop.children.push(item);
+      } else {
+        items.push(item);
+        lastTop = item;
+      }
+    }
+    return { items, plansUrl, skipped, unreadable };
+  }
+
+  /**
+   * Normalize a structured payload (v1 or v2) into the same item shape as
+   * the clipboard parser. Returns { items, project } or null when the payload
+   * is not one of ours.
+   */
+  function parsePayload(payload) {
+    if (!payload || typeof payload !== 'object' || (payload.v !== 1 && payload.v !== 2) || !Array.isArray(payload.items)) return null;
+    const knownTypes = typeof TakeoffState !== 'undefined' && Array.isArray(TakeoffState.ITEM_TYPES)
+      ? TakeoffState.ITEM_TYPES
+      : PICKABLE_TYPES.concat(['permits', 'powerCoCharges', 'temporaryPower']);
+    const validType = (t) => typeof t === 'string' && knownTypes.includes(t);
+    const toItem = (raw, isChild) => {
+      if (!raw || typeof raw !== 'object') return null;
+      const parsed = parseFixtureName(raw.description);
+      if (!parsed.description) return null;
+      // an explicit unit wins; otherwise the name convention; otherwise a count
+      const unit = typeof raw.unit === 'string' ? normalizeUnit(raw.unit) : parsed.unit;
+      const quantity = parseCount(raw.quantity ?? raw.count);
+      const group = typeof raw.group === 'string' && raw.group.trim() ? raw.group.trim() : parsed.group;
+      const item = {
+        description: parsed.description,
+        quantity: quantity == null ? null : Math.max(0, quantity),
+        unit,
+        type: validType(raw.type) ? raw.type : inferType(parsed.description, unit),
+        group,
+        planPage: String(raw.pages ?? raw.page ?? raw.planPage ?? '').trim(),
+        labor: null,
+        meta: raw.meta && typeof raw.meta === 'object' ? raw.meta : null,
+      };
+      if (!isChild) {
+        item.children = Array.isArray(raw.children) ? raw.children.map((c) => toItem(c, true)).filter(Boolean) : [];
+      }
+      return item;
+    };
+    const items = payload.items.map((r) => toItem(r, false)).filter(Boolean);
+    const p = payload.project && typeof payload.project === 'object' ? payload.project : {};
+    const project = {
+      name: typeof p.name === 'string' ? p.name.trim() : '',
+      plansUrl: typeof p.plansUrl === 'string' && PLANS_LINK_RE.test(p.plansUrl) ? p.plansUrl.match(PLANS_LINK_RE)[0] : '',
+    };
+    return { items, project };
   }
 
   function escapeHtml(str) {
     return utils.escapeHtml(str);
   }
 
+  // One key for "the same fixture": the purchase list's description key
+  // (case, trim and internal whitespace folded) plus the unit — 100 ft of
+  // "1/2" EMT" and a count of the same name are two rows.
+  function itemKey(desc, unit) {
+    return utils.descKey(desc) + '\n' + normalizeUnit(unit);
+  }
+
   /**
    * What the primary button is about to do. Pure: takes the import lines and
-   * a Map of described manifest rows keyed by descKey. The button label is
+   * a Map of described manifest rows keyed by itemKey. The button label is
    * built from this, so the receipt is on screen before the click.
    */
-  function summarizeImport(importItems, manifestByDesc) {
+  function summarizeImport(importItems, manifestByKey) {
     let updates = 0;
     let adds = 0;
     let matched = 0;
     let unreadable = 0;
     for (const item of importItems) {
-      const existing = manifestByDesc.get(descKey(item.description));
+      const existing = manifestByKey.get(itemKey(item.description, item.unit));
       if (!existing) {
         adds++;
         continue;
@@ -160,15 +301,27 @@ const TakeoffImport = (function () {
     return parts.join(' · ');
   }
 
-  // Real (described) manifest rows by normalized description — blank starter
+  // Real (described) manifest rows by description key + unit — blank starter
   // rows are noise in the preview and can't be merge targets.
-  function getManifestItemsByDesc() {
+  function getManifestItemsByKey() {
     const map = new Map();
     for (const i of TakeoffState.getTopLevelItems()) {
-      const key = descKey(i.description);
-      if (key && !map.has(key)) map.set(key, i);
+      if (!(i.description || '').trim()) continue;
+      const key = itemKey(i.description, i.unit);
+      if (!map.has(key)) map.set(key, i);
     }
     return map;
+  }
+
+  function unitTag(unit) {
+    if (unit === 'ft') return ' <span class="unit-tag unit-tag-ft">ft</span>';
+    if (unit === 'px') return ' <span class="unit-tag unit-tag-px" title="Unscaled: pixel length, not feet">px · unscaled</span>';
+    return '';
+  }
+
+  function fmtQty(q) {
+    if (q == null) return '?';
+    return String(Math.round((Number(q) || 0) * 100) / 100);
   }
 
   function renderManifestList(container) {
@@ -180,7 +333,7 @@ const TakeoffImport = (function () {
     container.innerHTML = items
       .map(
         (i) =>
-          `<div class="import-preview-item"><span class="import-preview-desc">${escapeHtml(i.description || '-')}</span> <span class="import-preview-meta">× ${i.quantity ?? 0} ${i.planPage ? '| ' + escapeHtml(i.planPage) : ''}</span></div>`
+          `<div class="import-preview-item">${i.group ? `<span class="group-tag">${escapeHtml(i.group)}</span>` : ''}<span class="import-preview-desc">${escapeHtml(i.description || '-')}</span> <span class="import-preview-meta">× ${fmtQty(i.quantity)}${unitTag(i.unit)} ${i.planPage ? '| ' + escapeHtml(i.planPage) : ''}</span></div>`
       )
       .join('');
   }
@@ -200,16 +353,33 @@ const TakeoffImport = (function () {
     return `<select class="import-preview-type" data-idx="${idx}" aria-label="Type for ${escapeHtml(item.description || 'this line')}">${options}</select>`;
   }
 
-  function renderImportList(container, importItems, manifestByDesc) {
+  function countUnscaled(items) {
+    return items.reduce((n, i) => n + (i.unit === 'px' ? 1 : 0) + (i.children || []).filter((c) => c.unit === 'px').length, 0);
+  }
+
+  function renderImportList(container, importItems, manifestByKey, project) {
     if (importItems.length === 0) {
       container.innerHTML = '<p class="import-preview-empty">No import items.</p>';
       return;
     }
-    container.innerHTML = importItems
+    let html = '';
+    const pxCount = countUnscaled(importItems);
+    if (pxCount) {
+      html += `<div class="import-preview-notice import-preview-notice-warn">${pxCount} ${pxCount === 1 ? 'row is' : 'rows are'} unscaled (px): Count Tooling exported pixel lengths for pages with no scale. They import flagged and stay out of every total — set the scale in Count Tooling and copy again.</div>`;
+    }
+    if (project && project.plansUrl) {
+      html += '<div class="import-preview-notice">Plans link found — it will be saved on this project and travel to PipeTooling with the counts.</div>';
+    }
+    const childRow = (child) => {
+      const warn = child.unit === 'px'
+        ? ' <span class="import-preview-warn">pixels, not feet — this page was never scaled in Count Tooling</span>'
+        : '';
+      return `<div class="import-preview-item import-preview-item-child ${child.unit === 'px' ? 'import-preview-item-px' : ''}"><span class="import-preview-desc">${escapeHtml(child.description || '-')}</span> <span class="import-preview-meta">× ${fmtQty(child.quantity)}${unitTag(child.unit)}</span>${warn}</div>`;
+    };
+    html += importItems
       .map((item, idx) => {
-        const existing = manifestByDesc.get(descKey(item.description));
+        const existing = manifestByKey.get(itemKey(item.description, item.unit));
         const badge = existing ? '' : '<span class="import-preview-badge import-preview-badge-new">new</span>';
-        const count = item.quantity == null ? '?' : item.quantity;
         // for an existing item, the decision is the delta — show it, in both
         // directions, because counts are totals
         let delta = '';
@@ -218,9 +388,9 @@ const TakeoffImport = (function () {
           if (item.quantity == null) {
             delta = ` <span class="import-preview-delta">count not read — keeping ${have}</span>`;
           } else if (item.quantity > have) {
-            delta = ` <span class="import-preview-delta">was ${have}, +${item.quantity - have}</span>`;
+            delta = ` <span class="import-preview-delta">was ${have}, +${fmtQty(item.quantity - have)}</span>`;
           } else if (item.quantity < have) {
-            delta = ` <span class="import-preview-delta">was ${have}, −${have - item.quantity}</span>`;
+            delta = ` <span class="import-preview-delta">was ${have}, −${fmtQty(have - item.quantity)}</span>`;
           } else {
             delta = ` <span class="import-preview-delta">already ${have}</span>`;
           }
@@ -230,16 +400,20 @@ const TakeoffImport = (function () {
             delta += ` <span class="import-preview-delta">· page ${escapeHtml(page)}${hadPage ? `, was ${escapeHtml(hadPage)}` : ''}</span>`;
           }
         }
-        const warn = isUnscaled(item.description)
+        const warn = item.unit === 'px'
           ? ' <span class="import-preview-warn">pixels, not feet — this page was never scaled in Count Tooling</span>'
           : '';
         const classes = ['import-preview-item'];
         if (!existing) classes.push('import-preview-item-new');
         if (!item.type) classes.push('import-preview-item-untyped');
+        if (item.unit === 'px') classes.push('import-preview-item-px');
         const pageCell = existing || !item.planPage ? '' : ' | ' + escapeHtml(item.planPage);
-        return `<div class="${classes.join(' ')}" data-idx="${idx}">${badge}<span class="import-preview-desc">${escapeHtml(item.description || '-')}</span> ${renderTypePicker(item, idx)} <span class="import-preview-meta">× ${escapeHtml(String(count))}${delta}${pageCell}</span>${warn}</div>`;
+        const groupTag = item.group ? `<span class="group-tag">${escapeHtml(item.group)}</span>` : '';
+        const row = `<div class="${classes.join(' ')}" data-idx="${idx}">${badge}${groupTag}<span class="import-preview-desc">${escapeHtml(item.description || '-')}</span> ${renderTypePicker(item, idx)} <span class="import-preview-meta">× ${fmtQty(item.quantity)}${unitTag(item.unit)}${delta}${pageCell}</span>${warn}</div>`;
+        return row + (item.children || []).map(childRow).join('');
       })
       .join('');
+    container.innerHTML = html;
   }
 
   // The blank row a new project always carries. It is only ever consumed when
@@ -254,21 +428,31 @@ const TakeoffImport = (function () {
     return row;
   }
 
+  // A CountTooling child count lands as the flow's own component type.
+  function childTypeFor(parentType) {
+    if (parentType === 'conduit') return 'fitting';
+    if (parentType === 'devices') return 'misc';
+    return null;
+  }
+
   /**
    * separateRows=false (the primary button): counts are totals — a matched row
    * is set to the import's count in either direction and takes the import's
-   * plan page; unmatched lines are added. separateRows=true (the demoted
-   * secondary): every line becomes its own row, duplicates included.
+   * plan page, and its children are matched the same way under it; unmatched
+   * lines are added. separateRows=true (the demoted secondary): every line
+   * becomes its own row, duplicates included.
    */
-  function performImport(items, separateRows) {
-    const existingByDesc = separateRows ? new Map() : getManifestItemsByDesc();
-    const willAdd = items.filter((it) => separateRows || !existingByDesc.has(descKey(it.description))).length;
+  function performImport(items, separateRows, project) {
+    const existingByKey = separateRows ? new Map() : getManifestItemsByKey();
+    const lookup = (it) => existingByKey.get(itemKey(it.description, it.unit));
+    const willAdd = items.filter((it) => separateRows || !lookup(it)).length;
     const blank = soleBlankRow();
-    if (typeof TakeoffEvents !== 'undefined') TakeoffEvents.log('import_added', TakeoffEvents.importProps(items, separateRows, (it) => existingByDesc.get(descKey(it.description))));
+    if (typeof TakeoffEvents !== 'undefined') TakeoffEvents.log('import_added', TakeoffEvents.importProps(items, separateRows, lookup));
     TakeoffState.beginBatch(); // whole import = one undo frame
     if (blank && willAdd > 0) TakeoffState.removeItem(blank.id);
     for (const item of items) {
-      const existing = separateRows ? null : existingByDesc.get(descKey(item.description));
+      const existing = separateRows ? null : lookup(item);
+      let parent = existing || null;
       if (existing) {
         const updates = {};
         if (item.quantity != null && item.quantity !== (Number(existing.quantity) || 0)) {
@@ -277,24 +461,61 @@ const TakeoffImport = (function () {
         const page = (item.planPage || '').trim();
         if (page && page !== (existing.planPage || '').trim()) updates.planPage = page;
         if (Object.keys(updates).length) TakeoffState.updateItem(existing.id, updates);
-        continue;
+      } else {
+        parent = TakeoffState.addItem({
+          type: item.type,
+          description: item.description,
+          quantity: item.quantity == null ? 0 : item.quantity,
+          unit: item.unit,
+          labor: item.labor,
+          planPage: item.planPage,
+          group: item.group,
+          meta: item.meta,
+          parentId: null,
+        });
       }
-      TakeoffState.addItem({
-        type: item.type,
-        description: item.description,
-        quantity: item.quantity == null ? 0 : item.quantity,
-        labor: item.labor,
-        planPage: item.planPage,
-        parentId: null,
-      });
+      for (const child of item.children || []) {
+        if (existing) {
+          const match = (parent.children || []).find((c) => itemKey(c.description, c.unit) === itemKey(child.description, child.unit));
+          if (match) {
+            if (child.quantity != null && child.quantity !== (Number(match.quantity) || 0)) {
+              TakeoffState.updateItem(match.id, { quantity: child.quantity });
+            }
+            continue;
+          }
+        }
+        TakeoffState.addItem({
+          parentId: parent.id,
+          type: childTypeFor(parent.type),
+          description: child.description,
+          quantity: child.quantity == null ? 0 : child.quantity,
+          unit: child.unit,
+          labor: null,
+          planPage: '',
+          meta: child.meta || null,
+        });
+      }
     }
     TakeoffState.endBatch();
+    applyProjectMeta(project);
     TakeoffApp.render();
   }
 
+  // Project name (only when the open project is still the blank starter) and
+  // the plans link, applied when the import commits — never on preview.
+  function applyProjectMeta(project) {
+    if (!project) return;
+    if (project.plansUrl && typeof TakeoffState.setPlansUrl === 'function') TakeoffState.setPlansUrl(project.plansUrl);
+    if (project.name) {
+      const current = TakeoffState.getCurrentProject();
+      const described = TakeoffState.getTopLevelItems().filter((i) => (i.description || '').trim());
+      if (current.name === 'Untitled project' || described.length === 0) TakeoffState.setProjectName(project.name);
+    }
+    if (typeof TakeoffProjectsView !== 'undefined') TakeoffProjectsView.updateHeader();
+  }
+
   function refreshActions() {
-    const byDesc = getManifestItemsByDesc();
-    const summary = summarizeImport(pendingImportItems, byDesc);
+    const summary = summarizeImport(pending.items, getManifestItemsByKey());
     const addBtn = document.getElementById('import-preview-add-btn');
     const sepBtn = document.getElementById('import-preview-separate-btn');
     if (addBtn) {
@@ -306,16 +527,28 @@ const TakeoffImport = (function () {
     if (sepBtn) sepBtn.hidden = summary.matched === 0;
   }
 
-  function showImportPreviewModal(items) {
+  /**
+   * Open the preview. Takes either the parser's result ({ items, plansUrl })
+   * or a bare items array plus an optional project ({ name?, plansUrl? }).
+   */
+  function showImportPreviewModal(parsedOrItems, project) {
     ensureImportPreviewListeners();
-    pendingImportItems = items;
+    let items = [];
+    let proj = project || null;
+    if (Array.isArray(parsedOrItems)) {
+      items = parsedOrItems;
+    } else if (parsedOrItems && typeof parsedOrItems === 'object') {
+      items = Array.isArray(parsedOrItems.items) ? parsedOrItems.items : [];
+      if (!proj && parsedOrItems.plansUrl) proj = { name: '', plansUrl: parsedOrItems.plansUrl };
+    }
+    pending = { items, project: proj };
     const modal = document.getElementById('import-preview-modal');
     const manifestList = document.getElementById('import-preview-manifest-list');
     const importList = document.getElementById('import-preview-import-list');
     if (!modal || !manifestList || !importList) return;
 
     renderManifestList(manifestList);
-    renderImportList(importList, items, getManifestItemsByDesc());
+    renderImportList(importList, items, getManifestItemsByKey(), proj);
     refreshActions();
 
     lastFocusBeforeModal = document.activeElement;
@@ -333,7 +566,7 @@ const TakeoffImport = (function () {
       if (modal.contains(document.activeElement)) document.activeElement?.blur();
       modal.setAttribute('aria-hidden', 'true');
     }
-    pendingImportItems = [];
+    pending = { items: [], project: null };
     if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) lastFocusBeforeModal.focus();
     lastFocusBeforeModal = null;
   }
@@ -348,20 +581,20 @@ const TakeoffImport = (function () {
       hideImportPreviewModal();
     });
     document.getElementById('import-preview-add-btn')?.addEventListener('click', () => {
-      const items = pendingImportItems;
+      const { items, project } = pending;
       hideImportPreviewModal();
-      performImport(items, false);
+      performImport(items, false, project);
     });
     document.getElementById('import-preview-separate-btn')?.addEventListener('click', () => {
-      const items = pendingImportItems;
+      const { items, project } = pending;
       hideImportPreviewModal();
-      performImport(items, true);
+      performImport(items, true, project);
     });
     // the type each line will land with, fixed before the rows exist
     document.getElementById('import-preview-import-list')?.addEventListener('change', (e) => {
       const sel = e.target.closest?.('.import-preview-type');
       if (!sel) return;
-      const item = pendingImportItems[Number(sel.dataset.idx)];
+      const item = pending.items[Number(sel.dataset.idx)];
       if (!item) return;
       item.type = sel.value || null;
       sel.closest('.import-preview-item')?.classList.toggle('import-preview-item-untyped', !item.type);
@@ -369,7 +602,23 @@ const TakeoffImport = (function () {
     document.getElementById('import-preview-modal')?.addEventListener('click', (e) => {
       if (e.target.id === 'import-preview-modal') hideImportPreviewModal();
     });
+    // paste fallback (clipboard permission denied or unavailable)
+    document.getElementById('import-paste-cancel-btn')?.addEventListener('click', hidePasteModal);
+    document.getElementById('import-paste-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'import-paste-modal') hidePasteModal();
+    });
+    document.getElementById('import-paste-import-btn')?.addEventListener('click', () => {
+      const text = document.getElementById('import-paste-text')?.value || '';
+      hidePasteModal();
+      importText(text);
+    });
     document.addEventListener('keydown', function importPreviewKeyHandler(e) {
+      const paste = document.getElementById('import-paste-modal');
+      if (e.key === 'Escape' && paste && paste.getAttribute('aria-hidden') === 'false') {
+        e.preventDefault();
+        hidePasteModal();
+        return;
+      }
       const modal = document.getElementById('import-preview-modal');
       if (!modal || modal.getAttribute('aria-hidden') !== 'false') return;
       if (e.key === 'Escape') {
@@ -396,74 +645,80 @@ const TakeoffImport = (function () {
     });
   }
 
-  // None of these three stop the estimator doing anything else, so none of them
-  // is worth a dialog that has to be clicked away: they go to the app's one
+  function showPasteModal() {
+    ensureImportPreviewListeners();
+    const modal = document.getElementById('import-paste-modal');
+    const ta = document.getElementById('import-paste-text');
+    if (!modal) return;
+    if (ta) ta.value = '';
+    modal.setAttribute('aria-hidden', 'false');
+    ta?.focus();
+  }
+
+  function hidePasteModal() {
+    const modal = document.getElementById('import-paste-modal');
+    if (modal?.contains(document.activeElement)) document.activeElement?.blur();
+    modal?.setAttribute('aria-hidden', 'true');
+  }
+
+  // None of these stop the estimator doing anything else, so none of them is
+  // worth a dialog that has to be clicked away: they go to the app's one
   // feedback region (js/toast.js). Long timeout — the first one names a format.
   function importWarn(text) {
     if (typeof TakeoffToast !== 'undefined') TakeoffToast.show(text, { kind: 'warn', timeout: 10000 });
   }
 
-  async function importFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      const items = parseCountToolingClipboard(text);
-      if (items.length === 0) {
-        importWarn('Nothing to bring in. Count Tooling copies one row per line: fixture, count, page, separated by tabs.');
-        return;
-      }
-      showImportPreviewModal(items);
-    } catch (err) {
-      if (err.name === 'NotAllowedError') {
-        importWarn('The browser would not hand over the clipboard. Allow clipboard access for this site and paste again.');
-      } else {
-        importWarn('Could not read the paste: ' + (err.message || 'unknown error'));
-      }
+  // The clipboard (or pasted) text → the preview.
+  function importText(text) {
+    const parsed = parseCountToolingClipboard(text);
+    if (parsed.items.length === 0) {
+      importWarn('Nothing to bring in. Count Tooling copies one row per line: fixture, count, page, separated by tabs.');
+      return;
     }
+    if (parsed.skipped) importWarn(`${plural(parsed.skipped, 'line', 'lines')} skipped — no fixture name or no count cell.`);
+    showImportPreviewModal(parsed.items, { name: '', plansUrl: parsed.plansUrl || '' });
+  }
+
+  async function importFromClipboard() {
+    let text = '';
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('unavailable');
+      text = await navigator.clipboard.readText();
+    } catch (err) {
+      // Firefox, a denied permission, or an insecure page land here: offer a
+      // paste box instead of a dead end.
+      showPasteModal();
+      return;
+    }
+    importText(text);
   }
 
   /**
-   * Structured handoff from Count Tooling (or any host app) — no clipboard.
-   * payload: { v: 1, source?: string, items: [{ description, count|quantity, page?, type? }] }
-   * Items flow through the same preview modal as the clipboard import.
-   * Returns { count, message }: count is how many items were queued (0 =
-   * nothing shown) and message says why, so a wrong envelope version is not
-   * reported as an empty link.
+   * Structured handoff from CountTooling (or any host app) — no clipboard.
+   * Accepts payload v1 and v2 (see the header). Items flow through the same
+   * preview modal as the clipboard import. Returns { count, message }: count
+   * is how many items were queued (0 = nothing shown) and message says why, so
+   * a wrong envelope version is not reported as an empty link.
    */
   function importFromPayload(payload) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       return { count: 0, message: 'This import link did not carry any counts.' };
     }
-    if (payload.v !== 1) {
+    if (payload.v !== 1 && payload.v !== 2) {
       const seen = payload.v == null ? 'no version' : `version ${String(payload.v).slice(0, 20)}`;
       return {
         count: 0,
-        message: `This import link says ${seen}; this app reads version 1 links. Nothing was imported.`,
+        message: `This import link says ${seen}; this app reads version 1 and 2 links. Nothing was imported.`,
       };
     }
-    if (!Array.isArray(payload.items)) {
+    const parsed = parsePayload(payload);
+    if (!parsed) {
       return { count: 0, message: 'This import link did not carry any counts.' };
     }
-    const items = [];
-    for (const raw of payload.items) {
-      if (!raw || typeof raw !== 'object') continue;
-      const description = String(raw.description || '').trim();
-      if (!description) continue;
-      const quantity = parseCount(raw.quantity ?? raw.count);
-      const type = typeof raw.type === 'string' && TakeoffState.ITEM_TYPES.includes(raw.type)
-        ? raw.type
-        : inferType(description);
-      items.push({
-        description,
-        quantity,
-        labor: null,
-        planPage: String(raw.page ?? raw.planPage ?? '').trim(),
-        type,
-      });
-    }
-    if (items.length) showImportPreviewModal(items);
+    if (parsed.items.length) showImportPreviewModal(parsed.items, parsed.project);
     return {
-      count: items.length,
-      message: items.length ? '' : 'This import link contained no valid items.',
+      count: parsed.items.length,
+      message: parsed.items.length ? '' : 'This import link contained no valid items.',
     };
   }
 
@@ -477,19 +732,24 @@ const TakeoffImport = (function () {
   return {
     importFromClipboard,
     importFromPayload,
-    parseCountToolingClipboard,
+    importText,
     showImportPreviewModal,
     hideImportPreviewModal,
     ensureImportPreviewListeners,
     // pure helpers (unit-tested in import.test.js)
+    parseCountToolingClipboard,
+    parsePayload,
+    parseFixtureName,
     inferType,
     parseCount,
+    itemKey,
     summarizeImport,
     primaryLabel,
   };
 })();
 
-// Node (unit tests); inert in the browser.
+// Node (unit tests): the parser and inference are pure; the DOM-facing
+// functions only touch TakeoffState/TakeoffApp when called. Inert in the browser.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TakeoffImport;
 }

@@ -11,7 +11,7 @@
 
     // A flow editor whose row is gone (project switched, row deleted) would
     // render an empty page with no way out — fall back to the manifest.
-    if (view !== 'manifest' && (!itemId || !TakeoffState.getItemById(itemId))) {
+    if (view !== 'manifest' && view !== 'organize' && (!itemId || !TakeoffState.getItemById(itemId))) {
       TakeoffState.setFlowDirty(false);
       TakeoffState.setCurrentView('manifest', null);
       TakeoffState.clearConduitTempData();
@@ -33,6 +33,9 @@
     } else if (view === 'wire' && itemId) {
       mainContent.innerHTML = TakeoffWireView.render(itemId);
       TakeoffWireView.attachListeners(itemId);
+    } else if (view === 'organize') {
+      mainContent.innerHTML = TakeoffOrganizeView.render();
+      TakeoffOrganizeView.attachListeners();
     }
     updateUndoRedoButtons();
     if (typeof TakeoffProjectsView !== 'undefined') TakeoffProjectsView.updateHeader();
@@ -230,6 +233,13 @@
     render();
   }
 
+  // Full-page category organizer (opened from the Labor & Price Book modal)
+  function navigateToOrganize() {
+    TakeoffState.setCurrentView('organize', null);
+    TakeoffOrganizeView.enter();
+    render();
+  }
+
   function navigateToWire(itemId) {
     TakeoffState.setFlowDirty(false);
     TakeoffState.setCurrentView('wire', itemId);
@@ -324,6 +334,8 @@
       laborRate: TakeoffState.getLaborRate(),
       taxRate: TakeoffState.getTaxRate(),
       details: TakeoffState.getProjectDetails(),
+      // where the counts came from (the CountTooling plans link), when known
+      plansUrl: TakeoffState.getCurrentProject().plansUrl || undefined,
       manifest: TakeoffState.getManifest(),
     };
   }
@@ -367,6 +379,7 @@
     navigateToDevice,
     navigateToConduit,
     navigateToWire,
+    navigateToOrganize,
   };
 
   // App title - navigate to manifest
@@ -402,6 +415,11 @@
     if (e.target.closest('.header-menu-item')) {
       setHeaderMenuOpen(false);
     }
+  });
+
+  // Copy for PipeTooling (v0 handoff: PipeTooling's Counts-import text)
+  document.getElementById('copy-pipetooling-btn')?.addEventListener('click', () => {
+    TakeoffHandoff.copyForPipeTooling();
   });
 
   // Undo/Redo move the manifest under whatever is on screen, so an open editor
@@ -564,8 +582,9 @@
             // keep inheriting the recipient's own rate
             if (data && typeof data.laborRate === 'number') TakeoffState.setLaborRate(data.laborRate);
             // the jurisdiction's sales tax travels with the bid too; a link made
-            // before it was editable carries none and keeps the old 8.5%
-            if (data && typeof data.taxRate === 'number') TakeoffState.setTaxRate(data.taxRate);
+            // before it was editable carries none and keeps the 8.5% it was bid at
+            TakeoffState.setTaxRate(data && typeof data.taxRate === 'number' ? data.taxRate : TakeoffState.LEGACY_TAX_RATE);
+            if (data && typeof data.plansUrl === 'string') TakeoffState.setPlansUrl(data.plansUrl);
             TakeoffState.loadManifestFromExport(data);
             showAppNotice(`Copy of ${base}, shared ${when} by link — edits stay on this device.`);
           }

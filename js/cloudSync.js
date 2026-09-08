@@ -43,6 +43,7 @@ const TakeoffCloudSync = (function () {
       (a.name || '') === (b.name || '') &&
       (Number(a.laborRate) || 0) === (Number(b.laborRate) || 0) &&
       (a.taxRate == null ? '' : String(a.taxRate)) === (b.taxRate == null ? '' : String(b.taxRate)) &&
+      (a.plansUrl || '') === (b.plansUrl || '') &&
       JSON.stringify(a.details || {}) === JSON.stringify(b.details || {}) &&
       JSON.stringify(a.manifest || []) === JSON.stringify(b.manifest || [])
     );

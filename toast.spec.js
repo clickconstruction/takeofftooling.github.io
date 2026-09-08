@@ -61,14 +61,15 @@ test('three real actions all report into the same region', async ({ page }) => {
   // and the button is still the verb, not a receipt that has to time out
   await expect(page.locator('#purchase-list-copy-btn')).toHaveText('Copy');
 
-  // 3. a share link that carries nothing — one of the alert() dialogs
+  // 3. an import link from the future — one of the alert() dialogs (v1 and
+  //    v2 are both read now, so the refused version is 3)
   page.on('dialog', (d) => { d.dismiss(); throw new Error('unexpected dialog: ' + d.message()); });
   await page.evaluate(() => {
-    const b64 = btoa(JSON.stringify({ v: 2, items: [{ description: 'Duplex Receptacle', count: 12 }] }));
+    const b64 = btoa(JSON.stringify({ v: 3, items: [{ description: 'Duplex Receptacle', count: 12 }] }));
     location.hash = '#import=' + b64; // the hashchange listener does the rest
   });
   await expect(toasts(page)).toHaveCount(3);
-  await expect(toasts(page).nth(2)).toContainText('version 2');
+  await expect(toasts(page).nth(2)).toContainText('version 3');
 
   // all three landed in ONE region, in the order they happened
   await expect(region(page)).toHaveCount(1);
