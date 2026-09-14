@@ -77,6 +77,31 @@ test('explodeManifest fills childless parents only and reports counts', () => {
   assert.strictEqual(r.unpriced, 1);
 });
 
+test('a conductor row CountTooling derived is never exploded — the cable is already the count', () => {
+  const mc = { id: 'w1', type: 'wire', description: 'MC 12/2 w/G', quantity: 240, unit: 'ft', group: 'A-1', children: [] };
+  assert.deepStrictEqual(
+    X.explodeItem({ ...mc, meta: { derived: 'cable' } }, { book }),
+    [],
+    'meta.derived → no MC connectors, no straps billed a second time',
+  );
+  assert.deepStrictEqual(X.explodeItem({ ...mc, meta: { derived: 'wire' } }, { book }), []);
+  // the same row WITHOUT the flag is an ordinary run and takes the MC template
+  const kids = X.explodeItem(mc, { book });
+  assert.deepStrictEqual(kids.map((k) => k.description), ['MC Cable Strap'], 'unsized MC run → the strap only');
+  assert.strictEqual(kids[0].quantity, 40, 'ceil(240/6)');
+});
+
+test('explodeManifest skips derived rows and counts only what it filled', () => {
+  const manifest = [
+    { id: 'a', type: 'devices', description: 'Duplex Receptacle', quantity: 2, unit: 'ea', children: [] },
+    { id: 'w', type: 'wire', description: 'MC 12/2 w/G', quantity: 240, unit: 'ft', meta: { derived: 'cable' }, children: [] },
+  ];
+  const r = X.explodeManifest(manifest, { book });
+  assert.strictEqual(r.exploded, 1, 'only the receptacle');
+  assert.strictEqual(r.manifest[1].children.length, 0);
+  assert.strictEqual(r.manifest[1], manifest[1], 'the derived row is returned untouched');
+});
+
 test('flattenBook walks type → section → rows', () => {
   const flat = X.flattenBook({ devices: { Receptacles: [{ name: 'A', labor: 1, price: 2 }] }, wire: { X: [{ name: 'B' }] } });
   assert.deepStrictEqual(flat.map((r) => [r.name, r.type, r.section]), [['A', 'devices', 'Receptacles'], ['B', 'wire', 'X']]);

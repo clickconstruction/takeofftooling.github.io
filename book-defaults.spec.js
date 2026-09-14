@@ -30,7 +30,10 @@ test('X6 — "1900 box" finds the box in your own book, with hours on it', async
 
   const names = await curatedNames(page);
   expect(names.length).toBeGreaterThan(0);
-  expect(names.join(' | ')).toMatch(/1900 box/i);
+  // v6 retargeted: the book carried two rows for this part, and the '1900 box
+  // (…)' one was dropped. The nickname still gets there — TakeoffUtils' search
+  // phrases map '1900' onto '4 square' — and lands on the one priced row.
+  expect(names.join(' | ')).toMatch(/4" Square Box, 1-1\/2" deep/i);
 
   // the point of the curated row is the hours the catalog does not carry
   const hrs = await page
@@ -93,11 +96,12 @@ test('X6 — a book stored at the previous defaults version takes the new sectio
 
   const doc = await page.evaluate(() => JSON.parse(localStorage.getItem('takeoff-book')));
   expect(Object.keys(doc.laborBook.devices)).toContain('Boxes & Rings'); // the X6 boxes live under v3's section name
-  expect(doc.laborBook.devices['Boxes & Rings'].some((r) => r.name.startsWith('1900 box'))).toBe(true);
+  // v6 retargeted: '1900 box (…)' was the dropped half of a duplicate pair
+  expect(doc.laborBook.devices['Boxes & Rings'].some((r) => r.name === '4" Square Box, 1-1/2" deep')).toBe(true);
   expect(Object.keys(doc.laborBook.devices)).toContain('MC and NM Connectors');
   expect(Object.keys(doc.laborBook.lighting)).toContain('Photocells');
   expect(Object.keys(doc.laborBook.gear)).toContain('Disconnects');
-  expect(doc.laborBookMeta.defaultsVersion).toBe(5);
+  expect(doc.laborBookMeta.defaultsVersion).toBe(6);
   // the boot merge alone must not move the book's clock past another device's
   expect(doc.savedAt).toBe('2026-01-01T00:00:00.000Z');
 });

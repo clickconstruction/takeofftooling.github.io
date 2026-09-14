@@ -20,11 +20,15 @@
  * 2. Structured handoff (`#import=<base64 JSON>`, js/app.js): CountTooling
  *    states facts and nothing is inferred that it provided.
  *      v1: { v:1, source, items:[{ description, count|quantity, page?, type? }] }
- *      v2: { v:2, source, project?: { name?, plansUrl? },
+ *      v2: { v:2, source, project?: { name?, plansUrl?, trade? },
  *            items:[{ description, quantity|count, unit?: 'ea'|'ft'|'px',
- *                     type?, pages?|page?, group?, meta?,
+ *                     type?, pages?|page?, group?, meta?, derived?: 'wire'|'cable',
  *                     children?: [{ description, quantity, unit?, type? }] }] }
  *    An invalid `type` falls back to inference; missing `unit` is 'ea'.
+ *    `derived` marks a conductor row CountTooling worked out from a run it
+ *    measured — it lands as meta.derived and that row is never exploded
+ *    (js/explode.js), because the cable it would add is already the count.
+ *    `project.trade` ('plumbing'|'electrical'|'hvac') stamps the bid.
  *
  * Counts are TOTALS, never additions: a line that matches a row already on
  * the bid (same description key + unit) sets that row to the import's number,
@@ -51,6 +55,14 @@ const TakeoffImport = (function () {
   // CountTooling's view-link footer: the `t=<uuid>` param, or the label itself.
   const PLANS_LINK_RE = /https?:\/\/\S*[?&]t=[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
   const UNITS = ['ea', 'ft', 'px'];
+  // CountTooling derives conductor rows from the runs it measured ("MC 12/2 w/G",
+  // a homerun's wire) and stamps them `derived: 'cable' | 'wire'` so the importer
+  // knows NOT to explode them: the cable is already the count, and an assembly
+  // template would add connectors and straps a second time. Kept as meta.derived;
+  // anything but these two words is dropped rather than trusted.
+  const DERIVED_KINDS = ['wire', 'cable'];
+  // CountTooling's project.trade — stated on the handoff, carried onto the bid.
+  const TRADES = ['plumbing', 'electrical', 'hvac'];
 
   // Types the preview's picker offers, in the type modal's own order.
   const PICKABLE_TYPES = ['gear', 'lighting', 'devices', 'conduit', 'wire', 'specialSystems'];
@@ -220,6 +232,17 @@ const TakeoffImport = (function () {
       ? TakeoffState.ITEM_TYPES
       : PICKABLE_TYPES.concat(['permits', 'powerCoCharges', 'temporaryPower']);
     const validType = (t) => typeof t === 'string' && knownTypes.includes(t);
+    // The row's meta, plus CountTooling's `derived` flag folded into it. The flag
+    // is read off the row (where CountTooling puts it) or off an already-shaped
+    // meta; an unknown word means the row is ordinary and explodes as usual.
+    const metaOf = (raw) => {
+      const base = raw.meta && typeof raw.meta === 'object' && !Array.isArray(raw.meta) ? { ...raw.meta } : null;
+      const claimed = typeof raw.derived === 'string' ? raw.derived : base && typeof base.derived === 'string' ? base.derived : '';
+      const derived = DERIVED_KINDS.includes(claimed) ? claimed : null;
+      if (derived) return { ...(base || {}), derived };
+      if (base && 'derived' in base) delete base.derived;
+      return base;
+    };
     const toItem = (raw, isChild) => {
       if (!raw || typeof raw !== 'object') return null;
       const parsed = parseFixtureName(raw.description);
@@ -236,7 +259,7 @@ const TakeoffImport = (function () {
         group,
         planPage: String(raw.pages ?? raw.page ?? raw.planPage ?? '').trim(),
         labor: null,
-        meta: raw.meta && typeof raw.meta === 'object' ? raw.meta : null,
+        meta: metaOf(raw),
       };
       if (!isChild) {
         item.children = Array.isArray(raw.children) ? raw.children.map((c) => toItem(c, true)).filter(Boolean) : [];
@@ -248,6 +271,8 @@ const TakeoffImport = (function () {
     const project = {
       name: typeof p.name === 'string' ? p.name.trim() : '',
       plansUrl: typeof p.plansUrl === 'string' && PLANS_LINK_RE.test(p.plansUrl) ? p.plansUrl.match(PLANS_LINK_RE)[0] : '',
+      // which trade the bid is, as CountTooling stated it — anything else is null
+      trade: TRADES.includes(String(p.trade ?? '').trim().toLowerCase()) ? String(p.trade).trim().toLowerCase() : null,
     };
     return { items, project };
   }
@@ -501,11 +526,12 @@ const TakeoffImport = (function () {
     TakeoffApp.render();
   }
 
-  // Project name (only when the open project is still the blank starter) and
-  // the plans link, applied when the import commits — never on preview.
+  // Project name (only when the open project is still the blank starter), the
+  // plans link and the trade, applied when the import commits — never on preview.
   function applyProjectMeta(project) {
     if (!project) return;
     if (project.plansUrl && typeof TakeoffState.setPlansUrl === 'function') TakeoffState.setPlansUrl(project.plansUrl);
+    if (project.trade && typeof TakeoffState.setProjectTrade === 'function') TakeoffState.setProjectTrade(project.trade);
     if (project.name) {
       const current = TakeoffState.getCurrentProject();
       const described = TakeoffState.getTopLevelItems().filter((i) => (i.description || '').trim());

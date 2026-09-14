@@ -16,7 +16,7 @@ import '../_shared/handoff.js'
 //   set_twin_flag          { email, is_digital_twin }
 //   set_twin_credential    { email, token_hash }        (sha256 hex of PT's per-twin token)
 //   revoke_twin_credential { token_hash }
-//   twin_projects          { email } → the twin's manifests with bid stamp + review state
+//   twin_projects          { email } → the twin's manifests with bid stamp, trade + review state
 //   twin_manifest          { email, project_id | external_ref } → the manifest as
 //                          PipeTooling rows (unit cost + hours per row) + a share URL a
 //                          human can open in their own TakeoffTooling
@@ -78,6 +78,9 @@ const fieldsOf = (p: Record<string, unknown>) => {
   const d = (p.data as Record<string, unknown>) ?? {}
   return {
     external_ref: typeof d.externalRef === 'string' ? d.externalRef : null,
+    // the bid's trade, as CountTooling stated it (project.trade) — null on a bid
+    // nobody stamped; PipeTooling reads it to know which lane the manifest is in
+    trade: typeof d.trade === 'string' ? d.trade : null,
     review_status: typeof d.reviewStatus === 'string' ? d.reviewStatus : 'draft',
     review_note: typeof d.reviewNote === 'string' ? d.reviewNote : null,
     review_requested_at: typeof d.reviewRequestedAt === 'string' ? d.reviewRequestedAt : null,
@@ -190,7 +193,7 @@ Deno.serve(async (req) => {
         const f = fieldsOf(proj)
         return json(200, {
           project: {
-            id: proj.id, name: proj.name, external_ref: f.external_ref, review_status: f.review_status, review_note: f.review_note,
+            id: proj.id, name: proj.name, external_ref: f.external_ref, trade: f.trade, review_status: f.review_status, review_note: f.review_note,
             updated_at: proj.updated_at, plans_url: project.plansUrl || null, labor_rate: data.laborRate ?? null, tax_rate: data.taxRate ?? null,
             agent_import: f.agent_import,
           },

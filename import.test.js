@@ -254,6 +254,35 @@ test('payload v2: explicit unit/type/group/children win; invalid type falls back
   assert.strictEqual(c.type, 'wire');
 });
 
+test('payload v2: CountTooling\'s derived conductor rows keep the flag on meta', () => {
+  const parsed = imp.parsePayload({
+    v: 2,
+    source: 'counttooling',
+    items: [
+      { description: 'MC 12/2 w/G', quantity: 240, unit: 'ft', pages: '', group: 'A-1', children: [], type: 'wire', derived: 'cable' },
+      { description: 'THHN #12 CU', quantity: 900, unit: 'ft', type: 'wire', derived: 'wire', meta: { runs: 3 } },
+      { description: 'MC 12/3 w/G', quantity: 60, unit: 'ft', type: 'wire', derived: 'guesswork' },
+      { description: '1/2" EMT', quantity: 143, unit: 'ft', type: 'conduit' },
+    ],
+  });
+  const [cable, wire, junk, plain] = parsed.items;
+  assert.deepStrictEqual(cable.meta, { derived: 'cable' });
+  assert.deepStrictEqual(wire.meta, { runs: 3, derived: 'wire' }, 'folded in beside the row\'s own meta');
+  assert.strictEqual(junk.meta, null, 'an unknown word is dropped, not trusted');
+  assert.strictEqual(plain.meta, null);
+});
+
+test('payload v2: the project\'s trade is read, and only the three words', () => {
+  const tradeOf = (t) => imp.parsePayload({ v: 2, project: { trade: t }, items: [{ description: 'Duplex Receptacle', quantity: 1 }] }).project.trade;
+  assert.strictEqual(tradeOf('electrical'), 'electrical');
+  assert.strictEqual(tradeOf('plumbing'), 'plumbing');
+  assert.strictEqual(tradeOf(' HVAC '), 'hvac', 'trimmed and lower-cased');
+  assert.strictEqual(tradeOf('sparky'), null);
+  assert.strictEqual(tradeOf(7), null);
+  assert.strictEqual(tradeOf(undefined), null);
+  assert.strictEqual(imp.parsePayload({ v: 2, items: [{ description: 'Duplex Receptacle', quantity: 1 }] }).project.trade, null);
+});
+
 test('payload v1 still imports', () => {
   const parsed = imp.parsePayload({ v: 1, source: 'counttooling', items: [{ description: 'Duplex Receptacle', count: 12, page: '2' }] });
   assert.strictEqual(parsed.items.length, 1);

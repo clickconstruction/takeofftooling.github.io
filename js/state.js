@@ -26,6 +26,11 @@ const TakeoffState = (function () {
   // `?t=<token>` view link CountTooling appends to its export). Shown in the
   // header; travels on to PipeTooling with the counts.
   let plansUrl = '';
+  // Which trade the bid is — CountTooling states it on its handoff (project.trade)
+  // and it rides on to PipeTooling. Stated, never inferred: null means nobody said,
+  // and this app prices electrical work either way.
+  const TRADES = ['plumbing', 'electrical', 'hvac'];
+  let trade = null;
   // The bid stamp (PipeTooling's bid number, e.g. "b409") and the review lane
   // (draft → ready → reviewed | changes) — the same fields CountTooling's
   // projects carry, so a manifest a twin imports through the agent door is a
@@ -142,6 +147,13 @@ const TakeoffState = (function () {
     return out;
   }
 
+  // A trade arriving from a document, a share link or an import: one of the three
+  // words, lower-cased and trimmed, or null.
+  function sanitizeTrade(raw) {
+    const t = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    return TRADES.includes(t) ? t : null;
+  }
+
   function sanitizeImportedFrom(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const name = typeof raw.name === 'string' ? raw.name.trim() : '';
@@ -219,6 +231,7 @@ const TakeoffState = (function () {
     const savedAt = new Date().toISOString();
     const doc = { v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate, taxRate, details: projectDetails, importedFrom: projectImportedFrom };
     if (plansUrl) doc.plansUrl = plansUrl;
+    if (trade) doc.trade = trade;
     if (projectArchived) {
       doc.archived = true;
       doc.archivedAt = projectArchivedAt;
@@ -359,6 +372,7 @@ const TakeoffState = (function () {
     // the old hardcoded 8.5%, so that is what it keeps
     taxRate = sanitizeTaxRate(data.taxRate);
     plansUrl = typeof data.plansUrl === 'string' && /^https?:\/\//i.test(data.plansUrl) ? data.plansUrl : '';
+    trade = sanitizeTrade(data.trade);
     projectDetails = sanitizeDetails(data.details);
     projectImportedFrom = sanitizeImportedFrom(data.importedFrom);
     const arch = sanitizeArchived(data);
@@ -422,7 +436,26 @@ const TakeoffState = (function () {
   }
 
   function getCurrentProject() {
-    return { id: projectId, name: projectName, plansUrl, externalRef, reviewStatus, reviewNote, agentImport };
+    return { id: projectId, name: projectName, plansUrl, trade, externalRef, reviewStatus, reviewNote, agentImport };
+  }
+
+  function getProjectTrade() {
+    return trade;
+  }
+
+  // The bid's trade, as the sending app stated it. '' or null clears it; an
+  // unknown word is refused rather than stored.
+  function setProjectTrade(next) {
+    if (next == null || next === '') {
+      trade = null;
+      schedulePersist();
+      return true;
+    }
+    const clean = sanitizeTrade(next);
+    if (!clean) return false;
+    trade = clean;
+    schedulePersist();
+    return true;
   }
 
   // The bid stamp: PipeTooling's bid number ("b409"). Empty clears it.
@@ -548,6 +581,7 @@ const TakeoffState = (function () {
     projectArchived = false;
     projectArchivedAt = null;
     plansUrl = ''; // the counts for a new bid have not come from anywhere yet
+    trade = null; // nobody has said what trade this bid is yet
     externalRef = null;
     reviewStatus = 'draft';
     reviewNote = null;
@@ -574,7 +608,7 @@ const TakeoffState = (function () {
 
   function duplicateProject(id) {
     const source = id === projectId
-      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, plansUrl, details: projectDetails }
+      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, plansUrl, trade, details: projectDetails }
       : TakeoffStorage.loadProject(id);
     if (!source) return null;
     const savedAt = new Date().toISOString();
@@ -592,6 +626,9 @@ const TakeoffState = (function () {
       importedFrom: null,
     };
     if (typeof source.plansUrl === 'string' && source.plansUrl) copy.plansUrl = source.plansUrl;
+    // the same job, so the same trade
+    const copyTrade = sanitizeTrade(source.trade);
+    if (copyTrade) copy.trade = copyTrade;
     TakeoffStorage.saveProject(copy);
     const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
     idx.projects.push({ id: copy.id, name: copy.name, createdAt: savedAt, updatedAt: savedAt });
@@ -1458,6 +1495,9 @@ const TakeoffState = (function () {
     setTaxRate,
     LEGACY_TAX_RATE,
     setPlansUrl,
+    getProjectTrade,
+    setProjectTrade,
+    TRADES,
     setExternalRef,
     setReviewStatus,
     REVIEW_STATUSES,

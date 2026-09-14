@@ -1,5 +1,5 @@
 {
- "version": 5,
+ "version": 6,
  "laborBook": {
   "gear": {
    "Switchboards": [
@@ -750,27 +750,12 @@
      "price": ""
     },
     {
-     "name": "Single pole toggle switch 20A",
-     "labor": 0.2,
-     "price": ""
-    },
-    {
      "name": "3-way toggle switch 15A",
      "labor": 0.25,
      "price": ""
     },
     {
-     "name": "3-way toggle switch 20A",
-     "labor": 0.25,
-     "price": ""
-    },
-    {
      "name": "4-way toggle switch 15A",
-     "labor": 0.3,
-     "price": ""
-    },
-    {
-     "name": "4-way toggle switch 20A",
      "labor": 0.3,
      "price": ""
     },
@@ -785,11 +770,6 @@
      "price": ""
     },
     {
-     "name": "Single pole weatherproof switch 20A",
-     "labor": 0.2,
-     "price": ""
-    },
-    {
      "name": "3-way weatherproof switch 20A",
      "labor": 0.25,
      "price": ""
@@ -797,11 +777,6 @@
     {
      "name": "Momentary switch 20A",
      "labor": 0.2,
-     "price": ""
-    },
-    {
-     "name": "Dimmer switch 600W",
-     "labor": 0.25,
      "price": ""
     }
    ],
@@ -883,23 +858,8 @@
      "pricedAt": "2026-07-17"
     },
     {
-     "name": "1900 box (4\" square, 1-1/2\" deep)",
-     "labor": 0.1,
-     "price": ""
-    },
-    {
-     "name": "4\" square box, 2-1/8\" deep",
-     "labor": 0.1,
-     "price": ""
-    },
-    {
      "name": "4\" square box with bracket, 1-1/2\" deep",
      "labor": 0.1,
-     "price": ""
-    },
-    {
-     "name": "4-11/16\" square box, 1-1/2\" deep",
-     "labor": 0.12,
      "price": ""
     },
     {
@@ -915,11 +875,6 @@
     {
      "name": "Octagon box 3\", 1-1/2\" deep",
      "labor": 0.166,
-     "price": ""
-    },
-    {
-     "name": "Handy box, 1-7/8\" deep",
-     "labor": 0.2,
      "price": ""
     },
     {
@@ -958,11 +913,6 @@
      "price": ""
     },
     {
-     "name": "4\" square mud ring 1 gang, 5/8\" deep",
-     "labor": 0.05,
-     "price": ""
-    },
-    {
      "name": "4\" square mud ring 1 gang, 3/4\" deep",
      "labor": 0.05,
      "price": ""
@@ -973,17 +923,7 @@
      "price": ""
     },
     {
-     "name": "4\" square mud ring 2 gang, 5/8\" deep",
-     "labor": 0.05,
-     "price": ""
-    },
-    {
      "name": "4\" square mud ring 2 gang, 3/4\" deep",
-     "labor": 0.05,
-     "price": ""
-    },
-    {
-     "name": "4\" square blank cover",
      "labor": 0.05,
      "price": ""
     },

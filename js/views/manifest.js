@@ -195,7 +195,10 @@ const TakeoffManifestView = (function () {
     const showRailAdd = !isChild && !(item.children && item.children.length);
     // Explode: fill children from the assembly template (js/explode.js) when one
     // matches this row and it has no children yet — the same kernel the agent door runs.
-    const template = showRailAdd && typeof TakeoffExplode !== 'undefined' ? TakeoffExplode.findTemplate(item) : null;
+    // Not offered on a row CountTooling derived (meta.derived): the cable is already
+    // the count, so there is nothing here to explode.
+    const derivedRow = !!(item.meta && item.meta.derived);
+    const template = showRailAdd && !derivedRow && typeof TakeoffExplode !== 'undefined' ? TakeoffExplode.findTemplate(item) : null;
     const explodeBtn = template ? `<button type="button" class="explode-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Explode: add the ${escapeHtml(template.label)} assembly (box, ring, plate, fittings…) priced from your book">${BOLT_SVG}</button>` : '';
     const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn row-btn" tabindex="0" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}${explodeBtn}</td>`;
 

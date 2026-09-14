@@ -347,6 +347,8 @@
       details: TakeoffState.getProjectDetails(),
       // where the counts came from (the CountTooling plans link), when known
       plansUrl: TakeoffState.getCurrentProject().plansUrl || undefined,
+      // which trade the bid is, when the sending app said so
+      trade: TakeoffState.getCurrentProject().trade || undefined,
       manifest: TakeoffState.getManifest(),
     };
   }
@@ -596,6 +598,7 @@
             // before it was editable carries none and keeps the 8.5% it was bid at
             TakeoffState.setTaxRate(data && typeof data.taxRate === 'number' ? data.taxRate : TakeoffState.LEGACY_TAX_RATE);
             if (data && typeof data.plansUrl === 'string') TakeoffState.setPlansUrl(data.plansUrl);
+            if (data && typeof data.trade === 'string') TakeoffState.setProjectTrade(data.trade);
             TakeoffState.loadManifestFromExport(data);
             showAppNotice(`Copy of ${base}, shared ${when} by link — edits stay on this device.`);
           }

@@ -265,6 +265,7 @@ const TakeoffCloud = (function () {
       laborRate: typeof project.laborRate === 'number' ? project.laborRate : 0,
       taxRate: typeof project.taxRate === 'number' ? project.taxRate : undefined,
       plansUrl: typeof project.plansUrl === 'string' && project.plansUrl ? project.plansUrl : undefined,
+      trade: typeof project.trade === 'string' && project.trade ? project.trade : undefined,
       details: project.details && typeof project.details === 'object' ? project.details : undefined,
     };
     TakeoffStorage.saveProjectLocalOnly(copy);
@@ -306,6 +307,9 @@ const TakeoffCloud = (function () {
     if (typeof d.taxRate === 'number') project.taxRate = d.taxRate;
     // the CountTooling plans link the counts came from (set by the import)
     if (typeof d.plansUrl === 'string' && d.plansUrl) project.plansUrl = d.plansUrl;
+    // which trade the bid is (CountTooling's project.trade) — PipeTooling reads it
+    // off the same row through the bridge
+    if (typeof d.trade === 'string' && d.trade) project.trade = d.trade;
     if (d.details && typeof d.details === 'object') project.details = d.details;
     if (d.importedFrom && typeof d.importedFrom === 'object') project.importedFrom = d.importedFrom;
     // bid stamp + review lane + agent-door provenance (006 twins) ride data like everything else
@@ -325,6 +329,7 @@ const TakeoffCloud = (function () {
     const payload = { manifest: project.manifest, laborRate: project.laborRate };
     if (typeof project.taxRate === 'number') payload.taxRate = project.taxRate;
     if (typeof project.plansUrl === 'string' && project.plansUrl) payload.plansUrl = project.plansUrl;
+    if (typeof project.trade === 'string' && project.trade) payload.trade = project.trade;
     if (project.details && typeof project.details === 'object') payload.details = project.details;
     if (project.importedFrom && typeof project.importedFrom === 'object') payload.importedFrom = project.importedFrom;
     // bid stamp + review lane + agent-door provenance (twin projects; humans can stamp too)
