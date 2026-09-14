@@ -78,9 +78,17 @@ FILES = {'m001': 'supabase/001_takeoff_projects.sql', 'm002': 'supabase/002_take
          'm005': 'supabase/005_takeoff_project_upsert.sql', 'm006': 'supabase/006_takeoff_twins.sql'}
 pending = [f for k, f in sorted(FILES.items()) if not have.get(k)]
 print('Migrations:', ' '.join(pending) if pending else 'nothing pending')
+applied = 0
 for f in pending:
     code, out = sql(open(f).read())
+    applied += code == 200
     print(('  OK   ' if code == 200 else '  FAIL ') + f + ('' if code == 200 else '  [%s] %s' % (code, out)))
+if applied:
+    # PostgREST learns about new tables/functions from this NOTIFY. Supabase
+    # sends one itself on DDL, but two statements seconds apart can leave the
+    # second out of the schema cache (the app then sees PGRST202 / 404).
+    code, out = sql("notify pgrst, 'reload schema'")
+    print('  schema cache reload ' + ('requested' if code == 200 else 'FAILED [%s] %s' % (code, out)))
 
 # The app's real origin is the custom domain on the Pages CNAME, not the
 # *.github.io address — a reset link back to the wrong origin is silently
