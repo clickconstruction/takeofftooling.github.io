@@ -10,6 +10,7 @@ phantom corrections.
 | `v2.js` | 2 | the pre-branch book (two conduit rows both named "PVC GLUE") |
 | `v3-main.js` | 3 | main: PVC GLUE QUART / PINT rename + curated Devices / Lighting / Special Systems starters |
 | `v4-ours.js` | 4 | the journey-map branch: PVC GLUE collapsed to one row + 141 X6 device / cable / connector rows (v3-ours is this file minus the X6 sections; the test derives it) |
+| `v5.js` | 5 | the union of v3-main and v4-ours: the X6 rows under v3's section names, two rows for some parts (v6 drops the duplicate half) |
 
 Do not edit these. Add a new file when a defaults version ships, never
 rewrite an old one.

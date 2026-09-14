@@ -18,6 +18,10 @@
 // ('1/2 emt coupling' finds '1/2" EMT Set-Screw Coupling'). A child no book row
 // prices gets labor/price null and meta.needsPricing = true — never a guess.
 //
+// One row never explodes: meta.derived ('wire' | 'cable') — a conductor row
+// CountTooling worked out from a run it already measured. The cable IS the
+// count; adding a template's connectors and straps on top would bill them twice.
+//
 // Templates are the shipped electrical defaults (the "assembly templates" the
 // electrical note moved here from CountTooling); a book section named the same
 // as a child wins over the template's spelling. Editing them is a data change.
@@ -143,6 +147,11 @@
    */
   function explodeItem(item, opts) {
     const o = opts || {};
+    // A row CountTooling DERIVED from a run it measured (meta.derived: 'wire' |
+    // 'cable' — the conductors under a homerun) is already the whole count: its
+    // connectors and straps came with it, and a template here would bill them
+    // twice. Never exploded, not even with an explicit template.
+    if (item && item.meta && item.meta.derived) return [];
     const t = o.template || findTemplate(item);
     if (!t) return [];
     const qty = Number(item.quantity) || 0;
@@ -185,6 +194,7 @@
     let unpriced = 0;
     const out = (manifest || []).map((item) => {
       if (!item || item.parentId || (item.children && item.children.length)) return item;
+      if (item.meta && item.meta.derived) return item; // CountTooling already counted it
       const kids = explodeItem(item, opts);
       if (!kids.length) return item;
       exploded++;

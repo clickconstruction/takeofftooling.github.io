@@ -31,19 +31,7 @@
 // v5: v3 and v4 were built on two branches; this is their union. The v4 rows
 // live under v3's section names (Boxes / Rings and Covers → Boxes & Rings,
 // Wall Plates → Covers & Plates), so a book at either version converges here.
-// v6: that union left two rows for one part in places — main's Title Case,
-// assembly-hour, priced row ('4" Square Box, 1-1/2" deep', 0.25h $3.90) beside
-// the branch's lower-case, piece-hour, unpriced one ('1900 box (4" square,
-// 1-1/2" deep)', 0.1h) — so a search for "1900 box" answered twice and the
-// estimator had to pick. One part, one row: main's name, hours and price stay
-// (the explode kernel's templates are pinned to those names), the branch's
-// copy goes, and the dropped names are listed in LABOR_BOOK_RETIRED so a
-// stored v5 book converges instead of keeping them as the user's own. Rows
-// with no counterpart — the 15A toggles, key and momentary switches, the
-// octagon and plastic boxes, every mud-ring depth main does not name — are
-// untouched. The 1900 nickname is still findable: TakeoffUtils' search
-// phrases map '1900' onto '4 square' (utils.js SEARCH_PHRASES).
-const LABOR_BOOK_DEFAULTS_VERSION = 6;
+const LABOR_BOOK_DEFAULTS_VERSION = 5;
 
 // Names and sections that USED to be defaults. The merge is name-keyed, so a
 // stored book still carrying one of these would otherwise read as the user's
@@ -56,41 +44,6 @@ const LABOR_BOOK_DEFAULTS_VERSION = 6;
 const LABOR_BOOK_RETIRED = {
   names: {
     conduit: { 'PVC GLUE': ['PVC GLUE'] }, // v2: two rows both named PVC GLUE
-    // v6: the near-duplicate half of a one-part-two-rows pair. Each of these
-    // named a part another row in the same section already named (or, for the
-    // blank cover, a row in Covers & Plates); the kept row is in the comment.
-    devices: {
-      Switches: [
-        'Single pole toggle switch 20A', // → 20A Single-Pole Switch
-        '3-way toggle switch 20A',       // → 20A 3-Way Switch
-        '4-way toggle switch 20A',       // → 20A 4-Way Switch
-        'Single pole weatherproof switch 20A', // → 20A Weatherproof Switch
-        'Dimmer switch 600W',            // → 600W Dimmer
-      ],
-      'Boxes & Rings': [
-        '1900 box (4" square, 1-1/2" deep)', // → 4" Square Box, 1-1/2" deep
-        '4" square box, 2-1/8" deep',        // → 4" Square Box, 2-1/8" deep
-        '4-11/16" square box, 1-1/2" deep',  // → 4-11/16" Square Box
-        'Handy box, 1-7/8" deep',            // → 1-Gang Handy Box
-        '4" square mud ring 1 gang, 5/8" deep', // → 4" Square 1-Gang Mud Ring
-        '4" square mud ring 2 gang, 5/8" deep', // → 4" Square 2-Gang Mud Ring
-        '4" square blank cover',             // → 4" Square Blank Cover (Covers & Plates)
-      ],
-      // the same names again under the v4 section names they shipped in: a
-      // pre-provenance v4 book is read section by section, and a name bootstrap
-      // does not recognise there would become the user's own row for good.
-      Boxes: [
-        '1900 box (4" square, 1-1/2" deep)',
-        '4" square box, 2-1/8" deep',
-        '4-11/16" square box, 1-1/2" deep',
-        'Handy box, 1-7/8" deep',
-      ],
-      'Rings and Covers': [
-        '4" square mud ring 1 gang, 5/8" deep',
-        '4" square mud ring 2 gang, 5/8" deep',
-        '4" square blank cover',
-      ],
-    },
   },
   sections: {
     devices: {
@@ -354,12 +307,17 @@ const LABOR_BOOK_DEFAULTS = {
     // Hours from mc-price-model.json items 24513-24548 (toggle switches),
     // 24576-24579 (weatherproof), 24267 (dimmer), 24572-24573 (momentary).
       { name: 'Single pole toggle switch 15A', labor: 0.2, price: '' },
+      { name: 'Single pole toggle switch 20A', labor: 0.2, price: '' },
       { name: '3-way toggle switch 15A', labor: 0.25, price: '' },
+      { name: '3-way toggle switch 20A', labor: 0.25, price: '' },
       { name: '4-way toggle switch 15A', labor: 0.3, price: '' },
+      { name: '4-way toggle switch 20A', labor: 0.3, price: '' },
       { name: 'Single pole key switch 20A', labor: 0.2, price: '' },
       { name: '3-way key switch 20A', labor: 0.25, price: '' },
+      { name: 'Single pole weatherproof switch 20A', labor: 0.2, price: '' },
       { name: '3-way weatherproof switch 20A', labor: 0.25, price: '' },
       { name: 'Momentary switch 20A', labor: 0.2, price: '' },
+      { name: 'Dimmer switch 600W', labor: 0.25, price: '' },
     ],
     // Hours from mc-price-model.json items 24334-24335 (wall occupancy
     // sensors), 24349-24350 (ceiling sensors), 22792 (wall motion sensor).
@@ -380,12 +338,15 @@ const LABOR_BOOK_DEFAULTS = {
       { name: 'Old-Work 1-Gang Box', labor: 0.3, price: 4.5, priceSource: 'MC book', pricedAt: '2026-07-17' },
     // Hours from mc-price-model.json items 25109-25231 (boxes) and
     // 26170-26173 (plastic device boxes). A 1900 box is the 4" square
-    // 1-1/2" deep box — one row for it, the priced one above; a search for
-    // "1900" reaches it through utils.js SEARCH_PHRASES.
+    // 1-1/2" deep box, so both names sit on the one row.
+      { name: '1900 box (4" square, 1-1/2" deep)', labor: 0.1, price: '' },
+      { name: '4" square box, 2-1/8" deep', labor: 0.1, price: '' },
       { name: '4" square box with bracket, 1-1/2" deep', labor: 0.1, price: '' },
+      { name: '4-11/16" square box, 1-1/2" deep', labor: 0.12, price: '' },
       { name: 'Octagon box 4", 1-1/2" deep', labor: 0.166, price: '' },
       { name: 'Octagon box 4", 2-1/8" deep', labor: 0.166, price: '' },
       { name: 'Octagon box 3", 1-1/2" deep', labor: 0.166, price: '' },
+      { name: 'Handy box, 1-7/8" deep', labor: 0.2, price: '' },
       { name: 'Switch box 1 gang, plastic', labor: 0.19, price: '' },
       { name: 'Switch box 2 gang, plastic', labor: 0.19, price: '' },
       { name: 'Switch box 3 gang, plastic', labor: 0.19, price: '' },
@@ -396,9 +357,12 @@ const LABOR_BOOK_DEFAULTS = {
     // 25116-25203 (mud rings, blank covers, extension rings) and
     // 25155-25161 (4-11/16" rings and covers).
       { name: '4" square mud ring 1 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 1 gang, 5/8" deep', labor: 0.05, price: '' },
       { name: '4" square mud ring 1 gang, 3/4" deep', labor: 0.05, price: '' },
       { name: '4" square mud ring 2 gang, 1/2" deep', labor: 0.05, price: '' },
+      { name: '4" square mud ring 2 gang, 5/8" deep', labor: 0.05, price: '' },
       { name: '4" square mud ring 2 gang, 3/4" deep', labor: 0.05, price: '' },
+      { name: '4" square blank cover', labor: 0.05, price: '' },
       { name: '4" square extension ring', labor: 0.05, price: '' },
       { name: '4" square raised cover, 1-19/32" deep', labor: 0.07, price: '' },
       { name: '4" square raised cover, 2-5/32" deep', labor: 0.09, price: '' },

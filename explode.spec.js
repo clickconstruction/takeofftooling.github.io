@@ -50,6 +50,36 @@ test('Explode fills a receptacle row with its assembly, priced from the book', a
   expect(errors).toEqual([]);
 });
 
+test('a row Count Tooling derived offers no Explode — the cable is already the count', async ({ page }) => {
+  await page.goto('/');
+  // the v2 handoff shape CountTooling sends: a measured run, and the conductor
+  // row it derived from that run (flagged so we do not bill the fittings twice)
+  await page.evaluate(() => TakeoffImport.importFromPayload({
+    v: 2,
+    source: 'counttooling',
+    project: { name: 'Maple St TI', trade: 'electrical' },
+    items: [
+      { description: '1/2" EMT', quantity: 143, unit: 'ft', type: 'conduit', pages: '1' },
+      { description: 'MC 12/2 w/G', quantity: 240, unit: 'ft', pages: '', group: 'A-1', children: [], type: 'wire', derived: 'cable' },
+    ],
+  }));
+  await page.locator('#import-preview-add-btn').click();
+
+  const rows = await page.evaluate(() => TakeoffState.getTopLevelItems().map((i) => ({ d: i.description, derived: (i.meta && i.meta.derived) || null })));
+  expect(rows).toEqual([
+    { d: '1/2" EMT', derived: null },
+    { d: 'MC 12/2 w/G', derived: 'cable' },
+  ]);
+  // exactly one bolt on the table: the EMT run's
+  const explode = page.locator('.explode-btn');
+  await expect(explode).toHaveCount(1);
+  await expect(explode).toHaveAttribute('title', /EMT run assembly/);
+  const emtId = await page.evaluate(() => TakeoffState.getTopLevelItems()[0].id);
+  expect(await explode.getAttribute('data-id')).toBe(emtId);
+  // the trade the sender stated landed with the counts
+  expect(await page.evaluate(() => TakeoffState.getProjectTrade())).toBe('electrical');
+});
+
 test('bid stamp and review lane: chips in the header, select in Manage Projects, persisted on the project', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {

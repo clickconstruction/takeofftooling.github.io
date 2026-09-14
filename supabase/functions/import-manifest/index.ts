@@ -20,10 +20,13 @@ import defaultsJson from '../_shared/laborBookDefaults.json' with { type: 'json'
 //     stays untyped; a child no book row prices is flagged, never guessed;
 //   * rejections are 400s that NAME the field.
 //
-// Body: { name, external_ref?, note?, plans_url?, labor_rate?, tax_rate?,
-//         explode? (default true), items: [ { description, quantity, unit?: ea|ft|px,
-//         type?, pages?|page?, group?, meta?, children?: [{ description, quantity,
+// Body: { name, external_ref?, note?, plans_url?, trade?: plumbing|electrical|hvac,
+//         labor_rate?, tax_rate?, explode? (default true),
+//         items: [ { description, quantity, unit?: ea|ft|px, type?, pages?|page?,
+//         group?, meta?, derived?: wire|cable, children?: [{ description, quantity,
 //         unit?, type?, labor?, price? }] } ] }
+// `derived` marks a conductor row CountTooling worked out from a run it measured:
+// it rides as meta.derived and is NEVER exploded — the cable is already the count.
 // Book for pricing: the twin's own synced Labor & Price Book (takeoff_store key
 // 'book'), else the shipped defaults bundled as _shared/laborBookDefaults.json.
 //
@@ -49,6 +52,8 @@ const bad = (field: string, why: string) => json(400, { error: `items.${field}: 
 const ITEM_TYPES = ['lighting', 'gear', 'devices', 'conduit', 'wire', 'specialSystems', 'permits', 'powerCoCharges', 'temporaryPower']
 const CHILD_TYPES = ['outletsAndSwitches', 'box', 'backBoxSupport', 'cover', 'conduit', 'wire', 'screws', 'misc', 'trenching', 'trenchingAddon', 'fitting', 'overage', 'macAdapter']
 const UNITS = ['ea', 'ft', 'px']
+const DERIVED_KINDS = ['wire', 'cable']
+const TRADES = ['plumbing', 'electrical', 'hvac']
 const PLANS_LINK_RE = /^https:\/\/\S+$/
 const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v)
 const toNum = (v: unknown) => (v == null || v === '' ? null : num(Number(v)) ? Number(v) : NaN)
@@ -81,6 +86,10 @@ Deno.serve(async (req) => {
     const note = String(body.note ?? '').trim().slice(0, 400) || null
     const plansUrl = String(body.plans_url ?? '').trim()
     if (plansUrl && !PLANS_LINK_RE.test(plansUrl)) return json(400, { error: 'plans_url must be an https URL' })
+    // The bid's trade, stated by the caller (CountTooling carries it as project.trade).
+    // Never inferred from the rows — an untrade-stamped bid stays untrade-stamped.
+    const trade = body.trade == null || body.trade === '' ? null : String(body.trade).trim().toLowerCase()
+    if (trade != null && !TRADES.includes(trade)) return json(400, { error: `trade must be one of ${TRADES.join('/')} (or omit)` })
     const laborRate = toNum(body.labor_rate)
     if (laborRate != null && (Number.isNaN(laborRate) || laborRate < 0)) return json(400, { error: 'labor_rate must be a non-negative number' })
     const taxRate = toNum(body.tax_rate)
@@ -105,7 +114,14 @@ Deno.serve(async (req) => {
       if (type != null && !ITEM_TYPES.includes(type)) return bad(`[${i}].type`, `one of ${ITEM_TYPES.join('/')} (or omit)`)
       const group = typeof r.group === 'string' && r.group.trim() ? r.group.trim().slice(0, 80) : null
       const planPage = String(r.pages ?? r.page ?? r.planPage ?? '').trim().slice(0, 80)
-      const meta = r.meta && typeof r.meta === 'object' && !Array.isArray(r.meta) ? r.meta : null
+      // CountTooling stamps `derived: 'wire' | 'cable'` on a conductor row it worked
+      // out from a run it measured. It rides as meta.derived and that row is never
+      // exploded — the cable is already the count. An unknown word is dropped.
+      const baseMeta = r.meta && typeof r.meta === 'object' && !Array.isArray(r.meta) ? { ...(r.meta as Record<string, unknown>) } : null
+      const claimedDerived = typeof r.derived === 'string' ? r.derived : typeof baseMeta?.derived === 'string' ? baseMeta.derived : ''
+      const derived = DERIVED_KINDS.includes(claimedDerived) ? claimedDerived : null
+      if (baseMeta && 'derived' in baseMeta) delete baseMeta.derived
+      const meta = derived ? { ...(baseMeta ?? {}), derived } : baseMeta
       const id = crypto.randomUUID()
       const children: Record<string, unknown>[] = []
       if (r.children != null) {
@@ -148,10 +164,18 @@ Deno.serve(async (req) => {
     let exploded = 0
     let unpriced = 0
     if (doExplode) {
+      // The kernel already skips derived rows; this door skips them again on the way
+      // out, so a stale _shared/explode.js copy can never bill a conductor run's
+      // connectors and straps twice. explodeManifest maps 1:1, so indexes line up.
+      const isDerived = (m: Record<string, unknown>) => !!(m.meta as { derived?: unknown } | null)?.derived
       const r = TakeoffExplode.explodeManifest(manifest, { book: TakeoffExplode.flattenBook(laborBook) })
-      finalManifest = r.manifest
-      exploded = r.exploded
-      unpriced = r.unpriced
+      finalManifest = (r.manifest as Record<string, unknown>[]).map((m, i) => (isDerived(manifest[i]) ? manifest[i] : m))
+      for (let i = 0; i < finalManifest.length; i++) {
+        const kids = ((finalManifest[i] as Record<string, unknown>).children as Record<string, unknown>[]) ?? []
+        if (!kids.length || (manifest[i].children as unknown[]).length) continue
+        exploded++
+        unpriced += kids.filter((k) => (k.meta as { needsPricing?: boolean } | null)?.needsPricing).length
+      }
     }
     const summary = TakeoffHandoff.buildPipeToolingText(finalManifest, { plansUrl })
 
@@ -164,6 +188,7 @@ Deno.serve(async (req) => {
     if (externalRef) data.externalRef = externalRef
     if (taxRate != null) data.taxRate = taxRate
     if (plansUrl) data.plansUrl = plansUrl
+    if (trade) data.trade = trade
 
     // idempotent: by (owner, external_ref) when stamped, else by (owner, name)
     let existingQ = admin.from('takeoff_projects').select('id').eq('user_id', user.id)
@@ -187,6 +212,7 @@ Deno.serve(async (req) => {
       project_id: projectId,
       replaced: !!existing?.id,
       external_ref: externalRef,
+      trade,
       rows: summary.rows,
       counts: summary.counts,
       line_types: summary.feet,

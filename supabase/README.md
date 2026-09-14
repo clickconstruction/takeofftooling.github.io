@@ -15,16 +15,12 @@ works without every one of them — that is deliberate, and each row says what
 stays dormant until it is done. This is the only list; the tables below carry
 the detail behind each row.
 
-**Verified against the live project on 2026-09-08** (probed through PostgREST with
-the publishable key): `001`, `002`, `003` and `006` are applied — `takeoff_projects`,
-`takeoff_profiles` (with `is_digital_twin`), `takeoff_layout_suggestions`,
-`twin_credentials` and `takeoff_list_users` all answer. `004` and `005` are not.
-All four Edge Functions are deployed.
+**Verified against the live project on 2026-09-14**: every migration below answers through PostgREST and all four Edge Functions are deployed.
 
-- [ ] **`005_takeoff_project_upsert.sql`** — SQL Editor. Without it, project
+- [x] **`005_takeoff_project_upsert.sql`** — applied 2026-09-14 (`apply-pending.sh`). Without it, project
       sync falls back to read-compare-then-upsert: the same decisions, but not
       atomic, so two devices saving one bid can race.
-- [ ] **`004_takeoff_events.sql`** — SQL Editor. Without it no telemetry is
+- [x] **`004_takeoff_events.sql`** — applied 2026-09-14 (`apply-pending.sh`). Without it no telemetry is
       recorded at all: `js/events.js` posts once, reads the 404 / `42P01`, and
       stays silent for the session.
 - [x] **Redeploy the `takeoff-admin` Edge Function** — done 2026-09-08, from
@@ -33,18 +29,24 @@ All four Edge Functions are deployed.
       Manage Users (create / delete accounts) calls it; it must be running the
       current `supabase/functions/takeoff-admin/index.ts` — redeploy again after
       any edit to that file.
-- [ ] **Auth → URL Configuration → Redirect URLs** — add
+- [x] **Auth → URL Configuration → Redirect URLs** — done 2026-09-14; add
       `https://takeofftooling.com/` — the app's real origin, the custom domain on
       the Pages CNAME, **not** the `*.github.io` address — and every dev origin you
       use (`http://localhost:4173/`). Without it "Forgot your password?" silently
       sends people to the Site URL and the new-password form never appears.
-- [ ] **Auth → Email Templates → Reset Password** — leave it as the default
+- [x] **Auth → Email Templates → Reset Password** — checked 2026-09-14: the template is custom but sends `{{ .ConfirmationURL }}`, which is what the app needs. Leave it as a
       link template (`{{ .ConfirmationURL }}`). The app expects a link back to
       itself, not a code. (The **Magic Link / OTP** template is the separate one
       that is edited to send `{{ .Token }}`.)
 
-`001` was applied 2026-08-17; `002`, `003` and `006` are applied (verified
-2026-09-08, above).
+**All six migrations and all three auth items are done as of 2026-09-14.** `001` was
+applied 2026-08-17; `002`, `003` and `006` on 2026-09-07/08; `004` and `005` on 2026-09-14.
+
+One thing that bit us: a function created through the Management API can sit in
+Postgres while PostgREST's schema cache still says it does not exist (`PGRST202`),
+if two DDL statements land seconds apart. `apply-pending.sh` now sends
+`notify pgrst, 'reload schema'` after applying anything; if you ever apply SQL by
+hand and the app's RPC 404s, run that one statement in the SQL Editor.
 
 The remaining migrations and the redirect-URL entry can be done in one command
 instead of three dashboard trips. It reads the schema first and applies only what

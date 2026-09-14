@@ -370,7 +370,10 @@ test('a book at the previous defaults version takes the new sections on merge', 
   const removed = {};
   Merge.bootstrap(v3, realDefaults.defaults);
   const res = Merge.mergeDefaults(v3, realDefaults.defaults, removed, {});
-  assert.ok(v3.devices['Boxes & Rings'].some((r) => r.name.startsWith('1900 box')), 'the boxes come back');
+  // v6 retargeted: '1900 box (4" square, 1-1/2" deep)' was dropped as a duplicate
+  // of this row, which is the one the section now carries (a "1900 box" search
+  // still reaches it — utils.js SEARCH_PHRASES maps '1900' onto '4 square')
+  assert.ok(v3.devices['Boxes & Rings'].some((r) => r.name === '4" Square Box, 1-1/2" deep'), 'the boxes come back');
   assert.ok(v3.conduit['Pull String and Rope'].length === 3);
   // a wholesale new section is not "your book changed" — nothing to announce
   assert.deepEqual(res.updated, []);
@@ -410,6 +413,7 @@ function historicalShapes() {
   const v2 = loadHistoricalDefaults('v2.js');
   const v3main = loadHistoricalDefaults('v3-main.js');
   const v4ours = loadHistoricalDefaults('v4-ours.js');
+  const v5 = loadHistoricalDefaults('v5.js');
   // v3 on the journey-map branch: the PVC GLUE collapse before the X6 rows
   const v3ours = { version: 3, defaults: clone(v4ours.defaults) };
   delete v3ours.defaults.gear.Disconnects;
@@ -418,7 +422,7 @@ function historicalShapes() {
   delete v3ours.defaults.wire['NM-B (Romex)'];
   delete v3ours.defaults.wire['MC Cable'];
   delete v3ours.defaults.conduit['Pull String and Rope'];
-  return { v2, 'v3-main': v3main, 'v3-ours': v3ours, 'v4-ours': v4ours };
+  return { v2, 'v3-main': v3main, 'v3-ours': v3ours, 'v4-ours': v4ours, v5 };
 }
 
 for (const [label, shape] of Object.entries(historicalShapes())) {
@@ -447,22 +451,59 @@ for (const [label, shape] of Object.entries(historicalShapes())) {
   });
 }
 
+// v6 collapsed the one-part-two-rows pairs the v5 union left behind. A stored
+// v5 book must lose exactly the branch's copy and keep main's — no phantom
+// "you added this" correction for a row the estimator never typed.
+test('v6 drops the duplicate half of each pair from a stored v5 book, and keeps the kept half', () => {
+  const v5 = loadHistoricalDefaults('v5.js');
+  const book = clone(v5.defaults);
+  const removed = {};
+  const res = Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
+  const names = (section) => book.devices[section].map((r) => r.name);
+  for (const gone of [
+    '1900 box (4" square, 1-1/2" deep)', '4" square box, 2-1/8" deep', '4-11/16" square box, 1-1/2" deep',
+    'Handy box, 1-7/8" deep', '4" square mud ring 1 gang, 5/8" deep', '4" square mud ring 2 gang, 5/8" deep',
+    '4" square blank cover',
+  ]) assert.ok(!names('Boxes & Rings').includes(gone), `${gone} is still in Boxes & Rings`);
+  for (const gone of ['Single pole toggle switch 20A', '3-way toggle switch 20A', '4-way toggle switch 20A',
+    'Single pole weatherproof switch 20A', 'Dimmer switch 600W']) {
+    assert.ok(!names('Switches').includes(gone), `${gone} is still in Switches`);
+  }
+  // the kept half, with main's hours and price
+  const box = book.devices['Boxes & Rings'].find((r) => r.name === '4" Square Box, 1-1/2" deep');
+  assert.equal(box.labor, 0.25);
+  assert.equal(box.price, 3.9);
+  const sw = book.devices.Switches.find((r) => r.name === '20A Single-Pole Switch');
+  assert.equal(sw.labor, 0.45);
+  // rows with no counterpart on main's side are untouched
+  assert.ok(names('Switches').includes('Single pole toggle switch 15A'));
+  assert.ok(names('Boxes & Rings').includes('4" square mud ring 1 gang, 1/2" deep'));
+  assert.ok(names('Boxes & Rings').includes('Octagon box 4", 1-1/2" deep'));
+  // and nothing the estimator has to answer for
+  assert.deepEqual(Merge.computeCorrections(book, realDefaults.defaults, removed), []);
+  assert.deepEqual(res.updated, [], 'dropping a duplicate is not "your numbers changed"');
+});
+
 test('a v4-ours book keeps the rows the user edited or added in a retired section', () => {
   const v4 = loadHistoricalDefaults('v4-ours.js');
   const book = clone(v4.defaults);
-  book.devices.Boxes[0].labor = 0.5;
-  book.devices.Boxes[0].edited = true;
+  // v6 retargeted: Boxes[0] used to be '1900 box (…)', which v6 dropped as a
+  // duplicate — an edit to a row that is no longer a default is the user's own
+  // row ('new'), which is a different story. Boxes[2] is still a default.
+  const edited = book.devices.Boxes[2];
+  edited.labor = 0.5;
+  edited.edited = true;
   book.devices['Wall Plates'].push({ name: 'Jumbo plate 1 gang', labor: 0.05, price: '', userAdded: true });
   const removed = {};
   Merge.mergeDefaults(book, realDefaults.defaults, removed, {}, {}, RETIRED);
   assert.equal(book.devices.Boxes, undefined, 'the retired section is gone');
-  const moved = book.devices['Boxes & Rings'].find((r) => r.name === v4.defaults.devices.Boxes[0].name);
+  const moved = book.devices['Boxes & Rings'].find((r) => r.name === edited.name);
   assert.equal(moved.labor, 0.5);
   assert.equal(moved.edited, true);
   assert.ok(book.devices['Covers & Plates'].some((r) => r.name === 'Jumbo plate 1 gang' && r.userAdded));
   // and the edit is the only correction proposed
   const corrections = Merge.computeCorrections(book, realDefaults.defaults, removed);
-  assert.deepEqual(corrections.map((c) => [c.kind, c.name]), [['edit', v4.defaults.devices.Boxes[0].name], ['new', 'Jumbo plate 1 gang']]);
+  assert.deepEqual(corrections.map((c) => [c.kind, c.name]), [['edit', edited.name], ['new', 'Jumbo plate 1 gang']]);
 });
 
 test('migrateRemovedMeta carries the relocated map, and it blocks the merge without being shared', () => {

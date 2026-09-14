@@ -222,6 +222,38 @@ test('the job details ride the link and land on the copy', async ({ page }) => {
   expect(await page.evaluate(() => TakeoffState.getProjectDetails())).toEqual(SHARED.details);
 });
 
+// The bid's trade (CountTooling's project.trade) rides the same road as the
+// details: the project document, the share envelope, and the copy at the far end.
+test('the trade rides the project document and the share link', async ({ page }) => {
+  await page.goto('/' + linkFor({ ...SHARED, exportedAt: '2026-09-07T09:00:00.000Z', trade: 'electrical' }));
+  await expect.poll(() => page.evaluate(() => TakeoffState.getProjectTrade())).toBe('electrical');
+  // through storage
+  await page.evaluate(() => TakeoffState.persistNow());
+  const doc = await page.evaluate(() => {
+    const idx = JSON.parse(localStorage.getItem('takeoff-projects-index'));
+    return JSON.parse(localStorage.getItem('takeoff-project-' + idx.currentId));
+  });
+  expect(doc.trade).toBe('electrical');
+  await page.reload();
+  expect(await page.evaluate(() => TakeoffState.getProjectTrade())).toBe('electrical');
+  // and back out into an envelope the next reader gets
+  const envelope = await page.evaluate(() => TakeoffApp.buildShareEnvelope());
+  expect(envelope.trade).toBe('electrical');
+});
+
+test('a trade nobody stated stays null, and a made-up one is refused', async ({ page }) => {
+  await page.goto('/' + linkFor({ ...SHARED, exportedAt: '2026-09-07T10:00:00.000Z', trade: 'sparky' }));
+  await expect.poll(() => page.evaluate(() => TakeoffState.getCurrentProject().name)).toContain('Northgate');
+  expect(await page.evaluate(() => TakeoffState.getProjectTrade())).toBe(null);
+  expect(await page.evaluate(() => TakeoffState.setProjectTrade('sparky'))).toBe(false);
+  expect(await page.evaluate(() => TakeoffState.setProjectTrade('hvac'))).toBe(true);
+  expect(await page.evaluate(() => TakeoffState.getProjectTrade())).toBe('hvac');
+  // a new bid starts unstamped; a duplicate keeps the trade it copied
+  expect(await page.evaluate(() => { TakeoffState.createProject('Blank'); return TakeoffState.getProjectTrade(); })).toBe(null);
+  const envelope = await page.evaluate(() => TakeoffApp.buildShareEnvelope());
+  expect(envelope.trade).toBe(undefined);
+});
+
 test('junk in the details is dropped rather than stored', async ({ page }) => {
   const nasty = { ...SHARED, exportedAt: '2026-09-06T16:00:00.000Z', details: { client: '  Ridgeline  ', evil: 'x', permitNo: 42, address: { nope: true } } };
   await page.goto('/' + linkFor(nasty));
