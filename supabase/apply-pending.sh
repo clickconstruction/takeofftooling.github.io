@@ -6,19 +6,24 @@
 # Every migration here is idempotent, and the redirect list is merged, never
 # replaced — so re-running this is safe.
 #
-# Auth: your own Supabase access token. It is read from SUPABASE_ACCESS_TOKEN
-# if set, otherwise from the CLI's keychain entry on macOS (`supabase login`
-# puts it there) — that read pops a one-time "allow access" prompt, so run this
-# from a terminal you can click on. Nothing is written to disk.
+# Auth: your own Supabase access token, looked for in this order:
+#   1. SUPABASE_ACCESS_TOKEN already in the environment
+#   2. the same variable in the repo's gitignored .env.local
+#   3. the CLI's keychain entry on macOS (`supabase login` puts it there) —
+#      that read pops a one-time "allow access" prompt, so run from a terminal
+#      you can click on
+# Nothing is written to disk.
 #
 #   bash supabase/apply-pending.sh
 #
-# Not on macOS, or would rather not use the keychain? Mint a token at
-# https://supabase.com/dashboard/account/tokens and pass it in:
+# To keep a token on this machine: mint one at
+# https://supabase.com/dashboard/account/tokens and add one line to .env.local:
 #
-#   SUPABASE_ACCESS_TOKEN=sbp_... bash supabase/apply-pending.sh
+#   SUPABASE_ACCESS_TOKEN=sbp_...
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# .env.local is gitignored; it already holds the e2e test account.
+if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
 # The CLI stopped logging the token under --debug (checked on 2.72.7), so the
 # keychain is the only place to get it without minting a new one.
 export SB_TOKEN="${SUPABASE_ACCESS_TOKEN:-$(security find-generic-password -s 'Supabase CLI' -a supabase -w 2>/dev/null || true)}"
