@@ -1,0 +1,363 @@
+<title>Takeoff Tooling Alpha Test Script</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    --paper:#f4f1e8; --card:#fffdf7; --sunk:#efebdf;
+    --ink:#211f19; --body:#3a372e; --muted:#6d6858; --faint:#8f8974;
+    --rule:#ded8c6; --rule-soft:#e9e4d5;
+    --accent:#8a6d10; --accent-soft:#f0e6c4;
+    --pass:#4a6f38; --pass-bg:#e8efe0;
+    --watch:#8a6212; --watch-bg:#f6ecd6;
+    --stop:#9d3f2c; --stop-bg:#f7e5df;
+    --sans:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#141419; --card:#1b1b21; --sunk:#212129;
+    --ink:#f0eee6; --body:#d9d6cb; --muted:#a09c8e; --faint:#7d7a6d;
+    --rule:#33333d; --rule-soft:#2a2a33;
+    --accent:#e5c15c; --accent-soft:#3a3320;
+    --pass:#9dbd82; --pass-bg:#232b1e;
+    --watch:#dcae52; --watch-bg:#2e2718;
+    --stop:#e08069; --stop-bg:#2f1f1b;
+  }}
+  :root[data-theme="dark"]{
+    --paper:#141419; --card:#1b1b21; --sunk:#212129;
+    --ink:#f0eee6; --body:#d9d6cb; --muted:#a09c8e; --faint:#7d7a6d;
+    --rule:#33333d; --rule-soft:#2a2a33;
+    --accent:#e5c15c; --accent-soft:#3a3320;
+    --pass:#9dbd82; --pass-bg:#232b1e;
+    --watch:#dcae52; --watch-bg:#2e2718;
+    --stop:#e08069; --stop-bg:#2f1f1b;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--body);font-family:var(--serif);font-size:16.5px;line-height:1.6;margin:0}
+  .sheet{max-width:53rem;margin:0 auto;padding:2.6rem 1.4rem 5rem}
+
+  header.mast{border-bottom:3px double var(--rule);padding-bottom:1.4rem;margin-bottom:1.8rem}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 .7rem}
+  h1{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.75rem,4.6vw,2.35rem);line-height:1.1;color:var(--ink);margin:0 0 .7rem;text-wrap:balance}
+  .standfirst{max-width:62ch;margin:0 0 1.2rem;font-size:1.03rem}
+  .factbar{display:flex;flex-wrap:wrap;gap:.35rem 1.6rem;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+  .factbar b{color:var(--ink);font-weight:500}
+  .factbar a{color:var(--accent)}
+
+  h2{font-family:var(--sans);font-size:1.28rem;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin:2.9rem 0 .3rem;display:flex;align-items:baseline;gap:.6rem}
+  h2 .num{font-family:var(--mono);font-size:.8rem;font-weight:500;color:var(--accent);border:1px solid var(--rule);border-radius:3px;padding:.1rem .4rem;flex:none}
+  .h2note{color:var(--muted);font-size:.94rem;margin:.15rem 0 1.2rem;max-width:60ch}
+  h3{font-family:var(--sans);font-size:.82rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2rem 0 .8rem;padding-bottom:.35rem;border-bottom:1px solid var(--rule-soft)}
+
+  ol.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+  ol.steps>li{counter-increment:s;position:relative;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:4px;padding:.95rem 1.05rem .95rem 1.05rem;margin:0 0 .7rem}
+  .stepline{display:flex;gap:.7rem;align-items:flex-start}
+  .tick{flex:none;width:1.15rem;height:1.15rem;margin-top:.28rem;accent-color:var(--accent);cursor:pointer}
+  .stepbody{flex:1;min-width:0}
+  .steptitle{font-family:var(--sans);font-weight:600;color:var(--ink);font-size:1.02rem;line-height:1.35;margin:0 0 .2rem}
+  .steptitle::before{content:counter(s) ". ";font-family:var(--mono);font-weight:500;color:var(--faint);font-size:.85em}
+  ol.steps p{margin:.3rem 0 0;max-width:62ch}
+  ol.steps p.do{color:var(--body)}
+  .expect{margin:.6rem 0 0;background:var(--sunk);border-radius:4px;padding:.55rem .75rem;font-size:.93rem}
+  .expect .lbl{display:block;font-family:var(--sans);font-size:.66rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin-bottom:.25rem}
+  .num,code{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.9em;color:var(--ink)}
+  .expect .num{color:var(--ink);font-weight:500}
+  em.was{color:var(--muted);font-style:italic}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:.1rem .42rem;border-radius:3px;vertical-align:2px;margin-left:.35rem;white-space:nowrap}
+  .t-stop{color:var(--stop);background:var(--stop-bg)}
+  .t-watch{color:var(--watch);background:var(--watch-bg)}
+  .t-pass{color:var(--pass);background:var(--pass-bg)}
+
+  .callout{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--watch);border-radius:4px;padding:.9rem 1.1rem;margin:1.1rem 0}
+  .callout.stop{border-left-color:var(--stop)}
+  .callout.pass{border-left-color:var(--pass)}
+  .callout h4{font-family:var(--sans);font-size:.95rem;font-weight:600;color:var(--ink);margin:0 0 .35rem}
+  .callout p{margin:.3rem 0 0;max-width:62ch}
+  .callout ul{margin:.45rem 0 0;padding-left:1.1rem}
+  .callout li{margin:.28rem 0}
+
+  ul.plain{list-style:none;margin:.6rem 0 0;padding:0}
+  ul.plain li{padding:.5rem 0;border-bottom:1px solid var(--rule-soft);display:grid;grid-template-columns:minmax(9rem,15rem) 1fr;gap:.2rem 1.1rem;align-items:baseline}
+  ul.plain li:last-child{border-bottom:none}
+  ul.plain b{font-family:var(--sans);font-weight:600;color:var(--ink);font-size:.95rem}
+  ul.plain span{color:var(--muted);font-size:.95rem}
+
+  .scroller{overflow-x:auto}
+  footer{margin-top:3.2rem;padding-top:1.1rem;border-top:1px solid var(--rule);color:var(--faint);font-size:.85rem;max-width:64ch}
+  a{color:var(--accent);text-underline-offset:2px}
+  @media (max-width:560px){
+    ul.plain li{grid-template-columns:1fr}
+    .sheet{padding:1.8rem 1rem 3.5rem}
+  }
+  @media print{
+    body{background:#fff}
+    ol.steps>li,.callout{break-inside:avoid;background:#fff}
+    .sheet{max-width:none;padding:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="sheet">
+  <header class="mast">
+    <p class="eyebrow">Takeoff Tooling · alpha</p>
+    <h1>Test script for the pre-alpha build</h1>
+    <p class="standfirst">Every route below changed in the pre-alpha review (Sept 7–14). Work through it in order — the bid you build in Round 1 is the one Rounds 2 and 3 use. Budget about forty minutes for Rounds 1–2, plus ten on a real phone. Where a figure is printed, compare it to the screen: this app's failure mode is a wrong dollar amount that looks right.</p>
+    <div class="factbar">
+      <span>App: <b><a href="https://takeofftooling.com/">takeofftooling.com</a></b></span>
+      <span>Build <b>main @ 93e914b</b></span>
+      <span>Sept 14, 2026</span>
+    </div>
+  </header>
+
+  <div class="callout">
+    <h4>Set up in thirty seconds</h4>
+    <p>Open the app in a <b>private / incognito window</b> on a desktop browser. The app saves into that browser, so a private window guarantees a clean first-run and throws the test bid away when you close it. Don't sign in yet — Round 5 covers that. Keep a note open: for anything that looks wrong, write down <em>which screen, what you did, what you expected, what you saw</em>, plus the numbers and your browser width.</p>
+  </div>
+
+  <h2><span class="num">R1</span> Ten minutes that have to pass</h2>
+  <p class="h2note">If anything here fails, stop and report it — the rest of the script is built on this bid.</p>
+
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c1"><div class="stepbody">
+      <p class="steptitle">Open the app cold</p>
+      <p class="do">Load the URL in the private window.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>A line reading <span class="num">Start here.</span> above one empty row. No totals panel yet — it appears once a row has a description. No error banner, nothing flashing.</p>
+    </div></div></li>
+
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c2"><div class="stepbody">
+      <p class="steptitle">Build one priced line</p>
+      <p class="do">Description <span class="num">2x4 LED Troffer</span>. Click the <b>type…</b> chip and pick <b>Lighting</b> (or press <span class="num">L</span>). Quantity <span class="num">24</span>, Labor <span class="num">0.75</span>, Price <span class="num">89.50</span>. Then set the Labor rate to <span class="num">92</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like — check all five</span>
+        Lighting materials <span class="num">$2,148.00</span> · Sales tax (%) field pre-filled <span class="num">8.25</span> giving <span class="num">$177.21</span> · Labor <span class="num">18.00</span> hrs · Labor total <span class="num">$1,656.00</span> · Grand Total <span class="num">$3,981.21</span>.
+      </p>
+    </div></div></li>
+
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c3"><div class="stepbody">
+      <p class="steptitle">Type a number, then immediately click something else<span class="tag t-stop">was broken</span></p>
+      <p class="do">Click into the Quantity cell, type <span class="num">25</span>, and <b>without pressing Tab</b> click straight into the Labor rate box.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The click lands — the cursor is in the Labor rate box — and the quantity keeps <span class="num">25</span>. <em class="was">Until this week the click was swallowed and the typed number was lost.</em> Try it a few times, and on the Price and Labor cells too.</p>
+    </div></div></li>
+
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c4"><div class="stepbody">
+      <p class="steptitle">Correct the bid with the purchase list open<span class="tag t-stop">was broken</span></p>
+      <p class="do">Set the quantity back to <span class="num">24</span>. Press <b>Generate purchase list (PO)</b>, then — with the list on screen — change the quantity to <span class="num">30</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The list updates as you type: <span class="num">30</span> and <span class="num">$2,685.00</span>. The list total and the summary never disagree. <em class="was">The list used to freeze the moment you started correcting.</em></p>
+    </div></div></li>
+
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c5"><div class="stepbody">
+      <p class="steptitle">Undo right after typing<span class="tag t-stop">was broken</span></p>
+      <p class="do">Type a different quantity, then press <b>Undo</b> in the header (or ⌘Z / Ctrl-Z with the cursor outside a field).</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Undo is lit and works on the first press. <em class="was">It used to stay greyed out until something else redrew the page.</em> Set the quantity back to <span class="num">24</span> before moving on.</p>
+    </div></div></li>
+
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c6"><div class="stepbody">
+      <p class="steptitle">Print for review</p>
+      <p class="do"><b>Print Options → Print for review.</b> Open the PDF.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Page 1 is the summary you just read on screen, with dollars and cents. Page 2 is the line items — every description sits inside its own column, nothing overlaps the Quantity or Price columns, hours show two decimals, and the file is named after the job and today's date.</p>
+    </div></div></li>
+  </ol>
+
+  <h2><span class="num">R2</span> The routes that changed</h2>
+  <p class="h2note">Keep the same bid. Each block is independent — if one fails, note it and carry on to the next.</p>
+
+  <h3>Counts arriving from Count Tooling</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c7"><div class="stepbody">
+      <p class="steptitle">A re-count must not duplicate the fixture<span class="tag t-stop">was broken</span></p>
+      <p class="do">Copy these two lines, then press <b>Paste from CountTooling.com</b>:</p>
+      <p class="expect"><span class="lbl">Clipboard</span><span class="num">2x4 LED Troffer&nbsp;⇥&nbsp;30&nbsp;⇥&nbsp;E2.1</span><br><span class="num">LED Wall Pack - WP1&nbsp;⇥&nbsp;7&nbsp;⇥&nbsp;E1.0</span><br><span style="color:var(--muted)">(tab-separated — type it into a text file if pasting is awkward)</span></p>
+      <p class="expect"><span class="lbl">What right looks like</span>One primary button reading <span class="num">Update 1 count · add 1 fixture</span>. Press it: the troffer row becomes <span class="num">30</span> and keeps its price and hours — there is <b>no second troffer row</b>. The wall pack arrives typed as Lighting. <em class="was">The old "Add All" turned 24 + 30 into 54.</em></p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c8"><div class="stepbody">
+      <p class="steptitle">A count that went down</p>
+      <p class="do">Paste again with the troffer at <span class="num">18</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The preview shows <span class="num">× 18 · was 30, −12</span> and the button takes it. A lower count is a real correction, not something to ignore. Put it back to <span class="num">24</span> afterwards.</p>
+    </div></div></li>
+  </ol>
+
+  <h3>A device run</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c9"><div class="stepbody">
+      <p class="steptitle">Quantities are totals for the whole line</p>
+      <p class="do">Add a row: <span class="num">Duplex receptacle 20A</span>, quantity <span class="num">20</span>, type <b>Devices</b> — the editor opens by itself.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Eight <b>chips</b> ("+ Box", "+ Cover"…), not eight empty tables. Click <b>+ Box</b>: the new row is seeded at <span class="num">20</span>, not 1, and the column header reads <span class="num">Quantity (all 20 runs)</span>. The panel prints the extended price <b>and</b> the per-run price.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c10"><div class="stepbody">
+      <p class="steptitle">Fill a row from the book</p>
+      <p class="do">On that box row press <b>Book</b>, search <span class="num">1900 box</span>, and add <span class="num">4" Square Box, 1-1/2" deep</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The description is exactly the part name — <b>no section name pasted onto the end</b>. Hours <span class="num">0.25</span> and price <span class="num">3.90</span> come with it. Then <b>Save parts to the bid</b>: Devices materials <span class="num">$78.00</span>, Devices labor <span class="num">5.00</span> hrs.</p>
+    </div></div></li>
+  </ol>
+
+  <h3>A conduit run</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c11"><div class="stepbody">
+      <p class="steptitle">Nothing reaches the bid until you press Save<span class="tag t-stop">was broken</span></p>
+      <p class="do">Add <span class="num">3/4" EMT Homerun</span>, quantity <span class="num">150</span>, price <span class="num">1.10</span>, type <b>Conduit</b>. In the wizard: quick-add <b>Dirt to 24in</b>, add <b>+ BACKHOE</b>, <b>Next</b>, pick a <span class="num">90° Elbow</span> preset and set quantity <span class="num">4</span> / labor <span class="num">0.12</span> / price <span class="num">2.40</span>, then press <b>Back</b>, then <b>Cancel</b>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Cancel <b>asks first</b> — "Discard unsaved changes in this editor?". Say no, go forward again, set overage to <span class="num">10%</span>, and <b>Save parts to the bid</b>. <em class="was">The old wizard wrote to the bid at every step, and Back-then-Cancel threw work away silently.</em></p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c12"><div class="stepbody">
+      <p class="steptitle">Trenching and rentals are not stock</p>
+      <p class="do">Read the totals panel, then the purchase list.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Conduit materials <span class="num">$191.10</span>. The trench (<span class="num">$2,250.00</span>) and the backhoe sit under <b>Other charges → Site work &amp; rentals</b>, are <b>not taxed</b>, and are <b>not</b> on the purchase list — nobody orders a backhoe from the supply house. The conduit line on the list reads <span class="num">165 · 3/4" EMT Homerun (incl. 10% overage)</span>, one line, not two.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c13"><div class="stepbody">
+      <p class="steptitle">Change the run afterwards</p>
+      <p class="do">On the manifest, change the homerun's quantity from <span class="num">150</span> to <span class="num">200</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The overage child follows on its own — <span class="num">20</span> ft, not the stale 15. <em class="was">It used to keep the old number until you re-opened and re-saved the wizard.</em></p>
+    </div></div></li>
+  </ol>
+
+  <h3>Finding a part</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c14"><div class="stepbody">
+      <p class="steptitle">Four searches that used to return nothing<span class="tag t-stop">was broken</span></p>
+      <p class="do">Open <b>Labor &amp; Price Book</b> and search, one at a time: <span class="num">2p 20a breaker</span> · <span class="num">exit sign</span> · <span class="num">mac adapter</span> · <span class="num">single pole switch</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>All four return hits, sorted with the closest match first, under three honest headings: <b>Your book (hours)</b>, <b>MC assemblies (hours + material)</b>, <b>Supply house · Elliot (prices)</b>. Try the words you'd actually say — anything that returns nothing is worth reporting.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c15"><div class="stepbody">
+      <p class="steptitle">The assemblies side</p>
+      <p class="do">Switch to <b>Assemblies</b> and use the filter box; open <b>Abbreviation Key</b>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The filter narrows the tree (it did not exist before). The key decodes the codes you can actually see on screen — <span class="num">nf</span>, <span class="num">n3r</span>, <span class="num">gd</span> and the rest.</p>
+    </div></div></li>
+  </ol>
+
+  <h3>Proving the number</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c16"><div class="stepbody">
+      <p class="steptitle">A row spun down to zero<span class="tag t-watch">changed on purpose</span></p>
+      <p class="do">Spin the troffer's quantity down to <span class="num">0</span> and read the totals and the purchase list. Then put it back to <span class="num">24</span>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>At zero the row contributes <b>nothing</b> — no material, no hours, no purchase line — and its quantity cell greys out. <em class="was">It used to bill one unit, and the purchase list dropped it, so the two reports disagreed.</em> This changes the total on any old bid that used a zero row: say so if that surprises you.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c17"><div class="stepbody">
+      <p class="steptitle">One material bought at two prices</p>
+      <p class="do">Add a second row with the same description as an existing one, but a different price, then regenerate the list.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>One line, with the unit column showing a range (e.g. <span class="num">$89.50–$92.00</span>) and the extended column showing the exact money. Quantity × unit no longer has to multiply out, and the list total still matches the summary to the cent.</p>
+    </div></div></li>
+  </ol>
+
+  <h3>Delivering it</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c18"><div class="stepbody">
+      <p class="steptitle">The share link carries the rate<span class="tag t-stop">was broken</span></p>
+      <p class="do"><b>Print Options → Copy share link.</b> Open it in a <b>different browser</b> (or a second private window).</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The copy opens with a banner saying it's a copy, and the <b>same Grand Total</b> as the sender. <em class="was">The rate didn't travel, so one bid showed three different totals depending on who opened it.</em> Open the same link twice: you get your copy back, not a second identical bid.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c19"><div class="stepbody">
+      <p class="steptitle">The other two prints</p>
+      <p class="do">Under Print Options, fill in <b>Job details</b> (client, address, permit). Then <b>Print purchase list (PO)</b> and <b>Print with form</b>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The PO PDF is the purchase list you see on screen — quantities, unit prices, extended costs and a materials total. The form prints your job details on page 1. The details stay with <b>this</b> bid: switch bids and they don't follow you.</p>
+    </div></div></li>
+  </ol>
+
+  <h3>Several bids at once</h3>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c20"><div class="stepbody">
+      <p class="steptitle">Name, rename, archive</p>
+      <p class="do">Use the project switcher: name this bid, make a second one, rename one from the switcher, then open <b>Manage projects</b> and archive it.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Naming a job <b>closes</b> the dialog (it used to sit there and mint duplicates on a second Enter). The header shows <span class="num">Saved just now</span>. <b>Lines</b> counts components, not just top rows. An archived bid leaves the switcher, which then reads <span class="num">1 archived</span>.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c21"><div class="stepbody">
+      <p class="steptitle">Switch bids from inside an editor<span class="tag t-stop">was broken</span></p>
+      <p class="do">Open a conduit or device editor, type something, and — without saving — switch to the other bid from the header.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>It asks about the unsaved edit, and whichever you choose you land on a <b>working manifest</b>. <em class="was">This used to leave a blank page, and on a duplicated bid it could save your work into the wrong job.</em></p>
+    </div></div></li>
+  </ol>
+
+  <h2><span class="num">R3</span> On a real phone or tablet</h2>
+  <p class="h2note">Ten minutes on actual hardware — a desktop window shrunk down is not the same test. Same URL.</p>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c22"><div class="stepbody">
+      <p class="steptitle">The bid on a phone</p>
+      <p class="do">Open the bid, type a five-digit quantity like <span class="num">12000</span>, tap the +/− spinners, and scroll the whole page.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Rows are stacked cards. The quantity is fully readable. Nothing scrolls sideways. Tapping a field does <b>not</b> zoom the page. The trash icon is on every row without hunting for it.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c23"><div class="stepbody">
+      <p class="steptitle">The book and the editors on a phone<span class="tag t-stop">was broken</span></p>
+      <p class="do">Open the Labor &amp; Price Book and search; then open a device run.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>You can read every part's <b>name</b> — search results and supply-house rows alike. <em class="was">At phone width the name was clipped to about three characters with no way to pan.</em> In the editor, <b>Save parts to the bid</b> is pinned at the bottom of the screen instead of a full page-length away.</p>
+    </div></div></li>
+  </ol>
+
+  <h2><span class="num">R4</span> Offline, and installed</h2>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c24"><div class="stepbody">
+      <p class="steptitle">Reload with no signal<span class="tag t-pass">new</span></p>
+      <p class="do">With the app open, turn on airplane mode (or switch off Wi-Fi) and <b>reload the page</b>.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The app comes back with your bid, instead of the browser's "no internet" page. Typing, totals and the Parts side of the book all keep working. The Assemblies side needs one online visit first, and says so plainly.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c25"><div class="stepbody">
+      <p class="steptitle">Add to home screen</p>
+      <p class="do">On the phone: Share → Add to Home Screen. On desktop Chrome: the install icon in the address bar.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>It opens in its own window with an icon, no browser address bar.</p>
+    </div></div></li>
+  </ol>
+
+  <h2><span class="num">R5</span> Signed in</h2>
+  <div class="callout pass">
+    <h4>The account side is fully set up</h4>
+    <p>Everything this round depends on is live as of Sept 14 — sync, the conflict-safe project write, and the password-reset address. If "Forgot your password?" does nothing, that is now a real bug worth writing up.</p>
+  </div>
+  <ol class="steps">
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c26"><div class="stepbody">
+      <p class="steptitle">Sign in and sync</p>
+      <p class="do">Sign in with the emailed six-digit code. Then open the app on a second device and sign in there.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>Your bids arrive on the second device rather than an empty table. The header says when it last saved. Edit the same bid on both machines and neither copy vanishes — if they collide you get a second bid named <span class="num">(conflict — time)</span> rather than losing one.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c27"><div class="stepbody">
+      <p class="steptitle">Set a password</p>
+      <p class="do">While signed in, open the Cloud dialog and use <b>Set a password</b>. Sign out and back in with it.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>An account created by emailed code can give itself a password without an admin handing one over.</p>
+    </div></div></li>
+    <li><div class="stepline"><input type="checkbox" class="tick" id="c28"><div class="stepbody">
+      <p class="steptitle">Forgot your password?<span class="tag t-pass">new</span></p>
+      <p class="do">Sign out. On the sign-in form, type your email and press <b>Forgot your password?</b>. Open the email.</p>
+      <p class="expect"><span class="lbl">What right looks like</span>The email carries a <b>link</b> (not a code). It opens the app itself — <span class="num">takeofftooling.com</span>, not some other page — showing a "choose a new password" form. Set one, and sign in with it.</p>
+    </div></div></li>
+  </ol>
+
+  <h2><span class="num">R6</span> Changed on purpose — please don't file these</h2>
+  <p class="h2note">All of these are deliberate. If any of them looks wrong <em>as a decision</em>, that's worth saying — but they aren't defects.</p>
+  <ul class="plain">
+    <li><b>A row at quantity 0 bills nothing</b><span>It used to count as one unit. This changes the total of any old bid that parked a row at zero.</span></li>
+    <li><b>Sales tax starts at 8.25%</b><span>It's now a field on each bid rather than a fixed 8.5%, and it travels with a share link.</span></li>
+    <li><b>Trenching and rentals are Other charges</b><span>Untaxed, and off the purchase list. Sand, patch and pole bases are still stock.</span></li>
+    <li><b>"Book", not "PB"</b><span>Same button, plain name.</span></li>
+    <li><b>The trash is on every row</b><span>The "Remove items" mode in the ☰ menu is gone.</span></li>
+    <li><b>The chip's text opens the type picker</b><span>The pencil still opens the run's editor in one click; the old × is gone (pick "No type" instead).</span></li>
+    <li><b>Print with form has no pop-up</b><span>Job details live under Print Options and belong to the bid.</span></li>
+    <li><b>Hours print to two decimals</b><span>0.75 hrs no longer rounds to 0.8 beside a price that used the exact figure.</span></li>
+    <li><b>Permit hours count</b><span>Labor typed on a Permits / Power co. / Temporary power row now counts in the labor total, on screen and in the PDF.</span></li>
+    <li><b>One row per part in "Your book"</b><span>Where two curated rows named the same part, the priced, assembly-hours row stayed — a 20A single-pole switch reads 0.45 h / $12.50, not 0.20 h. Searching "1900 box" still finds the 4" square box.</span></li>
+  </ul>
+
+  <h2><span class="num">R7</span> Already known</h2>
+  <ul class="plain">
+    <li><b>Two "occupancy sensor" rows</b><span>"Your book" has an <em>Occupancy sensor, wall switch</em> under Occupancy Sensors and an <em>Occupancy Sensor Switch</em> under Switches. Deliberately left for now; not a bug.</span></li>
+  </ul>
+
+  <footer>
+    <p>Anything that produces a <b>wrong number</b> — a total, an hour count, a purchase line — is the highest-value thing you can find, even if you can't reproduce it. Note the figures you saw and roughly what you'd done; the exact steps can be worked out afterwards. Ticks on this page are saved in your own browser only.</p>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var KEY = 'takeoff-test-script-v1';
+    var state = {};
+    try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+    var boxes = document.querySelectorAll('.tick');
+    for (var i = 0; i < boxes.length; i++) {
+      (function (box) {
+        if (state[box.id]) box.checked = true;
+        box.addEventListener('change', function () {
+          state[box.id] = box.checked;
+          try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+        });
+      })(boxes[i]);
+    }
+  })();
+</script>

@@ -43,6 +43,7 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — runtime modules, globals dependency table, state/data shapes, view pattern, flow-editor mechanics, modal ownership, localStorage keys, import/export formats, known quirks.
 - [docs/DATA-PIPELINE.md](docs/DATA-PIPELINE.md) — the offline build DAG (MC CSVs → JSON artifacts), schema of every JSON file, the Elliot supplier price-update flow, known pipeline issues.
 - [docs/REFACTOR-PLAN.md](docs/REFACTOR-PLAN.md) — agreed extraction seams for the large files and the constraints any split must respect.
+- [to-dos/README.md](to-dos/README.md) — work designed or decided but not finished, one folder per item with the ask, the decision, the spec and how to verify; pick up cold, delete when shipped.
 - [docs/guides/README.md](docs/guides/README.md) — the fifteen user guides (trade language, one per journey); keep them in step with behaviour changes — the specs are the tie-breaker.
 - [docs/JOURNEY-MAP.md](docs/JOURNEY-MAP.md) — the UX program (sibling of Count Tooling's): personas, 14 journeys, spirit test, verdict vocabulary, phases; dossiers live in `docs/journeys/` (`_surfaces.md` inventory, `_TEMPLATE.md`). Proposed UX changes must pass its spirit test.
 - [README.md](README.md) — user-facing feature documentation.
