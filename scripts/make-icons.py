@@ -8,9 +8,10 @@ does. Re-run after changing the mark or the palette:
 
 The mark is the "ruler-T pen": a T whose crossbar is a ruler (long/short
 inch ticks notched into its top edge) and whose stem is a pen, nib down, with
-a signature stroke arriving from the left and finishing at the nib — measure
-it, then sign the bid. Dark on the brand yellow tile, the same tile
-CountTooling's mark sits on, so the two read as siblings.
+one heavy cycle of AC waveform arriving from the left and finishing at the
+nib — measure it, then write the electrical bid. Dark on the brand yellow
+tile, the same tile CountTooling's and PipeTooling's marks sit on, so the
+three read as siblings.
 
 The nib's slit and breather hole are drawn only at 64 px and up (the app
 icons, the touch icon, icon.svg): below that they can't resolve and would
@@ -53,10 +54,29 @@ NIB = ((208, 296), (304, 296), (256, 392))  # shoulder-left, shoulder-right, tip
 SLIT = ((256, 384), (256, 322), 10)   # the nib's slit: from near the tip up to the breather hole; width
 BREATHER = (256, 322, 11)             # cx, cy, r
 DETAIL_MIN_PX = 64                    # slit + breather only at this size and up
-# The signature: a cubic path ending exactly at the nib tip. Written left to
-# right the way a hand moves, so the pen sits at the end of the stroke.
-SIG = 'M72 402 C92 388 120 436 146 412 C192 436 212 372 256 392'
-SIG_W = 30
+# The wave: one cycle of sine from the left of the safe zone to the nib tip,
+# written left to right the way a hand moves, so the pen sits at the end of
+# the stroke. Heavy on purpose — the weight is what keeps it a wave at 16 px.
+WAVE_X0, WAVE_AMP, WAVE_CYCLES = 72, 40, 1
+SIG_W = 50
+
+
+def wave_path():
+    """The sine as absolute cubic Béziers (M + C), ending at the nib tip."""
+    (_, _), (_, _), (tx, ty) = NIB
+    half = (tx - WAVE_X0) / (2 * WAVE_CYCLES)
+    d = f'M{WAVE_X0} {ty}'
+    x = WAVE_X0
+    for i in range(2 * WAVE_CYCLES):
+        sign = 1 if i % 2 else -1          # first half-wave rises (screen y down)
+        peak = ty + sign * WAVE_AMP * 1.55  # control-point height for a sine-like hump
+        ax, bx, ex = x + half * 0.36, x + half * 0.64, x + half
+        d += f' C{ax:.1f} {peak:.1f} {bx:.1f} {peak:.1f} {ex:.1f} {ty}'
+        x = ex
+    return d
+
+
+SIG = wave_path()
 
 
 def svg_text(bleed=False, detail=True):
