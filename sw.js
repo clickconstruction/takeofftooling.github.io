@@ -26,7 +26,7 @@
  * returning visitors keep the old copy until their next network-first hit.
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = `takeoff-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `takeoff-data-${CACHE_VERSION}`;
 
@@ -38,6 +38,10 @@ const CORE_ASSETS = [
   'css/styles.css',
   'icons/icon-192.png',
   'icons/icon-512.png',
+  'icons/maskable-512.png',
+  'icons/apple-touch-180.png',
+  'icons/favicon.svg',
+  'favicon.ico',
 ];
 
 /**
