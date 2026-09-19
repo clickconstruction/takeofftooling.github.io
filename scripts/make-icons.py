@@ -6,14 +6,20 @@ does. Re-run after changing the mark or the palette:
 
     python3 scripts/make-icons.py
 
-The mark is the "ruler-T pin": a T whose crossbar is a ruler (long/short
-inch ticks notched into its top edge) and whose stem ends in a pin point —
-measure, then mark the spot on the plan. Dark on the brand yellow tile,
-the same tile CountTooling's mark sits on, so the two read as siblings.
+The mark is the "ruler-T pen": a T whose crossbar is a ruler (long/short
+inch ticks notched into its top edge) and whose stem is a pen, nib down, with
+a signature stroke arriving from the left and finishing at the nib — measure
+it, then sign the bid. Dark on the brand yellow tile, the same tile
+CountTooling's mark sits on, so the two read as siblings.
+
+The nib's slit and breather hole are drawn only at 64 px and up (the app
+icons, the touch icon, icon.svg): below that they can't resolve and would
+only thin the stem, so the favicon sizes and favicon.svg carry the plain nib.
 
 Outputs (paths relative to the repo root):
-    icons/icon.svg              canonical vector (rounded tile, transparent corners)
-    icons/favicon.svg           the same, served as the SVG tab icon
+    icons/icon.svg              canonical vector, nib detail on (rounded tile)
+    icons/favicon.svg           the small-size vector, plain nib — the SVG tab icon
+                                and the source of index.html's inline header mark
     favicon.ico                 16/32/48 PNG-in-ICO (Safari + the browser's own
                                 /favicon.ico probe)
     icons/icon-192.png          rounded tile, transparent corners   (manifest "any")
@@ -27,6 +33,7 @@ the same numbers the SVG is written from, so the PNGs and the SVG can't drift.
 """
 import math
 import os
+import re
 import struct
 import zlib
 
@@ -38,16 +45,23 @@ ICONS = os.path.join(ROOT, 'icons')
 
 # --- the mark, in 512-unit canvas coordinates ------------------------------
 TILE_RX = 112
-BAR = (72, 88, 368, 100, 16)          # x, y, w, h, rx  — the ruler crossbar
-STEM = (208, 88, 96, 272, 16)         # x, y, w, h, rx  — the stem, down to the pin's shoulder
-PIN = ((208, 350), (304, 350), (256, 440))  # the point: shoulder-left, shoulder-right, tip
+BAR = (72, 84, 368, 100, 16)          # x, y, w, h, rx  — the ruler crossbar
 TICK_W = 22
 TICKS = ((118, 56), (164, 34), (210, 56), (302, 56), (348, 34), (394, 56))  # (x-center, depth) long/short
+STEM = (208, 84, 96, 222, 16)         # x, y, w, h, rx  — the pen barrel, down past the nib's shoulder
+NIB = ((208, 296), (304, 296), (256, 392))  # shoulder-left, shoulder-right, tip
+SLIT = ((256, 384), (256, 322), 10)   # the nib's slit: from near the tip up to the breather hole; width
+BREATHER = (256, 322, 11)             # cx, cy, r
+DETAIL_MIN_PX = 64                    # slit + breather only at this size and up
+# The signature: a cubic path ending exactly at the nib tip. Written left to
+# right the way a hand moves, so the pen sits at the end of the stroke.
+SIG = 'M72 402 C92 388 120 436 146 412 C192 436 212 372 256 392'
+SIG_W = 30
 
 
-def svg_text(bleed=False):
+def svg_text(bleed=False, detail=True):
     """The mark as SVG. bleed=True fills the whole square (maskable / apple-touch)."""
-    tile = (f'<rect width="512" height="512" fill="#e8c547"/>' if bleed
+    tile = ('<rect width="512" height="512" fill="#e8c547"/>' if bleed
             else f'<rect width="512" height="512" rx="{TILE_RX}" fill="#e8c547"/>')
     x, y, w, h, rx = BAR
     bar = f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="#161617"/>'
@@ -55,10 +69,18 @@ def svg_text(bleed=False):
                     for cx, d in TICKS)
     x, y, w, h, rx = STEM
     stem = f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="#161617"/>'
-    (ax, ay), (bx, by), (cx, cy) = PIN
-    pin = f'<path d="M{ax} {ay} H{bx} L{cx} {cy} Z" fill="#161617"/>'
+    (ax, ay), (bx, by), (cx, cy) = NIB
+    nib = f'<path d="M{ax} {ay} H{bx} L{cx} {cy} Z" fill="#161617"/>'
+    slit = ''
+    if detail:
+        (sx0, sy0), (sx1, sy1), sw = SLIT
+        hx, hy, hr = BREATHER
+        slit = (f'<line x1="{sx0}" y1="{sy0}" x2="{sx1}" y2="{sy1}" stroke="#e8c547" stroke-width="{sw}" stroke-linecap="round"/>'
+                f'<circle cx="{hx}" cy="{hy}" r="{hr}" fill="#e8c547"/>')
+    sig = (f'<path d="{SIG}" fill="none" stroke="#161617" stroke-width="{SIG_W}" '
+           f'stroke-linecap="round" stroke-linejoin="round"/>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
-            f'{tile}{bar}{ticks}{stem}{pin}</svg>\n')
+            f'{tile}{bar}{ticks}{stem}{nib}{slit}{sig}</svg>\n')
 
 
 # --- rasterizer: per-row class intervals on a 4x supersampled grid ----------
@@ -82,11 +104,66 @@ def rrect_span(rect, yc):
 
 
 def tri_span(yc):
-    (ax, ay), (bx, by), (cx, cy) = PIN
+    (ax, ay), (bx, by), (cx, cy) = NIB
     if yc < ay or yc > cy:
         return None
     t = (yc - ay) / (cy - ay)
     return (ax + (cx - ax) * t, bx + (cx - bx) * t)
+
+
+def cubic_points(d, n=48):
+    """Sample an SVG path made of M + C segments into a dense polyline."""
+    tokens = re.sub(r'([MC])', r' \1 ', d.replace(',', ' ')).split()
+    pts, i, cur = [], 0, None
+    while i < len(tokens):
+        cmd = tokens[i]
+        if cmd == 'M':
+            cur = (float(tokens[i + 1]), float(tokens[i + 2]))
+            pts.append(cur)
+            i += 3
+        elif cmd == 'C':
+            p1 = (float(tokens[i + 1]), float(tokens[i + 2]))
+            p2 = (float(tokens[i + 3]), float(tokens[i + 4]))
+            p3 = (float(tokens[i + 5]), float(tokens[i + 6]))
+            p0 = cur
+            for k in range(1, n + 1):
+                t = k / n
+                u = 1 - t
+                pts.append((u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+                            u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]))
+            cur = p3
+            i += 7
+        else:
+            raise ValueError('unsupported path command ' + cmd)
+    return pts
+
+
+def stroke_discs(points, width, step=2.0):
+    """A round-capped stroke as a union of discs: densify the polyline so
+    consecutive discs overlap, then return [(cx, cy, r), ...]."""
+    r = width / 2
+    out = []
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        dist = math.hypot(x1 - x0, y1 - y0)
+        n = max(1, int(dist / step))
+        for k in range(n):
+            t = k / n
+            out.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r))
+    x, y = points[-1]
+    out.append((x, y, r))
+    return out
+
+
+SIG_DISCS = stroke_discs(cubic_points(SIG), SIG_W)
+SLIT_DISCS = stroke_discs([SLIT[0], SLIT[1]], SLIT[2]) + [BREATHER]
+
+
+def disc_spans(discs, yc):
+    for cx, cy, r in discs:
+        dy = yc - cy
+        if -r < dy < r:
+            half = math.sqrt(r * r - dy * dy)
+            yield (cx - half, cx + half)
 
 
 def paint(row, span, k, value):
@@ -102,6 +179,7 @@ def render(size, bleed):
     """Return rows of (r, g, b, a) for a `size` px icon."""
     n = size * SS
     k = n / 512.0
+    detail = size >= DETAIL_MIN_PX
     # class per sample: 0 = outside the tile, 1 = yellow tile, 2 = dark ink
     sub_rows = []
     for sy in range(n):
@@ -112,12 +190,17 @@ def render(size, bleed):
         else:
             paint(row, rrect_span((0, 0, 512, 512, TILE_RX), yc), k, 1)
         paint(row, rrect_span(BAR, yc), k, 2)
-        bx, by, bw, bh, _ = BAR
+        by = BAR[1]
         for cx, d in TICKS:
             if by <= yc < by + d:
                 paint(row, (cx - TICK_W / 2, cx + TICK_W / 2), k, 1)
         paint(row, rrect_span(STEM, yc), k, 2)
         paint(row, tri_span(yc), k, 2)
+        if detail:
+            for span in disc_spans(SLIT_DISCS, yc):
+                paint(row, span, k, 1)
+        for span in disc_spans(SIG_DISCS, yc):
+            paint(row, span, k, 2)
         sub_rows.append(row)
 
     total = SS * SS
@@ -182,8 +265,8 @@ def write(rel, data):
 
 if __name__ == '__main__':
     os.makedirs(ICONS, exist_ok=True)
-    write('icons/icon.svg', svg_text().encode())
-    write('icons/favicon.svg', svg_text().encode())
+    write('icons/icon.svg', svg_text(detail=True).encode())
+    write('icons/favicon.svg', svg_text(detail=False).encode())
     write('icons/icon-192.png', png_bytes(render(192, bleed=False), opaque=False))
     write('icons/icon-512.png', png_bytes(render(512, bleed=False), opaque=False))
     write('icons/maskable-512.png', png_bytes(render(512, bleed=True), opaque=True))
