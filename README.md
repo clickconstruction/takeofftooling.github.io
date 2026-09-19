@@ -182,7 +182,7 @@ python3 scripts/dev-server.py 4173
 
 Then open http://localhost:4173. Don't open `index.html` directly via `file://` — the Labor & Price Book fetches JSON from `mc-assemblies/`, which requires an HTTP server.
 
-The offline service worker (`sw.js`) registers on localhost too. It is network-first for the app's own code, so edits still show up on a reload; if you ever suspect a stale copy, use **Reload app (keeps your data)** in the ☰ menu, which clears the caches and unregisters the worker. **Bump `CACHE_VERSION` in `sw.js` when you deploy a change to the shell** — that is what retires the offline copy on everyone else's device. The app icons are generated: `python3 scripts/make-icons.py` after a palette change.
+The offline service worker (`sw.js`) registers on localhost too. It is network-first for the app's own code, so edits still show up on a reload; if you ever suspect a stale copy, use **Reload app (keeps your data)** in the ☰ menu, which clears the caches and unregisters the worker. **Bump `CACHE_VERSION` in `sw.js` when you deploy a change to the shell** — that is what retires the offline copy on everyone else's device. The app icons and the favicon are generated from one vector definition: `python3 scripts/make-icons.py` after changing the mark or the palette.
 
 ### Tests & lint
 

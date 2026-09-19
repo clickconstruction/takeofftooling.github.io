@@ -62,10 +62,20 @@ header {
 
 header h1 {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-family: 'Instrument Serif', serif;
   font-size: 1.4rem;
   font-weight: 400;
   color: var(--accent);
+}
+
+/* The mark next to the title (inline SVG, same source as icons/ + favicon). */
+.app-mark {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .app-title-clickable {

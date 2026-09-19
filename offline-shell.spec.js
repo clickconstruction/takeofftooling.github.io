@@ -26,6 +26,16 @@ async function installWorker(page) {
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 }
 
+test('the head declares the favicon (ICO + SVG) and the apple-touch icon, and they resolve', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.locator('link[rel="icon"]')).toHaveCount(2);
+  for (const href of ['favicon.ico', 'icons/favicon.svg', 'icons/apple-touch-180.png']) {
+    expect((await request.get('/' + href)).ok()).toBe(true);
+  }
+  // The header carries the same mark inline, next to the title.
+  await expect(page.locator('#app-title .app-mark')).toBeVisible();
+});
+
 test('the head declares the web manifest, and it resolves', async ({ page, request }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', 'manifest.webmanifest');
