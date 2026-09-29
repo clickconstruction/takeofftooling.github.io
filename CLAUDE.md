@@ -36,7 +36,7 @@ Static web app for electrical estimators: build a manifest-based bid (fixtures, 
 | `source-data/` | Build-only inputs & intermediates (MC CSVs, 40 MB mc-assemblies.json, hierarchy artifacts) — removable; see its README |
 | `scripts/` | Offline pipeline that builds `mc-assemblies/*.json` — see docs/DATA-PIPELINE.md |
 | `import-files/` | Sample supplier CSV, hierarchy screenshots (pipeline inputs), and `counttooling-export.fixture.txt` — the CountTooling export both repos test against |
-| `css/styles.css` | Single stylesheet, ~6,100 lines, organized by `/* section */` comments |
+| `css/styles.css` | Single stylesheet, ~6,200 lines, organized by `/* section */` comments |
 
 ## Documentation index
 

@@ -1,6 +1,6 @@
 # Refactor Plan — making the codebase manageable
 
-Status: **steps 1–6 done** (item 6 on 2026-08-11; steps 1–5 on 2026-07-18). Landed: labor-book defaults extraction, the `TakeoffStorage` adapter, the full state.js split (`js/uiState.js` + `js/selectors.js`; state.js 1,388 → ~400 lines), the laborBook.js split (1,030 → ~540 + 3 modules), the shared-view module (`js/views/shared.js`: icons + overage helpers), dead-code removal, the quality gate (`npm run check` + Playwright), and the item 6 dead-weight removal. Remaining: the optional/later items below.
+Status: **steps 1–6 done** (item 6 on 2026-08-11; steps 1–5 on 2026-07-18). The sizes below are as they stood at each step; by 2026-09-29 state.js is back to 1,543 lines (projects, cloud sync, provenance and the trade / review fields landed on it), laborBook.js 845 and conduit.js 599. Landed: labor-book defaults extraction, the `TakeoffStorage` adapter, the full state.js split (`js/uiState.js` + `js/selectors.js`; state.js 1,388 → ~400 lines), the laborBook.js split (1,030 → ~540 + 3 modules), the shared-view module (`js/views/shared.js`: icons + overage helpers), dead-code removal, the quality gate (`npm run check` + Playwright), and the item 6 dead-weight removal. Remaining: the optional/later items below.
 
 ## Constraints every split must respect
 

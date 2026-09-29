@@ -85,11 +85,11 @@ A **preview modal** shows what is on the bid beside what the count says. **The c
 - **Add as separate rows** — only offered when at least one line already exists: every line becomes its own new row, duplicates included. Use it when the count really is a second batch of the same fixture.
 - The whole import is **one undo frame**, including the blank starter row it replaces on a first bid.
 
-CountTooling can also open Takeoff Tooling directly with a structured handoff link (`#import=`, payload v2 — v1 still opens), which carries units, types, groups, children and the project's name and plans link explicitly.
+CountTooling can also open Takeoff Tooling directly with a structured handoff link (`#import=`, payload v2 — v1 still opens), which carries units, types, groups, children and the project's name, plans link and trade explicitly — and marks a conductor row Count Tooling worked out from a run it measured (`derived`), so that row is never exploded here.
 
 ### Explode: the assembly in one click
 
-A ⚡ button appears on any typed row an assembly template knows — receptacles, GFCIs, switches and sensors, data drops, lay-in fixtures, EMT / PVC / MC runs — while it has no children. One click adds the assembly as child rows (box, ring, plate, connectors; couplings and straps per 10 ft, connectors per run) priced from your Labor & Price Book by name. A part your book doesn't carry is added unpriced and flagged, never guessed. Undo removes the whole assembly. Your own children always win: the button hides once a row has any.
+A ⚡ button appears on any typed row an assembly template knows — receptacles, GFCIs, switches and sensors, data drops, lay-in fixtures, EMT / PVC / MC runs — while it has no children. One click adds the assembly as child rows (box, ring, plate, connectors; couplings and straps per 10 ft, connectors per run) priced from your Labor & Price Book by name. A part your book doesn't carry is added unpriced and flagged, never guessed. Undo removes the whole assembly. Your own children always win: the button hides once a row has any. A wire or cable row that Count Tooling derived from a measured run (an MC cable under a homerun) carries no ⚡ either: the cable is already the count, and the raceway row above it carries the connectors.
 
 ### Bid stamp and review lane
 

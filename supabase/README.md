@@ -5,8 +5,9 @@ schema (the `takeoff_store` and `takeoff_suggestions` tables and their RLS)
 was created directly from the dashboard before this folder existed; new
 schema lands here as numbered files.
 
-**To apply:** Supabase Dashboard → SQL Editor → paste the entire file →
-Run. Apply files in filename order.
+**To apply:** `bash supabase/apply-pending.sh` (below: reads the schema, applies
+only what is missing, reloads PostgREST's cache). By hand instead: Supabase
+Dashboard → SQL Editor → paste the entire file → Run, in filename order.
 
 ## Apply before deploy
 
