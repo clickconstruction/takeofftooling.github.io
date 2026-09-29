@@ -14,9 +14,11 @@ time changes nothing.
 
 1. **Copy from Count Tooling.** Use its **Copy to /Tooling** button and pick the
    scope. What lands on your clipboard is one line per fixture —
-   `fixture ⇥ count ⇥ page`. A signed-in Count Tooling user also gets a
-   `View link:` footer line; Takeoff Tooling drops it rather than importing it as
-   a fixture.
+   `fixture ⇥ count ⇥ page` — with `[Group]` in front of a name that belongs to
+   a circuit or an area, `ft of` or `px of` in front of a run, and child counts
+   indented under their parent. A signed-in Count Tooling user also gets a
+   `View link:` footer line; Takeoff Tooling keeps it on the bid as the **Plans**
+   chip in the header rather than importing it as a fixture.
 
 2. **Paste it.** **Paste from CountTooling.com** is the gold button in the
    header — the same one the *Start here* line points at on an empty bid. Click
@@ -65,11 +67,22 @@ floor counted separately — and not otherwise.
 
 - Fixtures land with their count and plan page. Price and hours are yours to
   fill in — the import never touches them.
-- `ft of …` lines become Conduit and Wire runs, with the footage as the quantity.
+- A `[Group]` in front of a name becomes the row's **group tag** (a circuit, a
+  panel, an area) and stays off the part name, so the name can still match the
+  book.
+- `ft of …` lines become Conduit and Wire runs, with the footage as the quantity;
+  `px of …` lines arrive flagged as unscaled and stay out of every total until
+  the page is scaled in Count Tooling and copied again.
+- Indented lines (Count Tooling's child counts — couplings under a conduit, boxes
+  under a device) land as **children** of the row above them.
+- A wire or cable row Count Tooling worked out from a run it measured arrives
+  marked as derived: it shows no ⚡ Explode button, because the cable is already
+  the count.
 - The trade's own lighting names are typed correctly on the way in — troffers,
   downlights, exit signs, wall packs.
-- The `View link:` footer from a signed-in Count Tooling user is dropped, not
-  imported.
+- The `View link:` footer from a signed-in Count Tooling user is kept on the bid
+  as the **Plans** chip and travels on to PipeTooling; the link itself is never
+  a row. An `#import=` link can also name the project and its trade.
 
 ## The `#import=` contract
 
@@ -78,11 +91,20 @@ For anyone building the other side of this hand-off. The URL is
 the hash is stripped from the address bar before the preview shows.
 
 ```
-{ v: 1, source?: string, items: [{ description, count|quantity, page|planPage?, type? }] }
+v2: { v: 2, source?: string, project?: { name?, plansUrl?, trade?: 'plumbing'|'electrical'|'hvac' },
+      items: [{ description, quantity|count, unit?: 'ea'|'ft'|'px', type?, pages?|page?, group?,
+                derived?: 'wire'|'cable', children?: [{ description, quantity|count, unit?, type? }] }] }
+v1: { v: 1, source?: string, items: [{ description, count|quantity, page|planPage?, type? }] }
 ```
 
-- **`v` must be the number 1**, pinned literally. Any other value is refused with
-  a message naming the version it saw — it is not reported as an empty link.
+- **`v` must be the number 1 or 2**, pinned literally. Any other value is refused
+  with a message naming the version it saw — it is not reported as an empty link.
+  In a v2 link Count Tooling states facts and nothing it provided is inferred:
+  `unit` (`ea` | `ft` | `px`; anything else falls back to the name convention),
+  `group`, one level of `children`, and `derived` (`wire` | `cable`, the rows
+  that are never exploded). `project.name` is adopted only when the open bid is
+  still the blank starter; `project.plansUrl` is kept only when it carries Count
+  Tooling's `t=<uuid>` param; `project.trade` stamps the bid.
 - **`description`** — required, trimmed; blank items are dropped silently. It is
   the merge key: normalised as trim → lowercase → internal whitespace collapsed,
   the same key the purchase list merges on. `"2X4 led troffer - a1 "` and
@@ -107,8 +129,8 @@ the hash is stripped from the address bar before the preview shows.
   written to the bid in any of those cases, and each arrives as a toast, not a
   blocking dialog.
 
-`source` is accepted and ignored — nothing on the bid records where a count came
-from.
+`source` is accepted and ignored; what the bid keeps of where a count came from
+is the plans link and the trade, not the sending app's name.
 
 ## Good to know
 
