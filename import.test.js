@@ -375,3 +375,55 @@ test('the match key is the purchase list\'s key plus the unit', () => {
   assert.strictEqual(imp.itemKey('1/2" EMT', 'ft'), imp.itemKey(' 1/2"  emt ', 'ft'));
   assert.notStrictEqual(imp.itemKey('1/2" EMT', 'ft'), imp.itemKey('1/2" EMT', 'ea'));
 });
+
+// --- ALTERNATES (2026-09-30): CountTooling's alternate heading and schedule blocks ---
+
+test('clipboard: "--- Alternate: <name> ---" opens a block whose rows join that group; headings are structure, schedule rows are never counts', () => {
+  const text = [
+    '--- Counts, Office fit-out · every sheet · every layer ---',
+    '[LP-1 / 7] Duplex Receptacle\t24\tE2.1',
+    'WH\t1\tE2.1',
+    '',
+    '--- Alternate: Break room ---',
+    '[Break room] Duplex Receptacle\t6\tE2.2',
+    '  [Break room] Box 4-11/16\t6\tE2.2',
+    'ft of 3/4" EMT\t140.00\tE2.2',
+    '',
+    '--- Duct ---',
+    "24×12\t24 ga\t70'\t6.94 lb/ft\t486 lb",
+    '',
+    '--- Water sizing ---',
+    'Cold main\t1″\t3 fixtures · 12 WSFU\t8.0 gpm\t5.1 fps\t✓',
+    '',
+    '--- Alternate: Break room · Water sizing ---',
+    'Break room cold\t¾″\t1 fixture · 4 WSFU\t4.0 gpm\t9.2 fps\t⚠',
+    '',
+    'View link:\thttps://counttooling.com/app/?t=0f4c2a1e-6b7d-4e3a-9c21-8d5f6a7b9c0d',
+  ].join('\n');
+  const r = imp.parseCountToolingClipboard(text);
+  assert.strictEqual(r.skipped, 0);
+  assert.strictEqual(r.unreadable, 0);
+  assert.deepStrictEqual(r.alternates, ['Break room']);
+  assert.deepStrictEqual(r.items.map((i) => [i.description, i.quantity, i.group, i.unit]), [
+    ['Duplex Receptacle', 24, 'LP-1 / 7', 'ea'],
+    ['WH', 1, null, 'ea'],
+    ['Duplex Receptacle', 6, 'Break room', 'ea'],
+    ['3/4" EMT', 140, 'Break room', 'ft'],   // no prefix of its own: the heading's group
+  ]);
+  assert.deepStrictEqual(r.items[2].children.map((c) => [c.description, c.quantity]), [['Box 4-11/16', 6]]);
+  assert.strictEqual(r.plansUrl, 'https://counttooling.com/app/?t=0f4c2a1e-6b7d-4e3a-9c21-8d5f6a7b9c0d');
+  // a text with no heading reports no alternate and keeps its shape
+  assert.deepStrictEqual(imp.parseCountToolingClipboard('WC\t2\t1').alternates, []);
+});
+
+test('payload v2: alternate: true on a row with a group lands as the project\'s alternate list, first spelling kept', () => {
+  const r = imp.parsePayload({ v: 2, items: [
+    { description: 'Duplex Receptacle', quantity: 24, group: 'LP-1 / 7' },
+    { description: 'Duplex Receptacle', quantity: 6, group: 'Break room', alternate: true },
+    { description: '3/4" EMT', quantity: 140, unit: 'ft', group: 'break room', alternate: true },
+    { description: 'Orphan', quantity: 1, alternate: true },   // no group: nothing to name
+  ] });
+  assert.deepStrictEqual(r.project.alternates, ['Break room']);
+  assert.strictEqual(r.items.length, 4);
+  assert.deepStrictEqual(imp.parsePayload({ v: 2, items: [{ description: 'WC', quantity: 1, group: 'A' }] }).project.alternates, []);
+});

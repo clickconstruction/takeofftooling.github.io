@@ -70,6 +70,13 @@ floor counted separately — and not otherwise.
 - A `[Group]` in front of a name becomes the row's **group tag** (a circuit, a
   panel, an area) and stays off the part name, so the name can still match the
   book.
+- A `--- Alternate: <name> ---` block is a section the customer wants priced
+  **with and without** (marked as an alternate in Count Tooling). It lands as one
+  of the bid's alternates: its rows wear **ALT**, the summary adds a
+  with-and-without table (the base, what each alternate adds, the whole), and
+  Copy for PipeTooling sends it on under the same heading. Tap any group tag to
+  turn a group's alternate on or off yourself. A duct or water-sizing block is a
+  schedule, never counts.
 - `ft of …` lines become Conduit and Wire runs, with the footage as the quantity;
   `px of …` lines arrive flagged as unscaled and stay out of every total until
   the page is scaled in Count Tooling and copied again.
@@ -93,7 +100,7 @@ the hash is stripped from the address bar before the preview shows.
 ```
 v2: { v: 2, source?: string, project?: { name?, plansUrl?, trade?: 'plumbing'|'electrical'|'hvac' },
       items: [{ description, quantity|count, unit?: 'ea'|'ft'|'px', type?, pages?|page?, group?,
-                derived?: 'wire'|'cable', children?: [{ description, quantity|count, unit?, type? }] }] }
+                alternate?: true, derived?: 'wire'|'cable', children?: [{ description, quantity|count, unit?, type? }] }] }
 v1: { v: 1, source?: string, items: [{ description, count|quantity, page|planPage?, type? }] }
 ```
 
@@ -101,7 +108,8 @@ v1: { v: 1, source?: string, items: [{ description, count|quantity, page|planPag
   with a message naming the version it saw — it is not reported as an empty link.
   In a v2 link Count Tooling states facts and nothing it provided is inferred:
   `unit` (`ea` | `ft` | `px`; anything else falls back to the name convention),
-  `group`, one level of `children`, and `derived` (`wire` | `cable`, the rows
+  `group`, `alternate` (true on each row of a group priced with and without —
+  the group's name joins the bid's alternate list), one level of `children`, and `derived` (`wire` | `cable`, the rows
   that are never exploded). `project.name` is adopted only when the open bid is
   still the blank starter; `project.plansUrl` is kept only when it carries Count
   Tooling's `t=<uuid>` param; `project.trade` stamps the bid.

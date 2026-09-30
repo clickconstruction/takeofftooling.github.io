@@ -14,6 +14,12 @@
 //                                                PipeTooling flags it too)
 //     [Group] Child \t 15 \t pages             — two-space indent = child
 //   <blank>
+//   --- Alternate: <group> ---                 — ALTERNATES: a group the customer wants
+//   [<group>] Name \t quantity \t pages           priced with and without — its rows come
+//                                                LAST, under the same heading CountTooling
+//                                                writes, which PipeTooling reads into the
+//                                                bid's alternate list
+//   <blank>
 //   View link:\t<the project's CountTooling plans link>   (when it has one)
 // Rows with no description or qty 0 are left out; other-charge rows (permits,
 // power co, temporary power) are not counts and are left out too.
@@ -45,6 +51,26 @@
     return indent + fixtureName(item, inheritedGroup) + '\t' + fmtQty(item) + '\t' + (item.planPage || '').trim();
   }
 
+  // ALTERNATES: the project's alternate groups, by name (trimmed, case folded).
+  function normalizeGroupTag(tag) {
+    return String(tag == null ? '' : tag).trim().toLowerCase();
+  }
+  function alternateKeyOf(item, alternateGroups) {
+    if (!item || !item.group || !Array.isArray(alternateGroups) || alternateGroups.length === 0) return null;
+    const key = normalizeGroupTag(item.group);
+    return key && alternateGroups.some((g) => normalizeGroupTag(g) === key) ? key : null;
+  }
+  // The alternates that hold a row, in the project's order, each with its spelling.
+  function alternatesWithRows(walked, alternateGroups) {
+    const out = [];
+    for (const g of alternateGroups || []) {
+      const key = normalizeGroupTag(g);
+      if (!key || out.some((a) => a.key === key)) continue;
+      if (walked.some(({ item, parent }) => alternateKeyOf(parent || item, [g]))) out.push({ key, label: String(g).trim() });
+    }
+    return out;
+  }
+
   // Parent rows and their children, in display order, with the filters the text
   // export applies. Yields { item, parent } so both builders walk one list.
   function walk(manifest) {
@@ -68,23 +94,37 @@
 
   /**
    * @param {Array} manifest  top-level items with nested children
-   * @param {{ plansUrl?: string }} [project]
-   * @returns {{ text: string, counts: number, feet: number, unscaled: number, rows: number }}
+   * @param {{ plansUrl?: string, alternateGroups?: string[] }} [project]
+   * @returns {{ text: string, counts: number, feet: number, unscaled: number, rows: number, alternates: string[] }}
    */
   function buildPipeToolingText(manifest, project) {
     const lines = [];
     let counts = 0, feet = 0, unscaled = 0;
-    for (const { item, parent } of walk(manifest)) {
+    const walked = walk(manifest);
+    const alternateGroups = project && Array.isArray(project.alternateGroups) ? project.alternateGroups : [];
+    const alts = alternatesWithRows(walked, alternateGroups);
+    const emit = ({ item, parent }) => {
       if (parent) lines.push(rowText({ ...item, planPage: item.planPage || parent.planPage }, '  ', parent.group));
       else lines.push(rowText(item, '', null));
       if (item.unit === 'px') unscaled++;
       else if (item.unit === 'ft') feet++;
       else counts++;
+    };
+    const keyOf = ({ item, parent }) => alternateKeyOf(parent || item, alternateGroups);
+    // ALTERNATES: the base first, then each alternate's rows last under its heading
+    // (a blank line before it, as CountTooling writes it; a text with no alternate
+    // keeps its exact old shape).
+    walked.filter((w) => keyOf(w) === null).forEach(emit);
+    for (const a of alts) {
+      if (lines.length) lines.push('');
+      lines.push('--- Alternate: ' + a.label + ' ---');
+      walked.filter((w) => keyOf(w) === a.key).forEach(emit);
     }
     let text = lines.join('\n');
     const plans = project && typeof project.plansUrl === 'string' ? project.plansUrl.trim() : '';
     if (text && plans) text += '\n\nView link:\t' + plans;
-    return { text, counts, feet, unscaled, rows: lines.length };
+    const rows = lines.filter((l) => l && !/^--- .* ---$/.test(l)).length;
+    return { text, counts, feet, unscaled, rows, alternates: alts.map((a) => a.label) };
   }
 
   const toNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -97,6 +137,7 @@
    */
   function buildPipeToolingRows(manifest, project) {
     const rows = [];
+    const alternateGroups = project && Array.isArray(project.alternateGroups) ? project.alternateGroups : [];
     for (const { item, parent } of walk(manifest)) {
       const unit = item.unit || 'ea';
       const qty = Number(item.quantity) || 0;
@@ -118,8 +159,10 @@
         extended_cost: cost != null && cost > 0 ? Math.round(cost * qty * 100) / 100 : null,
         extended_hours: hours != null && hours > 0 ? Math.round(hours * qty * 100) / 100 : null,
       });
+      // ALTERNATES: only an alternate's row carries the key, so a bid without one
+      // keeps its exact old row shape.
+      if (alternateKeyOf(parent || item, alternateGroups)) rows[rows.length - 1].alternate = true;
     }
-    void project;
     return rows;
   }
 
@@ -128,6 +171,7 @@
     if (r.counts) parts.push(`${r.counts} count${r.counts === 1 ? '' : 's'}`);
     if (r.feet) parts.push(`${r.feet} line type${r.feet === 1 ? '' : 's'}`);
     if (r.unscaled) parts.push(`${r.unscaled} unscaled`);
+    if (r.alternates && r.alternates.length) parts.push(`${r.alternates.length} alternate${r.alternates.length === 1 ? '' : 's'}: ${r.alternates.join(', ')}`);
     return parts.join(' · ');
   }
 
@@ -150,5 +194,5 @@
     return true;
   }
 
-  return { buildPipeToolingText, buildPipeToolingRows, copyForPipeTooling };
+  return { buildPipeToolingText, buildPipeToolingRows, copyForPipeTooling, describe };
 });

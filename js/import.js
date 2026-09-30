@@ -50,6 +50,15 @@ const TakeoffImport = (function () {
   let lastFocusBeforeModal = null;
 
   const GROUP_PREFIX_RE = /^\[([^\]]*)\]\s*/;
+  // CountTooling frames headings as `--- <text> ---`: the scope header, the
+  // schedule blocks (`--- Duct ---`, `--- Water sizing ---` — sizes and pounds,
+  // never counts) and, since its ALT-GROUPS, `--- Alternate: <name> ---`, which
+  // opens the rows of a group the customer wants priced with and without. A
+  // heading is never a row; a blank line or the next heading ends its block.
+  const HEADING_LINE_RE = /^---\s.*\s---$/;
+  const ALTERNATE_HEADING_RE = /^---\s*Alternate:\s*(.+?)\s*---$/i;
+  const SCHEDULE_HEADING_RE = /^---\s*(Duct|Water sizing)\s*---$/i;
+  const ALTERNATE_SCHEDULE_SUFFIX_RE = /\s*·\s*(Duct|Water sizing)$/i;
   const FT_PREFIX_RE = /^(ft|feet|foot|lf|lin\.?\s?ft|linear\s+(feet|foot|ft))\.?\s+of\s+/i;
   const PX_PREFIX_RE = /^px\s+of\s+/i;
   // CountTooling's view-link footer: the `t=<uuid>` param, or the label itself.
@@ -178,12 +187,17 @@ const TakeoffImport = (function () {
    */
   function parseCountToolingClipboard(text) {
     const items = [];
+    const alternates = [];
     let plansUrl = null;
     let skipped = 0;
     let unreadable = 0;
     let lastTop = null;
+    // ALTERNATES: the alternate whose block the line is in, and whether the
+    // block is a schedule (its rows are never counts).
+    let inAlternate = null;
+    let inSchedule = false;
     for (const rawLine of String(text == null ? '' : text).split(/\r?\n/)) {
-      if (!rawLine.trim()) continue;
+      if (!rawLine.trim()) { inAlternate = null; inSchedule = false; continue; }
       const indented = /^\s{2,}/.test(rawLine);
       const parts = rawLine.trim().split(/\t/).map((p) => p.trim());
       const link = viewLinkOf(rawLine, parts);
@@ -191,13 +205,28 @@ const TakeoffImport = (function () {
         if (!plansUrl) plansUrl = link;
         continue;
       }
+      const trimmed = rawLine.trim();
+      const alt = trimmed.match(ALTERNATE_HEADING_RE);
+      if (alt) {
+        const raw = alt[1].trim();
+        inSchedule = ALTERNATE_SCHEDULE_SUFFIX_RE.test(raw);
+        const name = raw.replace(ALTERNATE_SCHEDULE_SUFFIX_RE, '').trim();
+        inAlternate = name || null;
+        if (name && !alternates.some((g) => g.toLowerCase() === name.toLowerCase())) alternates.push(name);
+        lastTop = null;
+        continue;
+      }
+      if (SCHEDULE_HEADING_RE.test(trimmed)) { inAlternate = null; inSchedule = true; lastTop = null; continue; }
+      if (HEADING_LINE_RE.test(trimmed)) { inAlternate = null; inSchedule = false; lastTop = null; continue; }
+      if (inSchedule) continue;
       if (parts.length < 2) { skipped++; continue; }
       const parsed = parseFixtureName(parts[0]);
       if (!parsed.description) { skipped++; continue; }
       const quantity = parseCount(parts[1]);
       if (quantity == null) unreadable++;
-      // 4 cells = PipeTooling-style `fixture, count, group, pages`
-      const group = parts.length >= 4 ? (parts[2] || parsed.group) : parsed.group;
+      // 4 cells = PipeTooling-style `fixture, count, group, pages`; a row under an
+      // alternate heading that names no group of its own joins that alternate
+      const group = (parts.length >= 4 ? (parts[2] || parsed.group) : parsed.group) || inAlternate;
       const planPage = (parts.length >= 4 ? parts[3] : parts[2]) || '';
       const item = {
         description: parsed.description,
@@ -218,7 +247,7 @@ const TakeoffImport = (function () {
         lastTop = item;
       }
     }
-    return { items, plansUrl, skipped, unreadable };
+    return { items, plansUrl, skipped, unreadable, alternates };
   }
 
   /**
@@ -266,9 +295,20 @@ const TakeoffImport = (function () {
       }
       return item;
     };
-    const items = payload.items.map((r) => toItem(r, false)).filter(Boolean);
+    const mapped = payload.items.map((r) => toItem(r, false));
+    const items = mapped.filter(Boolean);
+    // ALTERNATES: CountTooling stamps `alternate: true` on each row of an alternate
+    // group (its ALT-GROUPS payload); the fact lands on the project as the group's
+    // name, first spelling kept, so every row with that group follows.
+    const alternates = [];
+    payload.items.forEach((r, i) => {
+      const it = mapped[i];
+      if (!r || r.alternate !== true || !it || !it.group) return;
+      if (!alternates.some((g) => g.toLowerCase() === it.group.toLowerCase())) alternates.push(it.group);
+    });
     const p = payload.project && typeof payload.project === 'object' ? payload.project : {};
     const project = {
+      alternates,
       name: typeof p.name === 'string' ? p.name.trim() : '',
       plansUrl: typeof p.plansUrl === 'string' && PLANS_LINK_RE.test(p.plansUrl) ? p.plansUrl.match(PLANS_LINK_RE)[0] : '',
       // which trade the bid is, as CountTooling stated it — anything else is null
@@ -395,6 +435,11 @@ const TakeoffImport = (function () {
     if (project && project.plansUrl) {
       html += '<div class="import-preview-notice">Plans link found — it will be saved on this project and travel to PipeTooling with the counts.</div>';
     }
+    const altNames = project && Array.isArray(project.alternates) ? project.alternates : [];
+    if (altNames.length) {
+      html += `<div class="import-preview-notice import-preview-notice-alt">${altNames.length === 1 ? '1 alternate' : altNames.length + ' alternates'}: ${escapeHtml(altNames.join(', '))} — priced with and without. The summary will split it out, and Copy for PipeTooling carries it.</div>`;
+    }
+    const isAlt = (g) => !!g && altNames.some((a) => a.toLowerCase() === String(g).trim().toLowerCase());
     const childRow = (child) => {
       const warn = child.unit === 'px'
         ? ' <span class="import-preview-warn">pixels, not feet — this page was never scaled in Count Tooling</span>'
@@ -433,7 +478,7 @@ const TakeoffImport = (function () {
         if (!item.type) classes.push('import-preview-item-untyped');
         if (item.unit === 'px') classes.push('import-preview-item-px');
         const pageCell = existing || !item.planPage ? '' : ' | ' + escapeHtml(item.planPage);
-        const groupTag = item.group ? `<span class="group-tag">${escapeHtml(item.group)}</span>` : '';
+        const groupTag = item.group ? `<span class="group-tag${isAlt(item.group) ? ' group-tag-alt' : ''}" title="${isAlt(item.group) ? 'An alternate — priced with and without' : 'Group / circuit from CountTooling'}">${escapeHtml(item.group)}${isAlt(item.group) ? ' · ALT' : ''}</span>` : '';
         const row = `<div class="${classes.join(' ')}" data-idx="${idx}">${badge}${groupTag}<span class="import-preview-desc">${escapeHtml(item.description || '-')}</span> ${renderTypePicker(item, idx)} <span class="import-preview-meta">× ${fmtQty(item.quantity)}${unitTag(item.unit)}${delta}${pageCell}</span>${warn}</div>`;
         return row + (item.children || []).map(childRow).join('');
       })
@@ -531,6 +576,13 @@ const TakeoffImport = (function () {
   function applyProjectMeta(project) {
     if (!project) return;
     if (project.plansUrl && typeof TakeoffState.setPlansUrl === 'function') TakeoffState.setPlansUrl(project.plansUrl);
+    // ALTERNATES: the groups the count marked join the project's list (never removed by an import)
+    if (Array.isArray(project.alternates) && project.alternates.length && typeof TakeoffState.setAlternateGroups === 'function') {
+      const have = TakeoffState.getAlternateGroups();
+      const next = have.slice();
+      project.alternates.forEach((g) => { if (!next.some((h) => h.toLowerCase() === String(g).toLowerCase())) next.push(String(g).trim()); });
+      TakeoffState.setAlternateGroups(next);
+    }
     if (project.trade && typeof TakeoffState.setProjectTrade === 'function') TakeoffState.setProjectTrade(project.trade);
     if (project.name) {
       const current = TakeoffState.getCurrentProject();
@@ -702,7 +754,7 @@ const TakeoffImport = (function () {
       return;
     }
     if (parsed.skipped) importWarn(`${plural(parsed.skipped, 'line', 'lines')} skipped — no fixture name or no count cell.`);
-    showImportPreviewModal(parsed.items, { name: '', plansUrl: parsed.plansUrl || '' });
+    showImportPreviewModal(parsed.items, { name: '', plansUrl: parsed.plansUrl || '', alternates: parsed.alternates || [] });
   }
 
   async function importFromClipboard() {

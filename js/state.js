@@ -37,6 +37,10 @@ const TakeoffState = (function () {
   // reviewable fact PipeTooling reads over the bridge. agentImport is the
   // door's provenance (null for hand-built projects).
   let externalRef = null;
+  // ALTERNATES: the groups the customer wants priced with and without — a list of
+  // group NAMES on the project (PipeTooling keeps the same list on the bid). A row
+  // belongs by its group, compared trimmed and case-insensitively.
+  let alternateGroups = [];
   let reviewStatus = 'draft';
   let reviewNote = null;
   let agentImport = null;
@@ -232,6 +236,7 @@ const TakeoffState = (function () {
     const doc = { v: 1, id: projectId, savedAt, name: projectName, manifest, laborRate, taxRate, details: projectDetails, importedFrom: projectImportedFrom };
     if (plansUrl) doc.plansUrl = plansUrl;
     if (trade) doc.trade = trade;
+    if (alternateGroups.length) doc.alternateGroups = alternateGroups.slice();
     if (projectArchived) {
       doc.archived = true;
       doc.archivedAt = projectArchivedAt;
@@ -373,6 +378,7 @@ const TakeoffState = (function () {
     taxRate = sanitizeTaxRate(data.taxRate);
     plansUrl = typeof data.plansUrl === 'string' && /^https?:\/\//i.test(data.plansUrl) ? data.plansUrl : '';
     trade = sanitizeTrade(data.trade);
+    alternateGroups = sanitizeAlternateGroups(data.alternateGroups);
     projectDetails = sanitizeDetails(data.details);
     projectImportedFrom = sanitizeImportedFrom(data.importedFrom);
     const arch = sanitizeArchived(data);
@@ -436,7 +442,43 @@ const TakeoffState = (function () {
   }
 
   function getCurrentProject() {
-    return { id: projectId, name: projectName, plansUrl, trade, externalRef, reviewStatus, reviewNote, agentImport };
+    return { id: projectId, name: projectName, plansUrl, trade, externalRef, reviewStatus, reviewNote, agentImport, alternateGroups: alternateGroups.slice() };
+  }
+
+  // ALTERNATES: distinct names, trimmed, first spelling kept; anything else dropped.
+  function sanitizeAlternateGroups(list) {
+    const out = [];
+    for (const g of Array.isArray(list) ? list : []) {
+      const name = typeof g === 'string' ? g.trim().slice(0, 80) : '';
+      if (name && !out.some((h) => h.toLowerCase() === name.toLowerCase())) out.push(name);
+    }
+    return out;
+  }
+  function getAlternateGroups() {
+    return alternateGroups.slice();
+  }
+  function setAlternateGroups(list) {
+    alternateGroups = sanitizeAlternateGroups(list);
+    schedulePersist();
+    return alternateGroups.slice();
+  }
+  function isAlternateGroup(name) {
+    const key = TakeoffSelectors.normalizeGroupTag(name);
+    return !!key && alternateGroups.some((g) => TakeoffSelectors.normalizeGroupTag(g) === key);
+  }
+  // Flip one group. Not an undo frame (like the labor rate): it is a bid fact,
+  // not a row edit, and the tag flips back with one more tap.
+  function setGroupAlternate(name, on) {
+    const label = typeof name === 'string' ? name.trim() : '';
+    if (!label) return false;
+    const key = label.toLowerCase();
+    const without = alternateGroups.filter((g) => g.toLowerCase() !== key);
+    alternateGroups = on ? without.concat([label]) : without;
+    schedulePersist();
+    return true;
+  }
+  function getSummaryByAlternate() {
+    return TakeoffSelectors.getSummaryByAlternate(manifest, taxRate, alternateGroups);
   }
 
   function getProjectTrade() {
@@ -582,6 +624,7 @@ const TakeoffState = (function () {
     projectArchivedAt = null;
     plansUrl = ''; // the counts for a new bid have not come from anywhere yet
     trade = null; // nobody has said what trade this bid is yet
+    alternateGroups = []; // no alternate has been named on a new bid
     externalRef = null;
     reviewStatus = 'draft';
     reviewNote = null;
@@ -608,7 +651,7 @@ const TakeoffState = (function () {
 
   function duplicateProject(id) {
     const source = id === projectId
-      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, plansUrl, trade, details: projectDetails }
+      ? { v: 1, id: projectId, name: projectName, manifest, laborRate, taxRate, plansUrl, trade, alternateGroups, details: projectDetails }
       : TakeoffStorage.loadProject(id);
     if (!source) return null;
     const savedAt = new Date().toISOString();
@@ -629,6 +672,9 @@ const TakeoffState = (function () {
     // the same job, so the same trade
     const copyTrade = sanitizeTrade(source.trade);
     if (copyTrade) copy.trade = copyTrade;
+    // the same job, so the same alternates
+    const copyAlts = sanitizeAlternateGroups(source.alternateGroups);
+    if (copyAlts.length) copy.alternateGroups = copyAlts;
     TakeoffStorage.saveProject(copy);
     const idx = TakeoffStorage.loadProjectsIndex() || { v: 1, currentId: projectId, projects: [] };
     idx.projects.push({ id: copy.id, name: copy.name, createdAt: savedAt, updatedAt: savedAt });
@@ -1488,6 +1534,11 @@ const TakeoffState = (function () {
     getFlattenedItems,
     getPurchaseList,
     getSummaryBreakdown,
+    getSummaryByAlternate,
+    getAlternateGroups,
+    setAlternateGroups,
+    setGroupAlternate,
+    isAlternateGroup,
     generateId,
     getLaborRate,
     setLaborRate,
