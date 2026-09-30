@@ -26,7 +26,7 @@
  * returning visitors keep the old copy until their next network-first hit.
  */
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const SHELL_CACHE = `takeoff-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `takeoff-data-${CACHE_VERSION}`;
 

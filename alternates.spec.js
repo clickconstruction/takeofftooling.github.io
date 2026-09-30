@@ -31,6 +31,8 @@ const ROWS = [
 
 test('the tag is the switch: marks, the split table, the PipeTooling text, and the fact survives a reload', async ({ page }) => {
   const errors = [];
+  // a laptop width, where the menu used to run off the table's right edge
+  await page.setViewportSize({ width: 1024, height: 768 });
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/');
   await seed(page, ROWS);
@@ -43,6 +45,11 @@ test('the tag is the switch: marks, the split table, the PipeTooling text, and t
   // Tap the Break room tag → the menu → Alternate on.
   await page.locator('.row-group-tag[data-group="Break room"]').first().click();
   const toggle = page.locator('.group-tag-menu-toggle');
+  // The menu opens toward the left, inside the table: its right edge never passes the table's.
+  const box = await page.locator('.group-tag-menu').boundingBox();
+  const tableBox = await page.locator('.manifest-table-scroll').boundingBox();
+  expect(box.x + box.width).toBeLessThanOrEqual(tableBox.x + tableBox.width + 1);
+  expect(box.x).toBeGreaterThanOrEqual(0);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await toggle.click();
   await expect(page.locator('.alt-chip')).toHaveCount(2);            // the two top-level rows (a child has no plan cell)

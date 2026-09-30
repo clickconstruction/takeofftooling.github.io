@@ -6097,7 +6097,9 @@ button.group-tag { cursor: pointer; background: transparent; font: inherit; font
 button.group-tag:hover, button.group-tag:focus-visible { border-color: var(--accent); outline: none; }
 .alt-chip { display: inline-block; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.06em; padding: 0 0.3rem; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); line-height: 1.5; white-space: nowrap; }
 tr.manifest-row-alt td { background: rgba(232, 197, 71, 0.06); }
-.group-tag-menu { position: absolute; z-index: 30; margin-top: 0.25rem; min-width: 15rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.4rem; display: grid; gap: 0.25rem; font-size: 0.85rem; }
+/* Anchored to the cell's RIGHT edge: the plan column is the table's last, so a left-anchored
+   menu ran off the table and was cut off (live walkthrough 2026-09-30). top: 100% puts it under the tag. */
+.group-tag-menu { position: absolute; z-index: 30; top: 100%; right: 0; left: auto; margin-top: 0.25rem; min-width: 15rem; max-width: min(20rem, 80vw); background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.4rem; display: grid; gap: 0.25rem; font-size: 0.85rem; }
 .group-tag-menu-name { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text2); padding: 0.1rem 0.4rem; }
 .group-tag-menu button { text-align: left; font: inherit; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; }
 .group-tag-menu button[aria-pressed="true"] { background: var(--accent); color: #1a1a1e; font-weight: 600; }
