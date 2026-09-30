@@ -141,9 +141,16 @@ const TakeoffManifestView = (function () {
     const typeClass = item.type && TYPE_LABELS[item.type] ? item.type : 'default';
     const hasFlow = ['devices', 'conduit', 'wire'].includes(item.type);
 
+    // ALTERNATES: a row in an alternate group wears the mark; the tag itself is
+    // the switch (a tap opens the on/off menu — see attachListeners).
+    const parentForAlt = isChild && item.parentId ? TakeoffState.getItemById(item.parentId) : null;
+    const isAlt = TakeoffState.isAlternateGroup((isChild ? parentForAlt && parentForAlt.group : item.group) || '');
+    const groupTag = item.group
+      ? `<button type="button" class="group-tag row-group-tag${isAlt ? ' group-tag-alt' : ''}" data-id="${item.id}" data-group="${escapeHtml(item.group)}" aria-haspopup="menu" title="${isAlt ? 'An alternate — priced with and without. Tap to change.' : 'Group / circuit from CountTooling. Tap to make it an alternate.'}">${escapeHtml(item.group)}</button>${isAlt ? '<span class="alt-chip" title="In an alternate group — priced with and without">ALT</span>' : ''}`
+      : '';
     const planPageCell = isChild
       ? '<td></td>'
-      : `<td><div class="plan-cell-wrap">${item.group ? `<span class="group-tag" title="Group / circuit from CountTooling">${escapeHtml(item.group)}</span>` : ''}<input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></div></td>`;
+      : `<td><div class="plan-cell-wrap">${groupTag}<input type="text" data-field="planPage" data-id="${item.id}" value="${escapeHtml(item.planPage || '')}" placeholder="Plan page / Location" /></div></td>`;
 
     const typeLabelDisplay = item.type
       ? (isChild ? CHILD_TYPE_LABELS[item.type] || TYPE_LABELS[item.type] || item.type : TYPE_LABELS[item.type] || item.type)
@@ -203,7 +210,7 @@ const TakeoffManifestView = (function () {
     const laborBookCell = `<td class="labor-book-cell"><button type="button" class="labor-book-icon-btn icon-btn row-btn" tabindex="0" data-id="${item.id}" title="Open Labor and Price Book">${BOOK_SVG}</button>${showRailAdd ? `<button type="button" class="add-child-btn icon-btn row-btn" tabindex="-1" data-id="${item.id}" title="Add child row">${CHILD_ARROW_SVG}</button>` : ''}${explodeBtn}</td>`;
 
     return `
-      <tr class="${isChild ? 'child-row' : ''} ${item.unit === 'px' ? 'row-unscaled' : ''}" data-id="${item.id}">
+      <tr class="${isChild ? 'child-row' : ''} ${item.unit === 'px' ? 'row-unscaled' : ''}${isAlt ? ' manifest-row-alt' : ''}" data-id="${item.id}">
         ${removeCell}
         ${laborBookCell}
         <td><input type="text" data-field="description" data-id="${item.id}" value="${escapeHtml(item.description || '')}" placeholder="Assembly Description" /></td>
@@ -381,8 +388,37 @@ const TakeoffManifestView = (function () {
         <div class="manifest-summary-grand-total" data-summary="grandTotal" title="${escapeHtml(summaryTitle('grandTotal'))}">${v.grandTotal}</div>
         <div class="manifest-summary-grand-note">Cost only — margin and the bid price are set in PipeTooling.</div>
         <div class="summary-unscaled-note" data-summary="unscaledNote" title="${escapeHtml(summaryTitle('unscaledNote'))}" ${v.unscaledNote ? '' : 'hidden'}>${escapeHtml(v.unscaledNote)}</div>
+        ${renderAlternateSplit()}
       </div>
     `;
+  }
+
+  // ALTERNATES: the summary priced both ways — the base (every row outside an
+  // alternate, other charges included), what each alternate adds, and the whole.
+  // The grand total above stays the whole bid; this reads the same numbers by
+  // the group's scope. '' on a bid without an alternate that holds a row.
+  function renderAlternateSplit() {
+    const split = TakeoffState.getSummaryByAlternate();
+    if (!split) return '';
+    const rate = TakeoffState.getLaborRate() || 0;
+    const cols = [{ label: 'Base', b: split.base, alt: false }]
+      .concat(split.alternates.map((a) => ({ label: '+ ' + a.label, b: a.breakdown, alt: true })))
+      .concat([{ label: split.alternates.length === 1 ? 'With it' : 'With every alternate', b: split.whole, alt: false }]);
+    const row = (label, f, total) => `<tr${total ? ' class="alt-total"' : ''}><td>${label}</td>${cols.map((c) => `<td>${f(c.b)}</td>`).join('')}</tr>`;
+    return `
+      <div class="summary-alt-split" id="summary-alt-split" data-testid="summary-alt-split">
+        <h4>WITH AND WITHOUT THE ALTERNATE${split.alternates.length === 1 ? '' : 'S'}</h4>
+        <table>
+          <thead><tr><th></th>${cols.map((c) => `<th${c.alt ? ' class="alt-col"' : ''}>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${row('Materials (with tax)', (b) => '$' + formatMoney(b.materialsTotal))}
+            ${row('Labor hours', (b) => formatHours(b.laborTotal))}
+            ${row('Labor $', (b) => '$' + formatMoney(b.laborTotal * rate))}
+            ${row('Other charges', (b) => (b.otherTotal > 0 ? '$' + formatMoney(b.otherTotal) : '—'))}
+            ${row('Direct cost', (b) => '$' + formatMoney(TakeoffSelectors.directCostOf(b, rate)), true)}
+          </tbody>
+        </table>
+      </div>`;
   }
 
   /**
@@ -406,6 +442,9 @@ const TakeoffManifestView = (function () {
         if (next !== undefined && el.textContent !== next) el.textContent = next;
         if (el.dataset.summary === 'unscaledNote') el.hidden = !next;
       });
+      // ALTERNATES: the split holds no control, so it is simply redrawn in place.
+      const splitEl = document.getElementById('summary-alt-split');
+      if (splitEl) splitEl.outerHTML = renderAlternateSplit();
     }
     updatePurchaseListOnly();
     // A price typed by hand can agree with the book again, or stop agreeing:
@@ -510,6 +549,7 @@ const TakeoffManifestView = (function () {
   }
 
   // ---------- Purchase list report ----------
+  let groupMenuDocListenerAttached = false;
   let purchaseListVisible = false;
 
   // A material bought at two prices shows both, not one of them: '$11.00–$12.50'.
@@ -675,7 +715,52 @@ const TakeoffManifestView = (function () {
     );
   }
 
+  // ALTERNATES: the group tag's menu — one switch, Alternate on/off, for the
+  // group under the tap. The flag is on the group's name, so every row with
+  // that group follows; a re-render draws the marks and the split.
+  function closeGroupTagMenu() {
+    document.querySelectorAll('.group-tag-menu').forEach((m) => m.remove());
+  }
+  function openGroupTagMenu(tagBtn) {
+    closeGroupTagMenu();
+    const group = tagBtn.dataset.group || '';
+    if (!group) return;
+    const on = TakeoffState.isAlternateGroup(group);
+    const menu = document.createElement('div');
+    menu.className = 'group-tag-menu';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = `
+      <div class="group-tag-menu-name">Group · ${escapeHtml(group)}</div>
+      <button type="button" role="menuitemcheckbox" class="group-tag-menu-toggle" aria-pressed="${on}" data-group="${escapeHtml(group)}">Alternate · ${on ? 'on' : 'off'}${on ? ' — bid with and without' : ''}</button>
+      <div class="group-tag-menu-note">${on ? 'Its rows stay on the bid; the summary prices the bid with and without them, and PipeTooling reads them as the alternate.' : 'Turn on when the customer wants this section priced with and without.'}</div>`;
+    tagBtn.parentElement.style.position = 'relative';
+    tagBtn.parentElement.appendChild(menu);
+    menu.querySelector('.group-tag-menu-toggle').addEventListener('click', () => {
+      const next = !TakeoffState.isAlternateGroup(group);
+      TakeoffState.setGroupAlternate(group, next);
+      closeGroupTagMenu();
+      TakeoffApp.render();
+      if (typeof TakeoffToast !== 'undefined') {
+        TakeoffToast.show(next ? `${group} is an alternate — the summary prices the bid with and without it.` : `${group} is no longer an alternate.`, { kind: 'success', key: 'alternate' });
+      }
+    });
+    menu.querySelector('.group-tag-menu-toggle').focus();
+  }
+
   function attachListeners() {
+    document.querySelectorAll('.row-group-tag').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (btn.parentElement.querySelector('.group-tag-menu')) closeGroupTagMenu();
+        else openGroupTagMenu(btn);
+      });
+    });
+    if (!groupMenuDocListenerAttached) {
+      groupMenuDocListenerAttached = true;
+      document.addEventListener('click', (e) => { if (!e.target.closest?.('.group-tag-menu')) closeGroupTagMenu(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeGroupTagMenu(); });
+    }
+
     document.getElementById('purchase-list-toggle-btn')?.addEventListener('click', () => {
       purchaseListVisible = !purchaseListVisible;
       TakeoffApp.render();

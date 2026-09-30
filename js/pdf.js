@@ -281,6 +281,17 @@ const TakeoffPDF = (function () {
     doc.text('Grand Total', MARGIN, y);
     doc.text(money(breakdown.materialsTotal + laborDollars + breakdown.otherTotal, { fixed2: true }), valueX, y, { align: 'right' });
     doc.setFont(undefined, 'normal');
+    doc.setFontSize(BODY_SIZE + 1);
+
+    // ALTERNATES: the same numbers by the group's scope — what the screen's
+    // with-and-without table shows, as the direct cost of each column.
+    const split = typeof TakeoffState !== 'undefined' && TakeoffState.getSummaryByAlternate ? TakeoffState.getSummaryByAlternate() : null;
+    if (split && typeof TakeoffSelectors !== 'undefined' && TakeoffSelectors.directCostOf) {
+      heading(split.alternates.length === 1 ? 'WITH AND WITHOUT THE ALTERNATE' : 'WITH AND WITHOUT THE ALTERNATES');
+      line('Base (direct cost)', money(TakeoffSelectors.directCostOf(split.base, laborRate), { fixed2: true }));
+      split.alternates.forEach((a) => line('+ ' + a.label, money(TakeoffSelectors.directCostOf(a.breakdown, laborRate), { fixed2: true })));
+      line(split.alternates.length === 1 ? 'With it' : 'With every alternate', money(TakeoffSelectors.directCostOf(split.whole, laborRate), { fixed2: true }), true);
+    }
     doc.setFontSize(BODY_SIZE);
   }
 

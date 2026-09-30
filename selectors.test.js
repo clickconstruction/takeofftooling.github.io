@@ -309,3 +309,40 @@ test('getSummaryBreakdown uses the passed tax rate (percent), defaulting to 8.25
   assert.strictEqual(zero.salesTax, 0);
   assert.strictEqual(sel.getSummaryBreakdown(m, -1).taxRate, 0, 'negative → clamped to 0, not a credit');
 });
+
+// --- ALTERNATES (2026-09-30): the summary priced with and without ---
+
+test('getSummaryByAlternate splits the base, each alternate and the whole by the group name; other charges stay in the base', () => {
+  const m = [
+    item({ id: 'a', type: 'devices', description: 'Duplex Receptacle', quantity: 24, group: 'LP-1 / 7', labor: 0.5, price: 18.4,
+      children: [item({ id: 'a1', parentId: 'a', type: 'misc', description: 'Box', quantity: 24, price: 1, labor: 0 })] }),
+    item({ id: 'b', type: 'devices', description: 'Duplex Receptacle', quantity: 6, group: 'break room', labor: 0.5, price: 18.4,
+      children: [item({ id: 'b1', parentId: 'b', type: 'misc', description: 'Box', quantity: 6, price: 1, labor: 0 })] }),
+    item({ id: 'c', type: 'conduit', description: '3/4" EMT', quantity: 100, unit: 'ft', group: 'Break Room', labor: 0.04, price: 1.12 }),
+    item({ id: 'd', type: 'permits', description: 'City permit', quantity: 1, group: 'Break room', price: 650 }),
+  ];
+  const s = sel.getSummaryByAlternate(m, 0, ['Break room']);
+  assert.ok(s);
+  assert.deepStrictEqual(s.alternates.map((a) => [a.key, a.label]), [['break room', 'Break room']]);
+  // base: 24 × 18.40 + 24 boxes; the permit rides in the base (never an alternate)
+  assert.strictEqual(s.base.materialsTotal, 465.6);
+  assert.strictEqual(s.base.otherTotal, 650);
+  assert.strictEqual(s.base.laborTotal, 12);
+  // the alternate: 6 receptacles + boxes + 100 ft, its children with it
+  assert.strictEqual(s.alternates[0].breakdown.materialsTotal, Math.round((6 * 18.4 + 6 + 112) * 100) / 100);
+  assert.strictEqual(s.alternates[0].breakdown.laborTotal, 7);
+  assert.strictEqual(s.alternates[0].breakdown.otherTotal, 0);
+  // the whole is the plain summary
+  assert.deepStrictEqual(s.whole, sel.getSummaryBreakdown(m, 0));
+  assert.strictEqual(sel.directCostOf(s.base, 92), Math.round((465.6 + 12 * 92 + 650) * 100) / 100);
+});
+
+test('getSummaryByAlternate is null without an alternate that holds a row; isAlternateRow reads the name trimmed and case-folded', () => {
+  const m = [item({ id: 'a', type: 'devices', description: 'WC', quantity: 1, group: 'Restroom A', price: 1 })];
+  assert.strictEqual(sel.getSummaryByAlternate(m, 0, []), null);
+  assert.strictEqual(sel.getSummaryByAlternate(m, 0, ['Break room']), null);
+  assert.strictEqual(sel.isAlternateRow(item({ group: '  restroom a ' }), ['Restroom A']), true);
+  assert.strictEqual(sel.isAlternateRow(item({ type: 'permits', group: 'Restroom A' }), ['Restroom A']), false);
+  assert.strictEqual(sel.isAlternateRow(item({ group: null }), ['Restroom A']), false);
+  assert.deepStrictEqual(sel.alternatesWithRows(m, ['restroom a', 'Restroom A', 'Roof']), [{ key: 'restroom a', label: 'restroom a' }]);
+});

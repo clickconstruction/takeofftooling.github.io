@@ -349,6 +349,8 @@
       plansUrl: TakeoffState.getCurrentProject().plansUrl || undefined,
       // which trade the bid is, when the sending app said so
       trade: TakeoffState.getCurrentProject().trade || undefined,
+      // ALTERNATES: the groups priced with and without, when any
+      alternateGroups: TakeoffState.getAlternateGroups().length ? TakeoffState.getAlternateGroups() : undefined,
       manifest: TakeoffState.getManifest(),
     };
   }
@@ -599,6 +601,7 @@
             TakeoffState.setTaxRate(data && typeof data.taxRate === 'number' ? data.taxRate : TakeoffState.LEGACY_TAX_RATE);
             if (data && typeof data.plansUrl === 'string') TakeoffState.setPlansUrl(data.plansUrl);
             if (data && typeof data.trade === 'string') TakeoffState.setProjectTrade(data.trade);
+            if (data && Array.isArray(data.alternateGroups)) TakeoffState.setAlternateGroups(data.alternateGroups);
             TakeoffState.loadManifestFromExport(data);
             showAppNotice(`Copy of ${base}, shared ${when} by link — edits stay on this device.`);
           }

@@ -73,6 +73,7 @@ Both flows head their panel with the run's length and its unit ("220 ft"), keep 
 **Paste from CountTooling.com** reads the clipboard (or opens a paste box when the browser won't share it), or open an `#import=` link from Count Tooling. The import understands everything CountTooling's **Copy to /Tooling** puts there:
 
 - `[Group] ` prefixes become a **group tag** on the row (a circuit, a panel, an area) and stay off the part name so it can match the book
+- A `--- Alternate: <name> ---` block (a section the customer wants priced **with and without**, marked as an alternate in CountTooling) lands as one of the bid's **alternates**: its rows wear **ALT**, the summary gains a with-and-without table (base, what each alternate adds, the whole), and the fact travels on to PipeTooling. Tap any group tag to turn a group's alternate on or off yourself. Duct and water-sizing blocks are schedules, never counts.
 - `ft of …` rows import as **feet**; `px of …` rows (pages with no scale in CountTooling) import **flagged as unscaled** and stay out of every total until you set the scale there and copy again — the preview says so
 - indented rows (CountTooling child counts — couplings under a conduit, boxes under a device) import as **children** of the row above
 - the **plans link** in the footer is saved on the project (a **Plans** chip in the header) and travels on to PipeTooling
@@ -97,7 +98,7 @@ A project can carry the PipeTooling bid number it belongs to (a chip beside the 
 
 ### Copy for PipeTooling
 
-Header ☰ → **Copy for PipeTooling** puts the manifest on the clipboard in the exact text PipeTooling's **Bids → Counts → Import from /Tooling** reads (groups, `ft of`, children, the plans link), so an electrical bid's counts land on a PipeTooling bid with no retyping. Prices and labor stay here for now; PipeTooling prices the bid.
+Header ☰ → **Copy for PipeTooling** puts the manifest on the clipboard in the exact text PipeTooling's **Bids → Counts → Import from /Tooling** reads (groups, `ft of`, children, the plans link, an alternate's rows last under `--- Alternate: <name> ---`), so an electrical bid's counts land on a PipeTooling bid with no retyping. Prices and labor stay here for now; PipeTooling prices the bid.
 
 ### Export
 

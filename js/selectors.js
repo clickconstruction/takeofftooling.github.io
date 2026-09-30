@@ -270,6 +270,52 @@ const TakeoffSelectors = (function () {
     };
   }
 
+  // --- Alternates (ALTERNATES, 2026-09-30) ---
+  // A group the customer wants priced with and without. The fact lives on the
+  // project as a list of group NAMES (like PipeTooling's alternate_group_tags);
+  // a row belongs by its group, compared trimmed and case-insensitively, so a
+  // retyped spelling still counts. Children follow their parent. Other charges
+  // (permits, power co., temporary power) are never in an alternate.
+  function normalizeGroupTag(tag) {
+    return String(tag == null ? '' : tag).trim().toLowerCase();
+  }
+  function isAlternateRow(item, alternateGroups) {
+    if (!item || !item.group || !Array.isArray(alternateGroups) || alternateGroups.length === 0) return false;
+    if (OTHER_TYPES.includes(item.type)) return false;
+    const key = normalizeGroupTag(item.group);
+    return !!key && alternateGroups.some((g) => normalizeGroupTag(g) === key);
+  }
+  // The alternates that hold at least one top-level row, in the order the
+  // project lists them, each with the spelling the list carries.
+  function alternatesWithRows(manifest, alternateGroups) {
+    const out = [];
+    for (const g of alternateGroups || []) {
+      const key = normalizeGroupTag(g);
+      if (!key || out.some((a) => a.key === key)) continue;
+      if (topLevel(manifest).some((item) => isAlternateRow(item, [g]))) out.push({ key, label: String(g).trim() });
+    }
+    return out;
+  }
+  // The summary priced both ways: the base (every top-level row outside an
+  // alternate, other charges included), each alternate's own rows, and the
+  // whole. null when no alternate holds a row, so a bid without one draws
+  // nothing extra. Each part is a full getSummaryBreakdown over its rows.
+  function getSummaryByAlternate(manifest, taxRatePercent, alternateGroups) {
+    const alts = alternatesWithRows(manifest, alternateGroups);
+    if (alts.length === 0) return null;
+    const rows = topLevel(manifest);
+    const keyOf = (item) => (isAlternateRow(item, alternateGroups) ? normalizeGroupTag(item.group) : null);
+    return {
+      base: getSummaryBreakdown(rows.filter((item) => keyOf(item) === null), taxRatePercent),
+      alternates: alts.map((a) => ({ key: a.key, label: a.label, breakdown: getSummaryBreakdown(rows.filter((item) => keyOf(item) === a.key), taxRatePercent) })),
+      whole: getSummaryBreakdown(rows, taxRatePercent),
+    };
+  }
+  // What a column costs us: materials with tax + labor at the rate + other charges.
+  function directCostOf(breakdown, laborRate) {
+    return Math.round((breakdown.materialsTotal + breakdown.laborTotal * (Number(laborRate) || 0) + breakdown.otherTotal) * 100) / 100;
+  }
+
   // Rows still carrying pixel lengths (unit 'px') anywhere in the manifest.
   function countUnscaled(manifest) {
     let n = 0;
@@ -287,6 +333,11 @@ const TakeoffSelectors = (function () {
     getPurchaseList,
     getFlattenedItems,
     getSummaryBreakdown,
+    normalizeGroupTag,
+    isAlternateRow,
+    alternatesWithRows,
+    getSummaryByAlternate,
+    directCostOf,
     countUnscaled,
     isSiteCharge,
     isUnscaled,

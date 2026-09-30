@@ -26,7 +26,7 @@ import '../_shared/handoff.js'
 // Secrets: TT_MANAGE_USER_SECRET.
 
 declare const TakeoffHandoff: {
-  buildPipeToolingRows: (manifest: unknown[], project: { plansUrl?: string }) => Array<Record<string, unknown>>
+  buildPipeToolingRows: (manifest: unknown[], project: { plansUrl?: string; alternateGroups?: string[] }) => Array<Record<string, unknown>>
   buildPipeToolingText: (manifest: unknown[], project: { plansUrl?: string }) => { text: string; counts: number; feet: number; unscaled: number; rows: number }
 }
 
@@ -189,13 +189,14 @@ Deno.serve(async (req) => {
         if (!proj) return json(404, { error: 'no such project for this twin' })
         const data = (proj.data as Record<string, unknown>) ?? {}
         const manifest = (data.manifest as unknown[]) ?? []
-        const project = { plansUrl: typeof data.plansUrl === 'string' ? data.plansUrl : '' }
+        // ALTERNATES: the groups priced with and without ride the document; the rows they cover carry alternate: true
+        const project = { plansUrl: typeof data.plansUrl === 'string' ? data.plansUrl : '', alternateGroups: Array.isArray(data.alternateGroups) ? (data.alternateGroups as string[]) : [] }
         const f = fieldsOf(proj)
         return json(200, {
           project: {
             id: proj.id, name: proj.name, external_ref: f.external_ref, trade: f.trade, review_status: f.review_status, review_note: f.review_note,
             updated_at: proj.updated_at, plans_url: project.plansUrl || null, labor_rate: data.laborRate ?? null, tax_rate: data.taxRate ?? null,
-            agent_import: f.agent_import,
+            agent_import: f.agent_import, alternate_groups: project.alternateGroups,
           },
           rows: TakeoffHandoff.buildPipeToolingRows(manifest, project),
           counts_text: TakeoffHandoff.buildPipeToolingText(manifest, project).text,
