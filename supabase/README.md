@@ -105,7 +105,9 @@ working without it (that is why the record lives here).
 
 ## Edge Functions
 
-Deploy each with `supabase functions deploy <name> --project-ref awjcdxqhvgnqsrlnoyxr`.
+Deploy each with `supabase functions deploy <name> --project-ref awjcdxqhvgnqsrlnoyxr`, run from the repo root so the CLI reads [`config.toml`](config.toml).
+
+**The gateway's JWT check.** `config.toml` turns it off for `manage-user` and `twin-login`, the two functions a machine calls with no user session; each checks its own credential in the function body. A deploy that does not read that file turns the check back on, and the gateway then answers every call `401 Missing authorization header` before the function runs. That happened to `manage-user` on 2026-09-30 and held the PipeTooling bridge dark until 2026-11-20. After deploying either one, check it with no credentials: `curl -s -X POST https://awjcdxqhvgnqsrlnoyxr.supabase.co/functions/v1/manage-user` must answer the function's own `{"error":"Forbidden"}`, not the gateway's `Missing authorization header`.
 
 | Function | Caller | Auth | Purpose |
 |---|---|---|---|

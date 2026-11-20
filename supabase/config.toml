@@ -1,0 +1,23 @@
+# What the Supabase CLI reads when it deploys an Edge Function from this repo.
+# Only the gateway's JWT check is set here; everything else is the CLI's default.
+#
+# The gateway in front of every function refuses a call with no signed-in user's JWT
+# ("Missing authorization header") unless verify_jwt is false for that function. Two
+# functions are called by machines that hold no user session and check their own
+# credential in the function body, so the gateway must let their calls through.
+# A plain `supabase functions deploy <name>` turns the check back ON for a function
+# not listed here: that is how the bridge went dark from 2026-09-30 to 2026-11-20.
+project_id = "takeofftooling"
+
+# The TT↔PT bridge: PipeTooling calls it server to server with X-Bridge-Secret and no
+# user JWT. The function compares that secret itself and answers 403 without it.
+[functions.manage-user]
+verify_jwt = false
+
+# The twin seat: a harness calls it with X-Twin-Token (or the fleet master secret) and
+# no user JWT. The function verifies the credential itself.
+[functions.twin-login]
+verify_jwt = false
+
+# takeoff-admin and import-manifest are called with a user's or a twin's own session
+# JWT, so the gateway's check stays on for them: they are left out on purpose.
