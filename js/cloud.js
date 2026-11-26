@@ -15,8 +15,9 @@
  *     fetches, which outlive the page (js/cloudSync.js builds those).
  *
  * Signed out (or with supabase-js unavailable) the app behaves exactly as
- * before. Auth: email + password, or a 6-digit emailed code that also creates the
- * account. A signed-in account can set or change its own password here, and
+ * before. Auth: email + password, or a 6-digit emailed code. The code signs an
+ * existing account in and never makes one: a dev adds a person in Manage users
+ * first (sign-ups are closed on the project too). A signed-in account can set or change its own password here, and
  * "Forgot your password?" sends a reset link back to this page (that link is
  * the only thing needing a redirect URL — see supabase/README.md).
  *
@@ -1037,8 +1038,14 @@ const TakeoffCloud = (function () {
   // --- Auth ---
 
   async function sendCode(email) {
-    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    // Manage users is the gate: the code signs an existing account in and never
+    // makes one. The project's sign-ups are closed as well, so this holds even
+    // for a caller that skips this page.
+    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
     if (!error) pendingEmail = email;
+    if (error && /signups? not allowed|otp_disabled|user not found/i.test(`${error.code || ''} ${error.message || ''}`)) {
+      return 'No account with that email yet. Ask whoever runs Takeoff Tooling for you to add you in Manage users.';
+    }
     return error ? error.message : null;
   }
 
@@ -1464,7 +1471,7 @@ const TakeoffCloud = (function () {
       '<button type="button" id="cloud-forgot-btn" class="btn btn-link">Forgot your password?</button>',
       '<div class="cloud-or-divider"><span></span>or<span></span></div>',
       '<button type="button" id="cloud-send-code-btn" class="btn btn-secondary cloud-send-code-btn">Email me a 6-digit sign-in code</button>',
-      '<p class="cloud-hint">No password, or new here? The emailed code signs you in — and creates your account if you don’t have one yet.</p>',
+      '<p class="cloud-hint">No password? The emailed code signs you in. New here? Ask whoever runs Takeoff Tooling for you to add you in Manage users first.</p>',
     ].join('');
     const getEmailValue = () => document.getElementById('cloud-email-input').value.trim();
     const msgEl = () => document.getElementById('cloud-modal-msg');

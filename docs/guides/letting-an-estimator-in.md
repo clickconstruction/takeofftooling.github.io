@@ -1,25 +1,23 @@
 # Letting a new estimator in
 
-A new estimator joins and needs the app on their laptop. Most of the time you do
-nothing at all — they let themselves in. The only thing anyone has to do by hand
-is decide whether they are a plain user or an admin.
+A new estimator joins and needs the app on their laptop. The app itself needs
+nothing: it works signed out. An account, for the same bids on a second machine,
+is added by someone with the dev role. Nobody makes their own.
 
-## They sign themselves in
-
-There is no invitation to send and no account to create.
+## A dev adds them, then they sign in
 
 1. They open the site. The app works immediately, signed out — they can build a
    bid before anyone gives them anything.
-2. When they want the same bids on a second machine, they press **Sign In**, type
-   their work email, and press **Email me a 6-digit sign-in code**.
-3. They type the code from their inbox. That signs them in **and creates the
-   account if they don't have one.** They land as a plain **user**.
+2. A dev opens ☰ › **Manage users**, types their work email and presses **Add
+   user**. They land as a plain **user**. No password is set or sent.
+3. They press **Sign In**, type that email, and press **Email me a 6-digit
+   sign-in code**. They type the code from their inbox and are signed in.
 4. Signed in, **Set a password** in the same dialog means they don't wait for a
    code every time. If they forget it later, **Forgot your password?** on the
    sign-in screen emails them a reset.
 
-That's the whole onboarding. Nothing is provisioned, nothing is handed over out
-of band, and no admin is in the loop.
+An email nobody has added gets no code. The dialog answers *No account with that
+email yet. Ask whoever runs Takeoff Tooling for you to add you in Manage users.*
 
 ## The three roles
 
@@ -84,9 +82,8 @@ and which sends book corrections plus their sign-in email — never a bid. See
 
 ## Good to know
 
-- Anyone with an email address can create an account with the code. Manage users
-  is a directory and a role list, not a gate — treat the app as open to your
-  organisation and use roles to control the admin tools.
+- Manage users is the gate. Only an email a dev has added there can sign in, by
+  code or by password. Use roles to control the admin tools.
 - Roles are enforced on the server, not by hiding buttons. Hiding the button is a
   courtesy; the refusal underneath is real.
 - New accounts always start as `user`.

@@ -30,14 +30,14 @@ desktop and the truck laptop, the same book, the same saved assemblies.
 1. Click **Sign In** in the header.
 2. Type your email and your password → **Sign In**.
    - No password? Press **Email me a 6-digit sign-in code** instead. The code
-     signs you in and creates your account if you don't have one, so a new
-     estimator needs nobody's permission to start.
+     signs you in once someone with the dev role has added you in **Manage
+     users**. With no account yet it answers *No account with that email yet.*
    - Forgot the password you do have? **Forgot your password?** under the
      password box emails you a reset link — fill the email box in first, or it
      answers *Enter your email first.*
 3. The header reads **✓ Cloud** and your most recent bid opens.
 
-> **What you'll see:** an account made by emailed code has no password at all. The
+> **What you'll see:** an account added in Manage users has no password at all. The
 > dialog says so — *"You signed in with an emailed code. Set a password below if
 > you would rather type one next time."* — and the button under it reads **Set a
 > password**, so you can stop waiting for a code every time.
