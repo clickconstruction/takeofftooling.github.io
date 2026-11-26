@@ -184,7 +184,7 @@ by-bid lookup; the bid stamp and review lane live inside `takeoff_projects.data`
 magic-link session (per-twin token or fleet secret; fleet email pattern + twin flag required);
 `manage-user` is the server→server bridge PipeTooling commands (`create`, `lookup`, `set_twin_flag`,
 `set_twin_credential`, `revoke_twin_credential`, `twin_projects`, `twin_manifest`,
-`set_twin_project_review`); `import-manifest` is the agent door (twin JWT; payload v2 items →
+`set_twin_project_review`, `roster`, `deactivate`, `reactivate`, `update_email`); `import-manifest` is the agent door (twin JWT; payload v2 items →
 normalized rows, exploded + priced through `_shared/explode.js`, upserted idempotently by
 `(owner, data->>externalRef)` else `(owner, name)`, review lane reset to `draft`). `twin_manifest` returns
 the priced rows (`buildPipeToolingRows`), the counts text, and a `#d=` share URL so a human opens
