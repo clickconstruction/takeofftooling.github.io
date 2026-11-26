@@ -21,6 +21,15 @@ import '../_shared/handoff.js'
 //                          PipeTooling rows (unit cost + hours per row) + a share URL a
 //                          human can open in their own TakeoffTooling
 //   set_twin_project_review{ project_id, status: ready|changes|reviewed, note? }
+//   roster                 {} → { roster: [{ tt_user_id, email, role, is_digital_twin,
+//                          active, last_sign_in_at }], count }   (PipeTooling's People
+//                          screens and its weekly drift audit read it; nothing is written)
+//   deactivate | reactivate{ tt_user_id } → { tt_user_id, active }   ("inactive" here is
+//                          the Supabase auth ban, as on CountTooling; no column was invented)
+//   update_email           { tt_user_id, email } → { tt_user_id, email }
+//
+// The last four mirror CountTooling's manage-user verb for verb. Like every verb here
+// they answer only to the bridge secret, and none touches a password.
 //
 // Deploy: supabase functions deploy manage-user --project-ref awjcdxqhvgnqsrlnoyxr
 // Secrets: TT_MANAGE_USER_SECRET.
@@ -43,7 +52,26 @@ async function sha256Hex(s: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-type AdminUser = { id: string; email?: string | null }
+type AdminUser = { id: string; email?: string | null; banned_until?: string | null; last_sign_in_at?: string | null }
+
+const BAN_FOREVER = '876000h' // ~100 years
+const BAN_NONE = 'none'
+
+function isActive(u: AdminUser): boolean {
+  if (!u.banned_until) return true
+  return Date.parse(u.banned_until) <= Date.now()
+}
+
+async function listAllUsers(admin: Admin): Promise<AdminUser[]> {
+  const all: AdminUser[] = []
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) throw new Error(`listUsers failed: ${error.message}`)
+    all.push(...(data.users as AdminUser[]))
+    if (data.users.length < 1000) break
+  }
+  return all
+}
 // deno-lint-ignore no-explicit-any
 type Admin = any
 
@@ -226,6 +254,40 @@ Deno.serve(async (req) => {
         if (error) return json(500, { error: `review update failed: ${error.message}` })
         console.log(`manage-user set_twin_project_review: ${projectId} → ${status}`)
         return json(200, { ok: true, previous, status })
+      }
+      case 'roster': {
+        const users = await listAllUsers(admin)
+        const { data: profiles, error } = await admin.from('takeoff_profiles').select('user_id, role, is_digital_twin')
+        if (error) return json(500, { error: `profiles read failed: ${error.message}` })
+        const profById = new Map<string, { role?: string | null; is_digital_twin?: boolean | null }>(
+          ((profiles ?? []) as Array<{ user_id: string; role?: string | null; is_digital_twin?: boolean | null }>).map((p) => [p.user_id, p]),
+        )
+        const roster = users.map((u) => ({
+          tt_user_id: u.id,
+          email: u.email ?? null,
+          role: profById.get(u.id)?.role ?? 'user',
+          is_digital_twin: profById.get(u.id)?.is_digital_twin === true,
+          active: isActive(u),
+          last_sign_in_at: u.last_sign_in_at ?? null,
+        }))
+        return json(200, { roster, count: roster.length })
+      }
+      case 'deactivate':
+      case 'reactivate': {
+        const id = String(body.tt_user_id ?? '')
+        if (!id) return json(400, { error: 'tt_user_id required' })
+        const { error } = await admin.auth.admin.updateUserById(id, { ban_duration: verb === 'deactivate' ? BAN_FOREVER : BAN_NONE })
+        if (error) return json(500, { error: `${verb} failed: ${error.message}` })
+        console.log(`manage-user ${verb}: ${id}`)
+        return json(200, { tt_user_id: id, active: verb === 'reactivate' })
+      }
+      case 'update_email': {
+        const id = String(body.tt_user_id ?? '')
+        if (!id || !email.includes('@')) return json(400, { error: 'tt_user_id and valid email required' })
+        const { error } = await admin.auth.admin.updateUserById(id, { email, email_confirm: true })
+        if (error) return json(500, { error: `update_email failed: ${error.message}` })
+        console.log(`manage-user update_email: ${id}`)
+        return json(200, { tt_user_id: id, email })
       }
       default:
         return json(400, { error: `Unknown verb: ${verb}` })
