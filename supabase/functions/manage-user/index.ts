@@ -27,6 +27,9 @@ import '../_shared/handoff.js'
 //   deactivate | reactivate{ tt_user_id } → { tt_user_id, active }   ("inactive" here is
 //                          the Supabase auth ban, as on CountTooling; no column was invented)
 //   update_email           { tt_user_id, email } → { tt_user_id, email }
+//   set_role               { tt_user_id, role: user|admin|dev } → { tt_user_id, role }
+//                          (PipeTooling's person desk sets it; the last dev is never
+//                          demoted, since dev is the one role that can manage users here)
 //
 // The last four mirror CountTooling's manage-user verb for verb. Like every verb here
 // they answer only to the bridge secret, and none touches a password.
@@ -280,6 +283,24 @@ Deno.serve(async (req) => {
         if (error) return json(500, { error: `${verb} failed: ${error.message}` })
         console.log(`manage-user ${verb}: ${id}`)
         return json(200, { tt_user_id: id, active: verb === 'reactivate' })
+      }
+      case 'set_role': {
+        const id = String(body.tt_user_id ?? '')
+        const role = String(body.role ?? '').trim()
+        if (!id) return json(400, { error: 'tt_user_id required' })
+        if (!['user', 'admin', 'dev'].includes(role)) return json(400, { error: "role must be 'user', 'admin' or 'dev'" })
+        if (role !== 'dev') {
+          const { data: devs, error: devsErr } = await admin.from('takeoff_profiles').select('user_id').eq('role', 'dev')
+          if (devsErr) return json(500, { error: `devs read failed: ${devsErr.message}` })
+          const rows = (devs ?? []) as Array<{ user_id: string }>
+          if (rows.some((d) => d.user_id === id) && rows.length === 1) {
+            return json(409, { error: 'They are the only dev on Takeoff Tooling. Make someone else a dev first.' })
+          }
+        }
+        const { error } = await admin.from('takeoff_profiles').upsert({ user_id: id, role }, { onConflict: 'user_id' })
+        if (error) return json(500, { error: `set_role failed: ${error.message}` })
+        console.log(`manage-user set_role: ${id} → ${role}`)
+        return json(200, { tt_user_id: id, role })
       }
       case 'update_email': {
         const id = String(body.tt_user_id ?? '')
